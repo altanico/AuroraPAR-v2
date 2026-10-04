@@ -1,0 +1,48 @@
+# AuroraPAR v2
+
+Unofficial version of [AuroraPAR](https://github.com/bornac1/AuroraPAR) by bornac1 — a Precision Approach Radar (PAR) display for the IVAO Aurora ATC client.
+
+This is a test version with bug fixes. It is not an official release of the original project. All credit for the original program goes to bornac1; it is distributed under the same MIT license (see `LICENSE`).
+
+## What it does
+
+AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR display for the selected runway:
+
+- **Top – elevation (profile):** glide path with ±0.5° tolerance, MDH and missed approach point.
+- **Bottom – azimuth:** runway centreline with ±1.5° tolerance.
+
+Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range.
+
+## Download
+
+Go to the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section. Unzip it and run `AuroraPAR.exe` (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
+
+## Runway file (`runways.par`)
+
+One runway per line, fields separated by `;`, decimals written with a dot:
+
+```
+ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH_M;WIDTH_M;GLIDE_SLOPE;TCH;MDH;DEFAULT_DISTANCE
+```
+
+| Field | Unit |
+|---|---|
+| HEADING | degrees |
+| ELEVATION, TCH, MDH | feet |
+| LATITUDE, LONGITUDE | decimal degrees (north / east positive) |
+| LENGTH_M, WIDTH_M | metres |
+| GLIDE_SLOPE | degrees |
+| DEFAULT_DISTANCE | NM (1, 2.5, 5, 10, 15 or 20; other values use the closest) |
+
+Invalid or incomplete lines are ignored.
+
+## Changes from the original
+
+- Numbers are read correctly whatever the Windows language (previously coordinates were wrong on English Windows).
+- Automatic reconnection when Aurora is started later or the connection drops; network errors no longer crash the program.
+- Fixed possible crashes on incomplete answers from Aurora and on incomplete lines in `runways.par`.
+- Refreshes no longer overlap; the METAR is requested once a minute instead of ten times a second; US altimeter settings (`A2992`) are converted to hPa.
+- Default range is 10 NM; the range box now follows the selected runway's default distance.
+- Profile view: callsign label correctly placed at airports above sea level.
+- `runways.par` is copied next to the program when building; a clear message is shown if it is missing.
+- Automatic build on GitHub (see *Download*).

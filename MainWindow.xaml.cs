@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -7,14 +8,20 @@ namespace AuroraPAR
 {
     public partial class MainWindow : Window
     {
+        /// <summary>
+        /// How often the METAR (QNH) is requested again. It changes rarely, so there is no need to ask every refresh.
+        /// </summary>
+        private static readonly TimeSpan QnhRefreshInterval = TimeSpan.FromSeconds(60);
         private int qnh = 0;
+        private DateTime lastQnhUpdate = DateTime.MinValue;
+        private string lastQnhIcao = "";
         private readonly System.Timers.Timer timer;
         private ProfileView profileView;
         private HorizontalView horizontalView;
         private readonly Aurora aurora;
         private readonly Distance[] distances = new Distance[] {1, 2.5, 5, 10, 15, 20};
         private string dataPath = "runways.par";
-        private bool Open = true;
+        private volatile bool Open = true;
         private Runway runway = new()
         {
             ICAO = "EDDF",
@@ -32,44 +39,81 @@ namespace AuroraPAR
             InitializeComponent();
             this.Loaded += MainWindow_Loaded;
             DistanceComboBox.ItemsSource = distances;
-            DistanceComboBox.SelectedIndex = 1;//10 nm
+            DistanceComboBox.SelectedIndex = IndexOfDistance(runway.Distance);//10 nm
             DistanceComboBox.SelectionChanged += DistanceComboBox_SelectionChanged;
             profileView = new(Vertical, runway);
             horizontalView = new(Horizontal, runway);
             aurora = new();
             this.Closing += MainWindow_Closing;
-            timer = new();
-            timer.Start();
-            timer.Interval = 100;
+            // AutoReset = false: the next refresh is started only when the previous one has finished,
+            // so refreshes never overlap even when Aurora answers slowly.
+            timer = new()
+            {
+                Interval = 100,
+                AutoReset = false
+            };
             timer.Elapsed += Timer_Elapsed;
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             Open = false;
+            timer.Stop();
             aurora.Close();
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            RunwayComboBox.ItemsSource = await DataFile.GetRunways(dataPath);
+            try
+            {
+                Runway[] runways = await DataFile.GetRunways(dataPath);
+                RunwayComboBox.ItemsSource = runways;
+                if (runways.Length == 0)
+                {
+                    MessageBox.Show(this, $"No valid runway found in {Path.GetFullPath(dataPath)}.", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Cannot read the runway file {Path.GetFullPath(dataPath)}:\n{ex.Message}", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
-            await aurora.Connect();
+            // The refresh loop also takes care of (re)connecting to Aurora.
+            timer.Start();
         }
 
         private void RunwayComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems[0] is Runway r)
+            if (e.AddedItems.Count > 0 && e.AddedItems[0] is Runway r)
             {
+                // Read the runway's default distance before the distance box can change it.
+                double defaultDistance = r.Distance;
                 runway = r;
                 profileView = new(Vertical, runway);
                 horizontalView = new(Horizontal, runway);
-                int i = Array.IndexOf(distances, runway.Distance);
-                if(i != -1)
+                DistanceComboBox.SelectedIndex = IndexOfDistance(defaultDistance);
+                // Make sure runway and distance box always agree, even if the index did not change.
+                if (DistanceComboBox.SelectedItem is Distance d)
                 {
-                    DistanceComboBox.SelectedIndex = i;
+                    runway.Distance = d;
                 }
             }
+        }
+
+        /// <summary>
+        /// Index of the available display distance closest to the given one.
+        /// </summary>
+        private int IndexOfDistance(double distance)
+        {
+            int best = 0;
+            for (int i = 1; i < distances.Length; i++)
+            {
+                if (Math.Abs(distances[i] - distance) < Math.Abs(distances[best] - distance))
+                {
+                    best = i;
+                }
+            }
+            return best;
         }
 
         private void DistanceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -81,26 +125,61 @@ namespace AuroraPAR
         }
         private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            string[] callsigns = await aurora.GetTrafficList();
-            int nqnh = await aurora.GetQNH(runway);
-            if (nqnh != 0) {
-                qnh = nqnh;
-            }
-            List<Aircraft> aircrafts = [];
-            foreach(string callsign in callsigns)
+            try
             {
-                Aircraft? aircraft = await aurora.GetTrafficPosition(callsign);
-                if(aircraft != null)
+                if (!aurora.Connected)
                 {
-                    aircrafts.Add(aircraft);
+                    await aurora.TryConnect();
+                    // Ask for the QNH again right after (re)connecting.
+                    lastQnhUpdate = DateTime.MinValue;
+                }
+                Runway current = runway;
+                List<Aircraft> aircrafts = [];
+                if (aurora.Connected)
+                {
+                    if (current.ICAO != lastQnhIcao || DateTime.UtcNow - lastQnhUpdate >= QnhRefreshInterval)
+                    {
+                        int nqnh = await aurora.GetQNH(current);
+                        if (nqnh != 0)
+                        {
+                            qnh = nqnh;
+                        }
+                        else if (current.ICAO != lastQnhIcao)
+                        {
+                            // No METAR for the new airport: do not keep showing the old airport's QNH.
+                            qnh = 0;
+                        }
+                        lastQnhIcao = current.ICAO;
+                        lastQnhUpdate = DateTime.UtcNow;
+                    }
+                    string[] callsigns = await aurora.GetTrafficList();
+                    foreach (string callsign in callsigns)
+                    {
+                        Aircraft? aircraft = await aurora.GetTrafficPosition(callsign);
+                        if (aircraft != null)
+                        {
+                            aircrafts.Add(aircraft);
+                        }
+                    }
+                }
+                Draw(aircrafts);
+            }
+            catch (Exception)
+            {
+                // Never let a single failed refresh crash the program; the next refresh will try again.
+            }
+            finally
+            {
+                if (Open)
+                {
+                    timer.Start();
                 }
             }
-            Draw(aircrafts);
-            timer.Start();
         }
         private void Draw(List<Aircraft> aircrafts)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            if (!Open) return;
+            Dispatcher.Invoke(() =>
             {
                 if (Open)
                 {

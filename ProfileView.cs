@@ -49,7 +49,7 @@ namespace AuroraPAR
                 FontSize = 12,
                 Foreground = Brushes.White
             };
-            Canvas.SetBottom(textBlock, (altitude * yscale + 15));
+            Canvas.SetBottom(textBlock, ((altitude - Runway.Elevation) * yscale + 15));
             Canvas.SetLeft(textBlock, ((distance + Runway.LengthNM) * xscale) - 15);
             Canvas.Children.Add(textBlock);
         }

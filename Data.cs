@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace AuroraPAR
         /// <summary>
         /// Length in nautical miles.
         /// </summary>
-        public double LengthNM { get { return LengthM / 1852; } set { _length = value / 1852; } }
+        public double LengthNM { get { return LengthM / 1852; } set { _length = value * 1852; } }
         /// <summary>
         /// Glide slope angle in degrees.
         /// </summary>
@@ -60,7 +61,7 @@ namespace AuroraPAR
         /// <summary>
         /// Width in nautical miles.
         /// </summary>
-        public double WidthNM { get { return WidthM / 1852; } set { _width = value / 1852; } }
+        public double WidthNM { get { return WidthM / 1852; } set { _width = value * 1852; } }
 
         public override string ToString()
         {
@@ -165,27 +166,46 @@ namespace AuroraPAR
             string[] data = await System.IO.File.ReadAllLinesAsync(path);
             foreach (string line in data)
             {
-                string[] linedata = line.Replace('.', ',').Split(';');
-                if (linedata.Length > 10)
+                string[] linedata = line.Split(';', StringSplitOptions.TrimEntries);
+                // 12 fields are needed (indexes 0 to 11). Lines that are incomplete or contain
+                // invalid numbers (e.g. comments, empty lines) are skipped instead of crashing.
+                if (linedata.Length >= 12
+                    && TryParse(linedata[2], out double heading)
+                    && TryParse(linedata[3], out double elevation)
+                    && TryParse(linedata[4], out double latitude)
+                    && TryParse(linedata[5], out double longitude)
+                    && TryParse(linedata[6], out double length)
+                    && TryParse(linedata[7], out double width)
+                    && TryParse(linedata[8], out double glideSlope)
+                    && TryParse(linedata[9], out double tch)
+                    && TryParse(linedata[10], out double mdh)
+                    && TryParse(linedata[11], out double distance))
                 {
                     runways.Add(new()
                     {
                         ICAO = linedata[0],
                         Designator = linedata[1],
-                        Heading = Double.Parse(linedata[2]),
-                        Elevation = Double.Parse(linedata[3]),
-                        Latitude = Double.Parse(linedata[4]),
-                        Longitude = Double.Parse(linedata[5]),
-                        LengthM = Double.Parse(linedata[6]),
-                        WidthM = Double.Parse(linedata[7]),
-                        GlideSlope = Double.Parse(linedata[8]),
-                        TCH = Double.Parse(linedata[9]),
-                        MDH = Double.Parse(linedata[10]),
-                        Distance = Double.Parse(linedata[11])
+                        Heading = heading,
+                        Elevation = elevation,
+                        Latitude = latitude,
+                        Longitude = longitude,
+                        LengthM = length,
+                        WidthM = width,
+                        GlideSlope = glideSlope,
+                        TCH = tch,
+                        MDH = mdh,
+                        Distance = distance
                     });
                 }
             }
             return runways.ToArray();
+        }
+        /// <summary>
+        /// Numbers in the file always use a dot as decimal separator, whatever the Windows language.
+        /// </summary>
+        private static bool TryParse(string text, out double value)
+        {
+            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
     }
 }

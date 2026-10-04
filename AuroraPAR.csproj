@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <None Update="runways.par">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
