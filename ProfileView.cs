@@ -149,14 +149,7 @@ namespace AuroraPAR
             }
             for (int i = 1; i <= num; i++)
             {
-                SolidColorBrush stroke;
-                if (i % 5 == 0)
-                {
-                    stroke = Brushes.Orange;  
-                } else
-                {
-                    stroke = Brushes.Green;
-                }
+                SolidColorBrush stroke = Brushes.Green;
                 // Range marks are measured from the touchdown point (not from the threshold),
                 // as the distances given by the controller on final.
                 double markX = Runway.LengthNM - Runway.TouchdownNM + i * Runway.Distance / num;
