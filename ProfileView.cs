@@ -20,19 +20,54 @@ namespace AuroraPAR
             xscale = (Canvas.ActualWidth - 50) / (Runway.Distance+Runway.LengthNM);
             yscale = (Canvas.ActualHeight - 50) / (((Runway.Distance+Runway.LengthNM) * Math.Tan((Runway.GlideSlope + 5) * double.Pi / 180)* 6076.11549));
         }
-        private void DrawAircraft(string callsign, double distance, double altitude, double distanceFromTouchdown)
+        /// <summary>
+        /// Horizontal position on screen of a point at the given distance from the touchdown point.
+        /// </summary>
+        private double X(double distanceFromTouchdownNM)
         {
-            var color = Brushes.White;
-            double calculatedUp = distance * Math.Tan((Runway.GlideSlope + 0.5) * double.Pi / 180) * 6076.11549 + Runway.TCH + Runway.Elevation;
-            double calculatedDown = distance * Math.Tan((Runway.GlideSlope - 0.5) * double.Pi / 180) * 6076.11549 + Runway.TCH + Runway.Elevation;
-            if (altitude < calculatedUp && altitude > calculatedDown)
+            return (Runway.LengthNM - Runway.TouchdownNM + distanceFromTouchdownNM) * xscale;
+        }
+        /// <summary>
+        /// Vertical position on screen of a height in ft above the threshold elevation.
+        /// </summary>
+        private double Y(double heightFt)
+        {
+            return Canvas.ActualHeight - heightFt * yscale;
+        }
+        private void AddLine(double x1, double y1, double x2, double y2, Brush stroke, double thickness, bool dashed = false)
+        {
+            Line line = new()
             {
-                color = Brushes.Green;
-            }
-            else
+                X1 = x1,
+                Y1 = y1,
+                X2 = x2,
+                Y2 = y2,
+                Stroke = stroke,
+                StrokeThickness = thickness
+            };
+            if (dashed)
             {
-                color = Brushes.Red;
+                line.StrokeDashArray = new DoubleCollection { 4, 3 };
             }
+            Canvas.Children.Add(line);
+        }
+        /// <summary>
+        /// Draws a line starting at the touchdown point with angle GlideSlope + angleOffset:
+        /// dashed from touchdown to threshold, solid from threshold to the end of the display.
+        /// </summary>
+        private void AddGlidePathLine(double angleOffset, Brush stroke, double thickness)
+        {
+            double threshold = Runway.TouchdownNM;
+            double end = Runway.TouchdownNM + Runway.Distance;
+            AddLine(X(0), Y(0), X(threshold), Y(Runway.GlidePathHeight(threshold, angleOffset)), stroke, thickness, dashed: true);
+            AddLine(X(threshold), Y(Runway.GlidePathHeight(threshold, angleOffset)), X(end), Y(Runway.GlidePathHeight(end, angleOffset)), stroke, thickness);
+        }
+        private void DrawAircraft(Aircraft aircraft)
+        {
+            double distance = aircraft.AlongTrackDistance(Runway);
+            double distanceFromTouchdown = aircraft.DistanceFromTouchdown(Runway);
+            double altitude = aircraft.Altitude;
+            var color = aircraft.IsWithinGlidePathTolerance(Runway) ? Brushes.Green : Brushes.Red;
             Ellipse elipse = new()
             {
                 Height = 10,
@@ -45,7 +80,7 @@ namespace AuroraPAR
             Canvas.Children.Add(elipse);
             TextBlock textBlock = new()
             {
-                Text = $"{callsign}\n{altitude}\n{distanceFromTouchdown:0.0}NM",
+                Text = $"{aircraft.Callsign}\n{altitude}\n{distanceFromTouchdown:0.0}NM",
                 FontSize = 12,
                 Foreground = Brushes.White
             };
@@ -96,67 +131,17 @@ namespace AuroraPAR
                 StrokeThickness = 3
             };
             Canvas.Children.Add(upper);
-            Line glidepath = new()
-            {
-                X1 = Runway.LengthNM * xscale,
-                Y1 = Canvas.ActualHeight - (Runway.TCH * yscale),
-                X2 = (Runway.Distance + Runway.LengthNM) * xscale,
-                Y2 = Canvas.ActualHeight-((Runway.Distance * Math.Tan(Runway.GlideSlope * double.Pi / 180) * 6076.11549 + Runway.TCH)*yscale),
-                Stroke = Brushes.Yellow,
-                StrokeThickness = 2
-            };
-            Canvas.Children.Add(glidepath);
-            Line glidepathM05 = new()
-            {
-                X1 = Runway.LengthNM * xscale,
-                Y1 = Canvas.ActualHeight - (Runway.TCH * yscale),
-                X2 = (Runway.Distance + Runway.LengthNM) * xscale,
-                Y2 = Canvas.ActualHeight - ((Runway.Distance * Math.Tan((Runway.GlideSlope-0.5) * double.Pi / 180) * 6076.11549 + Runway.TCH) * yscale),
-                Stroke = Brushes.Red,
-                StrokeThickness = 1
-            };
-            Canvas.Children.Add(glidepathM05);
-            Line glidepathP05 = new()
-            {
-                X1 = Runway.LengthNM * xscale,
-                Y1 = Canvas.ActualHeight - (Runway.TCH * yscale),
-                X2 = (Runway.Distance + Runway.LengthNM) * xscale,
-                Y2 = Canvas.ActualHeight - ((Runway.Distance * Math.Tan((Runway.GlideSlope + 0.5) * double.Pi / 180) * 6076.11549 + Runway.TCH) * yscale),
-                Stroke = Brushes.Red,
-                StrokeThickness = 1
-            };
-            Canvas.Children.Add(glidepathP05);
-            Line MDH = new()
-            {
-                X1 = 0,
-                Y1 = Canvas.ActualHeight - (Runway.MDH * yscale),
-                X2 = (Runway.LengthNM + ((Runway.MDH - Runway.TCH) / 6076.11549) / Math.Tan(Runway.GlideSlope * double.Pi / 180)) * xscale,
-                Y2 = Canvas.ActualHeight - (Runway.MDH * yscale),
-                Stroke = Brushes.Red,
-                StrokeThickness = 2
-            };
-            Canvas.Children.Add(MDH);
-            Line MAPt = new()
-            {
-                X1 = (Runway.LengthNM + ((Runway.MDH - Runway.TCH) / 6076.11549) / Math.Tan(Runway.GlideSlope * double.Pi / 180)) * xscale,
-                Y1 = Canvas.ActualHeight,
-                X2 = (Runway.LengthNM + ((Runway.MDH - Runway.TCH) / 6076.11549) / Math.Tan(Runway.GlideSlope * double.Pi / 180)) * xscale,
-                Y2 = Canvas.ActualHeight - (Runway.MDH * yscale),
-                Stroke = Brushes.Red,
-                StrokeThickness = 2
-            };
-            Canvas.Children.Add(MAPt);
-            // Touchdown point: origin of the range marks.
-            Line touchdown = new()
-            {
-                X1 = (Runway.LengthNM - Runway.TouchdownNM) * xscale,
-                Y1 = Canvas.ActualHeight,
-                X2 = (Runway.LengthNM - Runway.TouchdownNM) * xscale,
-                Y2 = Canvas.ActualHeight - 12,
-                Stroke = Brushes.Yellow,
-                StrokeThickness = 2
-            };
-            Canvas.Children.Add(touchdown);
+            // Glide path and its tolerance limits all start at the touchdown point on the runway:
+            // dashed between touchdown and threshold, solid beyond the threshold.
+            AddGlidePathLine(0, Brushes.Yellow, 2);
+            AddGlidePathLine(-Runway.GlidePathTolerance, Brushes.Red, 1);
+            AddGlidePathLine(Runway.GlidePathTolerance, Brushes.Red, 1);
+            // MDH line and missed approach point, where the glide path reaches the MDH.
+            double mapt = Runway.MissedApproachPointNM;
+            AddLine(0, Y(Runway.MDH), X(mapt), Y(Runway.MDH), Brushes.Red, 2);
+            AddLine(X(mapt), Y(0), X(mapt), Y(Runway.MDH), Brushes.Red, 2);
+            // Touchdown point: origin of the range marks and of the glide path.
+            AddLine(X(0), Y(0), X(0), Y(0) - 12, Brushes.Yellow, 2);
             int num = 10;
             if(Runway.Distance == 15)
             {
@@ -199,7 +184,7 @@ namespace AuroraPAR
             {
                 if (aircraft.IsDisplayed(runway))
                 {
-                    DrawAircraft(aircraft.Callsign, aircraft.AlongTrackDistance(runway), aircraft.Altitude, aircraft.DistanceFromTouchdown(runway));
+                    DrawAircraft(aircraft);
                 }
             }
         }

@@ -11,7 +11,7 @@ AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR displ
 - **Top – elevation (profile):** glide path with ±0.5° tolerance, MDH and missed approach point.
 - **Bottom – azimuth:** runway centreline with ±1.5° tolerance.
 
-Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway), as controllers give them on final. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range.
+Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway in both views), as controllers give them on final. The glide path, the extended centreline and their tolerance limits also start at the touchdown point: dashed between touchdown and threshold, solid beyond it. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range.
 
 ## Download
 
@@ -42,6 +42,7 @@ Invalid or incomplete lines are ignored.
 ## Changes from the original
 
 - Fixed traffic disappearing until restart: answers from Aurora are now matched to their request, so one late answer can no longer shift all the following ones.
+- Glide path, centreline and tolerances drawn from the touchdown point (dashed up to the threshold), in/out of tolerance computed the same way.
 - Range marks measured from the touchdown point instead of the threshold; distance from touchdown shown next to each aircraft; aircraft placed by their distance along the centreline.
 - Numbers are read correctly whatever the Windows language (previously coordinates were wrong on English Windows).
 - Automatic reconnection when Aurora is started later or the connection drops; network errors no longer crash the program.

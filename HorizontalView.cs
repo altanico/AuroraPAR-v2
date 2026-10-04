@@ -63,36 +63,23 @@ namespace AuroraPAR
                 StrokeThickness = 3
             };
             Canvas.Children.Add(lower);
-            Line axis = new()
+            // Extended centreline and lateral tolerance limits all start at the touchdown point:
+            // dashed between touchdown and threshold, solid beyond the threshold.
+            double cy = Canvas.ActualHeight / 2;
+            double xTouchdown = (Runway.LengthNM - Runway.TouchdownNM) * xscale;
+            double xThreshold = Runway.LengthNM * xscale;
+            double xEnd = (Runway.LengthNM + Runway.Distance) * xscale;
+            double halfAtThreshold = Runway.CenterlineHalfWidth(Runway.TouchdownNM) * yscale;
+            double halfAtEnd = Runway.CenterlineHalfWidth(Runway.TouchdownNM + Runway.Distance) * yscale;
+            AddLine(xTouchdown, cy, xThreshold, cy, Brushes.Yellow, 2, dashed: true);
+            AddLine(xThreshold, cy, xEnd, cy, Brushes.Yellow, 2);
+            foreach (int side in new[] { -1, 1 })
             {
-                X1 = Runway.LengthNM * xscale,
-                Y1 = Canvas.ActualHeight / 2,
-                X2 = (Runway.LengthNM + Runway.Distance) * xscale,
-                Y2 = Canvas.ActualHeight / 2,
-                Stroke = Brushes.Yellow,
-                StrokeThickness = 2
-            };
-            Canvas.Children.Add(axis);
-            Line axisP15 = new()
-            {
-                X1 = Runway.LengthNM * xscale,
-                Y1 = Canvas.ActualHeight / 2,
-                X2 = (Runway.LengthNM + Runway.Distance) * xscale,
-                Y2 = (Canvas.ActualHeight / 2) + (Runway.Distance * Math.Tan((1.5) * double.Pi / 180)*yscale),
-                Stroke = Brushes.Red,
-                StrokeThickness = 1
-            };
-            Canvas.Children.Add(axisP15);
-            Line axisM15 = new()
-            {
-                X1 = Runway.LengthNM * xscale,
-                Y1 = Canvas.ActualHeight / 2,
-                X2 = (Runway.LengthNM + Runway.Distance) * xscale,
-                Y2 = (Canvas.ActualHeight / 2) - (Runway.Distance * Math.Tan((1.5) * double.Pi / 180) * yscale),
-                Stroke = Brushes.Red,
-                StrokeThickness = 1
-            };
-            Canvas.Children.Add(axisM15);
+                AddLine(xTouchdown, cy, xThreshold, cy + side * halfAtThreshold, Brushes.Red, 1, dashed: true);
+                AddLine(xThreshold, cy + side * halfAtThreshold, xEnd, cy + side * halfAtEnd, Brushes.Red, 1);
+            }
+            // Touchdown point: origin of the range marks and of the centreline tolerance.
+            AddLine(xTouchdown, cy - 8, xTouchdown, cy + 8, Brushes.Yellow, 2);
             int num = 10;
             if (Runway.Distance == 15)
             {
@@ -120,21 +107,34 @@ namespace AuroraPAR
             {
                 if (aircraft.IsDisplayed(Runway))
                 {
-                    DrawAircraft(aircraft.Callsign, aircraft.Altitude, aircraft.AlongTrackDistance(runway), aircraft.LateralOffset(runway));
+                    DrawAircraft(aircraft);
                 }
             }
         }
-        private void DrawAircraft(string callsign, double altitude, double distance, double offset)
+        private void AddLine(double x1, double y1, double x2, double y2, Brush stroke, double thickness, bool dashed = false)
         {
-            var color = Brushes.White;
-            if (Math.Abs(offset) <= distance * Math.Tan((1.5) * double.Pi / 180))
+            Line line = new()
             {
-                color = Brushes.Green;
-            }
-            else
+                X1 = x1,
+                Y1 = y1,
+                X2 = x2,
+                Y2 = y2,
+                Stroke = stroke,
+                StrokeThickness = thickness
+            };
+            if (dashed)
             {
-                color = Brushes.Red;
+                line.StrokeDashArray = new DoubleCollection { 4, 3 };
             }
+            Canvas.Children.Add(line);
+        }
+        private void DrawAircraft(Aircraft aircraft)
+        {
+            string callsign = aircraft.Callsign;
+            double altitude = aircraft.Altitude;
+            double distance = aircraft.AlongTrackDistance(Runway);
+            double offset = aircraft.LateralOffset(Runway);
+            var color = aircraft.IsWithinCenterlineTolerance(Runway) ? Brushes.Green : Brushes.Red;
             Ellipse elipse = new()
             {
                 Height = 10,
