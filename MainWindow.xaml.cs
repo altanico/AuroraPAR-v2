@@ -15,6 +15,19 @@ namespace AuroraPAR
         private int qnh = 0;
         private DateTime lastQnhUpdate = DateTime.MinValue;
         private string lastQnhIcao = "";
+        /// <summary>
+        /// Set when the QNH must be requested again as soon as possible (e.g. right after (re)connecting).
+        /// </summary>
+        private volatile bool qnhRefreshNeeded = true;
+        /// <summary>
+        /// Delay between two connection attempts while Aurora is not reachable.
+        /// </summary>
+        private static readonly TimeSpan ReconnectDelay = TimeSpan.FromSeconds(1);
+        /// <summary>
+        /// Aircraft received at the last refresh, so the screen can be redrawn immediately
+        /// (range or runway change, window resize) without waiting for Aurora.
+        /// </summary>
+        private volatile List<Aircraft> lastAircrafts = [];
         private readonly System.Timers.Timer timer;
         private ProfileView profileView;
         private HorizontalView horizontalView;
@@ -53,6 +66,8 @@ namespace AuroraPAR
                 AutoReset = false
             };
             timer.Elapsed += Timer_Elapsed;
+            Vertical.SizeChanged += (s, e) => Redraw();
+            Horizontal.SizeChanged += (s, e) => Redraw();
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -78,8 +93,8 @@ namespace AuroraPAR
                 MessageBox.Show(this, $"Cannot read the runway file {Path.GetFullPath(dataPath)}:\n{ex.Message}", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
-            // The refresh loop also takes care of (re)connecting to Aurora.
             timer.Start();
+            await ConnectionLoop();
         }
 
         private void RunwayComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -97,6 +112,28 @@ namespace AuroraPAR
                 {
                     runway.Distance = d;
                 }
+                Redraw();
+            }
+        }
+
+        /// <summary>
+        /// Keeps trying to (re)connect to Aurora while the window is open.
+        /// It runs separately from the refresh timer, so a slow or failing connection attempt
+        /// (about 2 s on Windows when Aurora is closed) never delays the drawing.
+        /// </summary>
+        private async Task ConnectionLoop()
+        {
+            while (Open)
+            {
+                if (!aurora.Connected)
+                {
+                    if (await aurora.TryConnect())
+                    {
+                        // Ask for the QNH again right after (re)connecting.
+                        qnhRefreshNeeded = true;
+                    }
+                }
+                await Task.Delay(ReconnectDelay);
             }
         }
 
@@ -121,24 +158,21 @@ namespace AuroraPAR
             if ( e.AddedItems.Count > 0 && e.AddedItems[0] is Distance d)
             {
                 runway.Distance = d;
+                // Redraw now with the last known traffic: the range change is immediate.
+                Redraw();
             }
         }
         private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
             try
             {
-                if (!aurora.Connected)
-                {
-                    await aurora.TryConnect();
-                    // Ask for the QNH again right after (re)connecting.
-                    lastQnhUpdate = DateTime.MinValue;
-                }
                 Runway current = runway;
                 List<Aircraft> aircrafts = [];
                 if (aurora.Connected)
                 {
-                    if (current.ICAO != lastQnhIcao || DateTime.UtcNow - lastQnhUpdate >= QnhRefreshInterval)
+                    if (qnhRefreshNeeded || current.ICAO != lastQnhIcao || DateTime.UtcNow - lastQnhUpdate >= QnhRefreshInterval)
                     {
+                        qnhRefreshNeeded = false;
                         int nqnh = await aurora.GetQNH(current);
                         if (nqnh != 0)
                         {
@@ -162,7 +196,8 @@ namespace AuroraPAR
                         }
                     }
                 }
-                Draw(aircrafts);
+                lastAircrafts = aircrafts;
+                Draw();
             }
             catch (Exception)
             {
@@ -176,20 +211,26 @@ namespace AuroraPAR
                 }
             }
         }
-        private void Draw(List<Aircraft> aircrafts)
+        /// <summary>
+        /// Redraw from the refresh timer's thread.
+        /// </summary>
+        private void Draw()
         {
             if (!Open) return;
-            Dispatcher.Invoke(() =>
-            {
-                if (Open)
-                {
-                    Vertical.Children.Clear();
-                    Horizontal.Children.Clear();
-                    DrawInfo();
-                    profileView.Draw(aircrafts);
-                    horizontalView.Draw(aircrafts);
-                }
-            });
+            Dispatcher.Invoke(Redraw);
+        }
+        /// <summary>
+        /// Redraws both views with the last known traffic. Must be called on the window's (UI) thread.
+        /// </summary>
+        private void Redraw()
+        {
+            if (!Open) return;
+            List<Aircraft> aircrafts = lastAircrafts;
+            Vertical.Children.Clear();
+            Horizontal.Children.Clear();
+            DrawInfo();
+            profileView.Draw(aircrafts);
+            horizontalView.Draw(aircrafts);
         }
         private void DrawInfo()
         {
