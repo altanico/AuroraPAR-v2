@@ -20,7 +20,7 @@ namespace AuroraPAR
             xscale = (Canvas.ActualWidth - 50) / (Runway.Distance+Runway.LengthNM);
             yscale = (Canvas.ActualHeight - 50) / (((Runway.Distance+Runway.LengthNM) * Math.Tan((Runway.GlideSlope + 5) * double.Pi / 180)* 6076.11549));
         }
-        private void DrawAircraft(string callsign, double distance, double altitude)
+        private void DrawAircraft(string callsign, double distance, double altitude, double distanceFromTouchdown)
         {
             var color = Brushes.White;
             double calculatedUp = distance * Math.Tan((Runway.GlideSlope + 0.5) * double.Pi / 180) * 6076.11549 + Runway.TCH + Runway.Elevation;
@@ -45,7 +45,7 @@ namespace AuroraPAR
             Canvas.Children.Add(elipse);
             TextBlock textBlock = new()
             {
-                Text = $"{callsign}\n{altitude}",
+                Text = $"{callsign}\n{altitude}\n{distanceFromTouchdown:0.0}NM",
                 FontSize = 12,
                 Foreground = Brushes.White
             };
@@ -146,6 +146,17 @@ namespace AuroraPAR
                 StrokeThickness = 2
             };
             Canvas.Children.Add(MAPt);
+            // Touchdown point: origin of the range marks.
+            Line touchdown = new()
+            {
+                X1 = (Runway.LengthNM - Runway.TouchdownNM) * xscale,
+                Y1 = Canvas.ActualHeight,
+                X2 = (Runway.LengthNM - Runway.TouchdownNM) * xscale,
+                Y2 = Canvas.ActualHeight - 12,
+                Stroke = Brushes.Yellow,
+                StrokeThickness = 2
+            };
+            Canvas.Children.Add(touchdown);
             int num = 10;
             if(Runway.Distance == 15)
             {
@@ -161,12 +172,15 @@ namespace AuroraPAR
                 {
                     stroke = Brushes.Green;
                 }
+                // Range marks are measured from the touchdown point (not from the threshold),
+                // as the distances given by the controller on final.
+                double markX = Runway.LengthNM - Runway.TouchdownNM + i * Runway.Distance / num;
                 Line distance = new()
                 {
-                    X1 = (i*Runway.Distance/num+Runway.LengthNM)*xscale,
+                    X1 = markX * xscale,
                     Y1 = Canvas.ActualHeight,
-                    X2 = (i*Runway.Distance/num + Runway.LengthNM) * xscale,
-                    Y2 = Canvas.ActualHeight - (((Runway.LengthNM+i*Runway.Distance/num) * Math.Tan((Runway.GlideSlope+5) * double.Pi / 180) * 6076.11549) * yscale),
+                    X2 = markX * xscale,
+                    Y2 = Canvas.ActualHeight - ((markX * Math.Tan((Runway.GlideSlope+5) * double.Pi / 180) * 6076.11549) * yscale),
                     Stroke = stroke,
                     StrokeThickness = 1
                 };
@@ -178,14 +192,14 @@ namespace AuroraPAR
                     Foreground = Brushes.Yellow
                 };
                 Canvas.SetBottom(textBlock, 0);
-                Canvas.SetLeft(textBlock, ((i * Runway.Distance / num + Runway.LengthNM) * xscale-10));
+                Canvas.SetLeft(textBlock, (markX * xscale-10));
                 Canvas.Children.Add(textBlock);
             }
             foreach (Aircraft aircraft in aircrafts)
             {
                 if (aircraft.IsDisplayed(runway))
                 {
-                    DrawAircraft(aircraft.Callsign, aircraft.Distance(runway), aircraft.Altitude);
+                    DrawAircraft(aircraft.Callsign, aircraft.AlongTrackDistance(runway), aircraft.Altitude, aircraft.DistanceFromTouchdown(runway));
                 }
             }
         }

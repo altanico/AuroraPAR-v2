@@ -11,7 +11,7 @@ AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR displ
 - **Top – elevation (profile):** glide path with ±0.5° tolerance, MDH and missed approach point.
 - **Bottom – azimuth:** runway centreline with ±1.5° tolerance.
 
-Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range.
+Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway), as controllers give them on final. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range.
 
 ## Download
 
@@ -22,8 +22,10 @@ Go to the **Actions** tab, open the latest successful **Build** run and download
 One runway per line, fields separated by `;`, decimals written with a dot:
 
 ```
-ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH_M;WIDTH_M;GLIDE_SLOPE;TCH;MDH;DEFAULT_DISTANCE
+ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH_M;WIDTH_M;GLIDE_SLOPE;TCH;MDH;DEFAULT_DISTANCE[;TOUCHDOWN_M]
 ```
+
+LATITUDE / LONGITUDE are those of the **landing threshold**.
 
 | Field | Unit |
 |---|---|
@@ -33,11 +35,14 @@ ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH_M;WIDTH_M;GLIDE_SLOP
 | LENGTH_M, WIDTH_M | metres |
 | GLIDE_SLOPE | degrees |
 | DEFAULT_DISTANCE | NM (1, 2.5, 5, 10, 15 or 20; other values use the closest) |
+| TOUCHDOWN_M *(optional)* | metres from the threshold to the touchdown point. If omitted, it is the point where the glide path reaches the runway: TCH / tan(GLIDE_SLOPE), about 290 m for 50 ft and 3° |
 
 Invalid or incomplete lines are ignored.
 
 ## Changes from the original
 
+- Fixed traffic disappearing until restart: answers from Aurora are now matched to their request, so one late answer can no longer shift all the following ones.
+- Range marks measured from the touchdown point instead of the threshold; distance from touchdown shown next to each aircraft; aircraft placed by their distance along the centreline.
 - Numbers are read correctly whatever the Windows language (previously coordinates were wrong on English Windows).
 - Automatic reconnection when Aurora is started later or the connection drops; network errors no longer crash the program.
 - Fixed possible crashes on incomplete answers from Aurora and on incomplete lines in `runways.par`.

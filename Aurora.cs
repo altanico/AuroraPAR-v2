@@ -42,6 +42,7 @@ namespace AuroraPAR
             try
             {
                 Disconnect();
+                consecutiveTimeouts = 0;
                 client = new TcpClient();
                 await client.ConnectAsync(IPAddress.Loopback, 1130);
                 stream = client.GetStream();
@@ -62,10 +63,22 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// Sends one command and waits for the one-line answer.
-        /// Returns null (and marks the connection as lost) on any network error or timeout.
+        /// Number of consecutive unanswered requests after which the connection is considered dead and reopened.
         /// </summary>
-        private async Task<string?> Request(string command)
+        private const int MaxConsecutiveTimeouts = 3;
+        private int consecutiveTimeouts = 0;
+
+        /// <summary>
+        /// Sends one command and waits for its one-line answer.
+        /// Aurora repeats the command at the start of every answer (e.g. "#TRPOS;ABC123;..."),
+        /// so <paramref name="isAnswer"/> checks that the line read is really the answer to this command.
+        /// Lines that are not (a late answer to an earlier request that timed out, or any other
+        /// unexpected line) are discarded. Without this check a single late answer shifts every
+        /// following answer by one: each aircraft then receives another aircraft's (or the METAR's)
+        /// answer, is rejected, and traffic disappears until the program is restarted.
+        /// Returns null on timeout or network error.
+        /// </summary>
+        private async Task<string?> Request(string command, Func<string, bool> isAnswer)
         {
             if (!connected) return null;
             await semaphore.WaitAsync();
@@ -75,13 +88,33 @@ namespace AuroraPAR
                 using CancellationTokenSource cts = new(ResponseTimeout);
                 await writer.WriteLineAsync(command.AsMemory(), cts.Token);
                 await writer.FlushAsync(cts.Token);
-                string? message = await reader.ReadLineAsync(cts.Token);
-                if (message == null)
+                while (true)
                 {
-                    // Aurora closed the connection.
+                    string? message = await reader.ReadLineAsync(cts.Token);
+                    if (message == null)
+                    {
+                        // Aurora closed the connection.
+                        Disconnect();
+                        return null;
+                    }
+                    if (isAnswer(message))
+                    {
+                        consecutiveTimeouts = 0;
+                        return message;
+                    }
+                    // Not the answer to this command: skip it and keep reading.
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // No answer in time. A single missing answer is tolerated (any late answer will be
+                // skipped by the check above); repeated ones mean the connection is dead.
+                consecutiveTimeouts++;
+                if (consecutiveTimeouts >= MaxConsecutiveTimeouts)
+                {
                     Disconnect();
                 }
-                return message;
+                return null;
             }
             catch (Exception)
             {
@@ -94,9 +127,18 @@ namespace AuroraPAR
             }
         }
 
+        /// <summary>
+        /// True when <paramref name="message"/> starts with <paramref name="prefix"/> followed by ';' or the end of the line.
+        /// </summary>
+        private static bool StartsWithField(string message, string prefix)
+        {
+            return message.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && (message.Length == prefix.Length || message[prefix.Length] == ';');
+        }
+
         public async Task<string[]> GetTrafficList()
         {
-            string? message = await Request("#TR");
+            string? message = await Request("#TR", m => StartsWithField(m, "#TR"));
             if (message != null)
             {
                 return message.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[1..];
@@ -107,8 +149,8 @@ namespace AuroraPAR
         public async Task<Aircraft?> GetTrafficPosition(string callsign)
         {
             if (string.IsNullOrEmpty(callsign)) return null;
-            string? message = await Request($"#TRPOS;{callsign}");
-            if (message != null && message.Contains("#TRPOS"))
+            string? message = await Request($"#TRPOS;{callsign}", m => StartsWithField(m, $"#TRPOS;{callsign}"));
+            if (message != null)
             {
                 string[] data = message.Split(';');
                 // Fields 3 to 7 are used, so at least 8 fields are needed.
@@ -139,7 +181,7 @@ namespace AuroraPAR
         /// </summary>
         public async Task<int> GetQNH(Runway runway)
         {
-            string? message = await Request($"#METAR;{runway.ICAO}");
+            string? message = await Request($"#METAR;{runway.ICAO}", m => StartsWithField(m, "#METAR"));
             if (message != null)
             {
                 Match q = QnhHpa.Match(message);

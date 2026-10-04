@@ -101,7 +101,8 @@ namespace AuroraPAR
             for (int i = 1; i <= num; i++)
             {
                 SolidColorBrush stroke = (i % 5 == 0) ? Brushes.Orange : Brushes.Green;
-                double x = (i * Runway.Distance / num + Runway.LengthNM) * xscale;
+                // Range marks are measured from the touchdown point (not from the threshold).
+                double x = (i * Runway.Distance / num - Runway.TouchdownNM + Runway.LengthNM) * xscale;
 
                 Line distance = new()
                 {
@@ -119,7 +120,7 @@ namespace AuroraPAR
             {
                 if (aircraft.IsDisplayed(Runway))
                 {
-                    DrawAircraft(aircraft.Callsign, aircraft.Altitude, aircraft.Distance(runway), aircraft.LateralOffset(runway));
+                    DrawAircraft(aircraft.Callsign, aircraft.Altitude, aircraft.AlongTrackDistance(runway), aircraft.LateralOffset(runway));
                 }
             }
         }

@@ -62,6 +62,28 @@ namespace AuroraPAR
         /// Width in nautical miles.
         /// </summary>
         public double WidthNM { get { return WidthM / 1852; } set { _width = value * 1852; } }
+        /// <summary>
+        /// Distance of the touchdown point beyond the threshold, in meters, when given in the runway file.
+        /// When null it is calculated as the point where the glide path reaches the runway.
+        /// </summary>
+        public double? TouchdownOverrideM { get; set; }
+        /// <summary>
+        /// Distance of the touchdown point beyond the threshold, in meters.
+        /// Default: where the glide path, crossing the threshold at TCH, reaches the runway (TCH / tan(glide slope)).
+        /// </summary>
+        public double TouchdownM
+        {
+            get
+            {
+                if (TouchdownOverrideM is double m) return m;
+                if (GlideSlope <= 0) return 0;
+                return TCH * 0.3048 / Math.Tan(GlideSlope * Math.PI / 180);
+            }
+        }
+        /// <summary>
+        /// Distance of the touchdown point beyond the threshold, in nautical miles.
+        /// </summary>
+        public double TouchdownNM => TouchdownM / 1852;
 
         public override string ToString()
         {
@@ -96,6 +118,23 @@ namespace AuroraPAR
                        Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return (c * 6371 * 1000 / 1852);
+        }
+        /// <summary>
+        /// Distance from the threshold measured along the extended runway centreline (ignoring the lateral offset), in NM.
+        /// </summary>
+        public double AlongTrackDistance(Runway runway)
+        {
+            double d = Distance(runway);
+            double xt = LateralOffset(runway);
+            return Math.Sqrt(Math.Max(0, d * d - xt * xt));
+        }
+        /// <summary>
+        /// Distance from the touchdown point measured along the extended runway centreline, in NM.
+        /// This is the distance controllers give on final ("4 miles from touchdown").
+        /// </summary>
+        public double DistanceFromTouchdown(Runway runway)
+        {
+            return AlongTrackDistance(runway) + runway.TouchdownNM;
         }
         public double LateralOffset(Runway runway)
         {
@@ -159,7 +198,7 @@ namespace AuroraPAR
 
     internal class DataFile
     {
-        //Format: ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH IN METERS;WIDTH IN METERS;GLIDE SLOPE;TCH;MDH;DEFAULT DISTANCE
+        //Format: ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH IN METERS;WIDTH IN METERS;GLIDE SLOPE;TCH;MDH;DEFAULT DISTANCE[;TOUCHDOWN DISTANCE FROM THRESHOLD IN METERS (optional)]
         public static async Task<Runway[]> GetRunways(string path)
         {
             List<Runway> runways = [];
@@ -181,7 +220,7 @@ namespace AuroraPAR
                     && TryParse(linedata[10], out double mdh)
                     && TryParse(linedata[11], out double distance))
                 {
-                    runways.Add(new()
+                    Runway runway = new()
                     {
                         ICAO = linedata[0],
                         Designator = linedata[1],
@@ -195,7 +234,13 @@ namespace AuroraPAR
                         TCH = tch,
                         MDH = mdh,
                         Distance = distance
-                    });
+                    };
+                    // Optional 13th field: touchdown point distance beyond the threshold, in meters.
+                    if (linedata.Length >= 13 && TryParse(linedata[12], out double touchdown))
+                    {
+                        runway.TouchdownOverrideM = touchdown;
+                    }
+                    runways.Add(runway);
                 }
             }
             return runways.ToArray();
