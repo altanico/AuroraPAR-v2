@@ -1,7 +1,7 @@
 ﻿<Window x:Class="AuroraPAR.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Aurora PAR" Height="600" Width="800"
+        Title="Aurora PAR" Height="600" Width="800" Icon="AuroraPAR.ico"
         MouseWheel="Window_MouseWheel">
     <Grid>
         <Grid.ColumnDefinitions>
