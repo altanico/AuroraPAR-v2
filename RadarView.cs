@@ -105,6 +105,7 @@ namespace AuroraPAR
             /// <summary>Label hidden with a right click.</summary>
             public bool LabelHidden;
             public Brush Color = Brushes.Green;
+            public string Callsign = "";
 
             public IEnumerable<UIElement> Elements()
             {
@@ -224,6 +225,7 @@ namespace AuroraPAR
                 if (!tracks.TryGetValue(aircraft.Callsign, out Track? track))
                 {
                     track = CreateTrack();
+                    track.Callsign = aircraft.Callsign;
                     tracks[aircraft.Callsign] = track;
                 }
                 UpdateTrack(track, aircraft);
@@ -474,31 +476,66 @@ namespace AuroraPAR
         }
 
         /// <summary>Maximum distance in pixels between a right click and a track for the click to apply to it.</summary>
-        private const double TrackClickDistance = 15;
+        private const double TrackClickDistance = 20;
 
+        /// <summary>
+        /// Right click on the view: with a single track nearby its label is hidden or shown at once; with several
+        /// tracks nearby (close formation) or with labels hidden elsewhere, a menu lists them by callsign.
+        /// </summary>
         private void Canvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
             Point click = e.GetPosition(Canvas);
-            Track? nearest = null;
-            double best = TrackClickDistance;
-            foreach (Track track in tracks.Values)
+            List<Track> nearby = tracks.Values
+                .Where(t => t.Symbol.Visibility == Visibility.Visible && (t.Position - click).Length <= TrackClickDistance)
+                .OrderBy(t => (t.Position - click).Length)
+                .ToList();
+            List<Track> hiddenElsewhere = tracks.Values
+                .Where(t => t.LabelHidden && !nearby.Contains(t))
+                .OrderBy(t => t.Callsign)
+                .ToList();
+            if (nearby.Count == 0 && hiddenElsewhere.Count == 0) return;
+            e.Handled = true;
+            if (nearby.Count == 1 && hiddenElsewhere.Count == 0)
             {
-                if (track.Symbol.Visibility != Visibility.Visible) continue;
-                double distance = (track.Position - click).Length;
-                if (distance <= best)
+                ToggleLabel(nearby[0]);
+                return;
+            }
+            ContextMenu menu = new() { PlacementTarget = Canvas };
+            foreach (Track track in nearby)
+            {
+                AddMenuItem(menu, $"{track.Callsign}: {(track.LabelHidden ? "show" : "hide")} label", () => ToggleLabel(track));
+            }
+            if (hiddenElsewhere.Count > 0)
+            {
+                if (menu.Items.Count > 0) menu.Items.Add(new Separator());
+                foreach (Track track in hiddenElsewhere)
                 {
-                    best = distance;
-                    nearest = track;
+                    AddMenuItem(menu, $"{track.Callsign}: show label", () => ToggleLabel(track));
                 }
             }
-            if (nearest == null) return;
-            nearest.LabelHidden = !nearest.LabelHidden;
-            if (nearest.LabelHidden)
+            if (tracks.Values.Count(t => t.LabelHidden) > 1)
             {
-                nearest.Label.Visibility = Visibility.Collapsed;
-                nearest.Leader.Visibility = Visibility.Collapsed;
+                menu.Items.Add(new Separator());
+                AddMenuItem(menu, "Show all hidden labels", ShowAllLabels);
             }
-            e.Handled = true;
+            menu.IsOpen = true;
+        }
+
+        private static void AddMenuItem(ContextMenu menu, string header, Action action)
+        {
+            MenuItem item = new() { Header = header };
+            item.Click += (s, e) => action();
+            menu.Items.Add(item);
+        }
+
+        private static void ToggleLabel(Track track)
+        {
+            track.LabelHidden = !track.LabelHidden;
+            if (track.LabelHidden)
+            {
+                track.Label.Visibility = Visibility.Collapsed;
+                track.Leader.Visibility = Visibility.Collapsed;
+            }
         }
 
         /// <summary>
