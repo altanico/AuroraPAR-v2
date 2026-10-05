@@ -1,0 +1,35 @@
+﻿<Window x:Class="AuroraPAR.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aurora PAR - Settings" Width="440" SizeToContent="Height"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Icon="AuroraPAR.ico">
+    <StackPanel Margin="12">
+        <GroupBox Header="Profile" Padding="8">
+            <StackPanel>
+                <ComboBox Name="ProfileComboBox" Height="26"/>
+                <DockPanel Margin="0,8,0,0">
+                    <Button Name="RenameButton" DockPanel.Dock="Right" Content="Rename" Width="80" Margin="6,0,0,0"/>
+                    <TextBox Name="ProfileNameTextBox" VerticalContentAlignment="Center" Height="24"/>
+                </DockPanel>
+                <UniformGrid Columns="4" Margin="0,8,0,0">
+                    <Button Name="NewButton" Content="Duplicate" Margin="0,0,4,0" Height="26"/>
+                    <Button Name="DeleteButton" Content="Delete" Margin="2,0,2,0"/>
+                    <Button Name="ImportButton" Content="Import..." Margin="2,0,2,0"/>
+                    <Button Name="ExportButton" Content="Export..." Margin="4,0,0,0"/>
+                </UniformGrid>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Header="Display" Padding="8" Margin="0,10,0,0">
+            <StackPanel>
+                <TextBlock Text="Runway position on screen"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <RadioButton Name="RunwayLeftRadio" GroupName="RunwaySide" Content="Left" Margin="0,0,20,0"/>
+                    <RadioButton Name="RunwayRightRadio" GroupName="RunwaySide" Content="Right"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+        <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
+        <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
+    </StackPanel>
+</Window>

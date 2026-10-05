@@ -17,6 +17,16 @@ Range marks and the distance shown next to each aircraft are measured **from the
 
 Go to the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section. Unzip it and run `AuroraPAR.exe` (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
 
+## Settings and profiles
+
+Click **Settings...** to manage profiles and display options. Changes are applied and saved immediately.
+
+- **Profiles:** several named profiles can be kept and switched; *Duplicate*, *Rename*, *Delete*, and *Export* / *Import* to share a profile (a `.json` file) with other controllers.
+- **Runway position:** left or right of the screen. With the runway on the right the azimuth view is rotated by 180°, so the side of the centreline shown above/below stays consistent with the direction of flight.
+- The runway and range in use when the program is closed are restored at the next start.
+
+Settings are saved in `AuroraPAR.settings.json` in the user's settings folder (`%AppData%\AuroraPAR` on Windows), so they are kept when a new version is downloaded. **Portable mode:** create an empty file named `AuroraPAR.settings.json` next to `AuroraPAR.exe`, and the program will use that one instead. A damaged settings file is kept as `AuroraPAR.settings.json.bad` and the defaults are used.
+
 ## Runway file (`runways.par`)
 
 One runway per line, fields separated by `;`, decimals written with a dot:
@@ -41,6 +51,8 @@ Invalid or incomplete lines are ignored.
 
 ## Changes from the original
 
+- Settings window with user profiles (saved, exportable/importable) and runway on the left or right of the screen.
+- Drawing rewritten: screen elements are updated instead of being recreated at every refresh.
 - Fixed traffic disappearing until restart: answers from Aurora are now matched to their request, so one late answer can no longer shift all the following ones.
 - Glide path, centreline and tolerances drawn from the touchdown point (dashed up to the threshold), in/out of tolerance computed the same way.
 - Range marks measured from the touchdown point instead of the threshold; distance from touchdown shown next to each aircraft; aircraft placed by their distance along the centreline.

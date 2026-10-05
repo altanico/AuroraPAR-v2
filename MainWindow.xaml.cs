@@ -29,12 +29,19 @@ namespace AuroraPAR
         /// </summary>
         private volatile List<Aircraft> lastAircrafts = [];
         private readonly System.Timers.Timer timer;
-        private ProfileView profileView;
-        private HorizontalView horizontalView;
+        private readonly ProfileView profileView;
+        private readonly HorizontalView horizontalView;
         private readonly Aurora aurora;
         private readonly Distance[] distances = new Distance[] {1, 2.5, 5, 10, 15, 20};
         private string dataPath = "runways.par";
         private volatile bool Open = true;
+        private readonly AppSettings settings;
+        /// <summary>
+        /// Information area (runway, QNH, connection status), created once and updated at every refresh.
+        /// </summary>
+        private readonly StackPanel infoPanel = new();
+        private readonly TextBlock infoText = new() { FontSize = 14, Foreground = Brushes.White };
+        private readonly TextBlock statusText = new() { FontSize = 14 };
         private Runway runway = new()
         {
             ICAO = "EDDF",
@@ -50,12 +57,17 @@ namespace AuroraPAR
         public MainWindow()
         {
             InitializeComponent();
+            settings = SettingsStore.Load();
             this.Loaded += MainWindow_Loaded;
             DistanceComboBox.ItemsSource = distances;
             DistanceComboBox.SelectedIndex = IndexOfDistance(runway.Distance);//10 nm
             DistanceComboBox.SelectionChanged += DistanceComboBox_SelectionChanged;
             profileView = new(Vertical, runway);
             horizontalView = new(Horizontal, runway);
+            infoPanel.Children.Add(infoText);
+            infoPanel.Children.Add(statusText);
+            Panel.SetZIndex(infoPanel, 20);
+            Vertical.Children.Add(infoPanel);
             aurora = new();
             this.Closing += MainWindow_Closing;
             // AutoReset = false: the next refresh is started only when the previous one has finished,
@@ -66,8 +78,10 @@ namespace AuroraPAR
                 AutoReset = false
             };
             timer.Elapsed += Timer_Elapsed;
-            Vertical.SizeChanged += (s, e) => Redraw();
-            Horizontal.SizeChanged += (s, e) => Redraw();
+            Vertical.SizeChanged += (s, e) => InvalidateViews();
+            Horizontal.SizeChanged += (s, e) => InvalidateViews();
+            SettingsButton.Click += SettingsButton_Click;
+            ApplyProfile();
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -75,13 +89,21 @@ namespace AuroraPAR
             Open = false;
             timer.Stop();
             aurora.Close();
+            // Remember runway and range for the next start.
+            if (RunwayComboBox.SelectedItem is Runway selected)
+            {
+                settings.LastRunway = selected.ToString();
+                settings.LastRange = selected.Distance;
+            }
+            SettingsStore.Save(settings);
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            Runway[] runways = [];
             try
             {
-                Runway[] runways = await DataFile.GetRunways(dataPath);
+                runways = await DataFile.GetRunways(dataPath);
                 RunwayComboBox.ItemsSource = runways;
                 if (runways.Length == 0)
                 {
@@ -93,6 +115,16 @@ namespace AuroraPAR
                 MessageBox.Show(this, $"Cannot read the runway file {Path.GetFullPath(dataPath)}:\n{ex.Message}", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
+            // Restore the runway and range used last time.
+            Runway? last = runways.FirstOrDefault(r => r.ToString() == settings.LastRunway);
+            if (last != null)
+            {
+                RunwayComboBox.SelectedItem = last;
+                if (settings.LastRange is double range)
+                {
+                    DistanceComboBox.SelectedIndex = IndexOfDistance(range);
+                }
+            }
             timer.Start();
             await ConnectionLoop();
         }
@@ -104,16 +136,51 @@ namespace AuroraPAR
                 // Read the runway's default distance before the distance box can change it.
                 double defaultDistance = r.Distance;
                 runway = r;
-                profileView = new(Vertical, runway);
-                horizontalView = new(Horizontal, runway);
+                profileView.SetRunway(runway);
+                horizontalView.SetRunway(runway);
                 DistanceComboBox.SelectedIndex = IndexOfDistance(defaultDistance);
                 // Make sure runway and distance box always agree, even if the index did not change.
                 if (DistanceComboBox.SelectedItem is Distance d)
                 {
                     runway.Distance = d;
                 }
-                Redraw();
+                InvalidateViews();
             }
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsWindow window = new(settings, ApplyProfile)
+            {
+                Owner = this
+            };
+            window.ShowDialog();
+        }
+
+        /// <summary>
+        /// Applies the active profile's settings to the screen.
+        /// </summary>
+        private void ApplyProfile()
+        {
+            bool right = settings.Active.RunwaySide == RunwaySide.Right;
+            profileView.SetRunwayOnRight(right);
+            horizontalView.SetRunwayOnRight(right);
+            // Information area in the top corner on the runway side, away from the far end of the scan limits.
+            if (right)
+            {
+                infoPanel.ClearValue(Canvas.LeftProperty);
+                Canvas.SetRight(infoPanel, 4);
+            }
+            else
+            {
+                infoPanel.ClearValue(Canvas.RightProperty);
+                Canvas.SetLeft(infoPanel, 0);
+            }
+            Canvas.SetTop(infoPanel, 0);
+            TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
+            infoText.TextAlignment = alignment;
+            statusText.TextAlignment = alignment;
+            InvalidateViews();
         }
 
         /// <summary>
@@ -159,7 +226,7 @@ namespace AuroraPAR
             {
                 runway.Distance = d;
                 // Redraw now with the last known traffic: the range change is immediate.
-                Redraw();
+                InvalidateViews();
             }
         }
         private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
@@ -220,46 +287,39 @@ namespace AuroraPAR
             Dispatcher.Invoke(Redraw);
         }
         /// <summary>
-        /// Redraws both views with the last known traffic. Must be called on the window's (UI) thread.
+        /// Rebuilds the static parts of both views (after a change of runway, range, size or settings) and redraws.
+        /// </summary>
+        private void InvalidateViews()
+        {
+            profileView.Invalidate();
+            horizontalView.Invalidate();
+            Redraw();
+        }
+        /// <summary>
+        /// Updates both views with the last known traffic. Must be called on the window's (UI) thread.
+        /// Only what changed is redrawn: static elements are rebuilt only after <see cref="InvalidateViews"/>.
         /// </summary>
         private void Redraw()
         {
             if (!Open) return;
             List<Aircraft> aircrafts = lastAircrafts;
-            Vertical.Children.Clear();
-            Horizontal.Children.Clear();
-            DrawInfo();
-            profileView.Draw(aircrafts);
-            horizontalView.Draw(aircrafts);
+            UpdateInfo();
+            profileView.Render(aircrafts);
+            horizontalView.Render(aircrafts);
         }
-        private void DrawInfo()
+        private void UpdateInfo()
         {
-            TextBlock info = new()
-            {
-                Text = $"RWY {runway.Designator}\nQNH {qnh}",
-                FontSize = 14,
-                Foreground = Brushes.White
-            };
-            Canvas.SetLeft(info, 0);
-            Canvas.SetTop(info, 0);
-            Vertical.Children.Add(info);
-            TextBlock sts = new()
-            {
-                FontSize = 14
-            };
+            infoText.Text = $"RWY {runway.Designator}\nQNH {qnh}";
             if (aurora.Connected)
             {
-                sts.Text = "STS OK";
-                sts.Foreground = Brushes.Green;
-            } else
-            {
-                sts.Text = "STS FAIL";
-                sts.Foreground = Brushes.Red;
+                statusText.Text = "STS OK";
+                statusText.Foreground = Brushes.Green;
             }
-            Canvas.SetLeft(sts, 0);
-            info.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Canvas.SetTop(sts, info.DesiredSize.Height);
-            Vertical.Children.Add(sts);
+            else
+            {
+                statusText.Text = "STS FAIL";
+                statusText.Foreground = Brushes.Red;
+            }
         }
         private void Window_MouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {

@@ -20,9 +20,11 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="30"/>
+                <RowDefinition Height="34"/>
             </Grid.RowDefinitions>
             <ComboBox Grid.Row="0" Name="RunwayComboBox"></ComboBox>
             <ComboBox Grid.Row="1" Name="DistanceComboBox"></ComboBox>
+            <Button Grid.Row="2" Name="SettingsButton" Content="Settings..." Margin="0,4,0,0"/>
         </Grid>
     </Grid>
 </Window>
