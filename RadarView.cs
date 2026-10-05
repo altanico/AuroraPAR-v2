@@ -26,6 +26,7 @@ namespace AuroraPAR
         public SymbolSetting ThresholdSymbol { get; set; } = new(SymbolShape.Line, 10);
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
+        public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         public LabelLayout ElevationLabel { get; set; } = LabelLayout.DefaultElevation();
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
     }
@@ -51,7 +52,6 @@ namespace AuroraPAR
         private const int HistoryZIndex = 9;
         private const int TrackZIndex = 11;
         private const int LabelZIndex = 12;
-        private const double HistoryDotSize = 3;
         /// <summary>Default label position: this many pixels right of and above the track (45°).</summary>
         private const double LabelDistance = 14;
 
@@ -71,6 +71,9 @@ namespace AuroraPAR
         private readonly Dictionary<string, Track> tracks = [];
         /// <summary>Label being dragged with the mouse, and where the drag started.</summary>
         private Track? dragging;
+        /// <summary>Shared geometry of the history dots, rebuilt when the options change.</summary>
+        private Geometry historyGeometry = Geometry.Empty;
+        private int historyGeometryVersion = -1;
         private Point dragStart;
         private Vector dragStartOffset;
 
@@ -86,7 +89,8 @@ namespace AuroraPAR
             public int LayoutVersion = -1;
             public int SymbolVersion = -1;
             public readonly Line Leader = new() { StrokeThickness = 1 };
-            public readonly List<Ellipse> Dots = [];
+            public readonly List<Path> Dots = [];
+            public int DotsVersion = -1;
             /// <summary>Previous positions, in world coordinates (see <see cref="ToWorld"/>), oldest first.</summary>
             public readonly List<(double Along, double Value)> History = [];
             public (double Along, double Value) LastWorld;
@@ -107,7 +111,7 @@ namespace AuroraPAR
                 yield return Symbol;
                 yield return Label;
                 yield return Leader;
-                foreach (Ellipse dot in Dots) yield return dot;
+                foreach (Path dot in Dots) yield return dot;
             }
         }
 
@@ -290,9 +294,22 @@ namespace AuroraPAR
         private void UpdateHistory(Track track)
         {
             int count = Options.HistoryEnabled ? Math.Min(track.History.Count, Options.HistoryDots) : 0;
+            if (track.DotsVersion != Options.Version)
+            {
+                // Symbol of the history dots changed: rebuild them.
+                foreach (Path old in track.Dots) Canvas.Children.Remove(old);
+                track.Dots.Clear();
+                track.DotsVersion = Options.Version;
+            }
+            if (historyGeometryVersion != Options.Version)
+            {
+                historyGeometry = Symbols.Create(Options.HistorySymbol.Shape, Options.HistorySymbol.Size);
+                historyGeometryVersion = Options.Version;
+            }
+            bool filled = Symbols.IsFilled(Options.HistorySymbol.Shape);
             while (track.Dots.Count < count)
             {
-                Ellipse dot = new() { Width = HistoryDotSize, Height = HistoryDotSize, IsHitTestVisible = false };
+                Path dot = new() { Data = historyGeometry, StrokeThickness = 1, IsHitTestVisible = false };
                 Panel.SetZIndex(dot, HistoryZIndex);
                 Canvas.Children.Add(dot);
                 track.Dots.Add(dot);
@@ -307,10 +324,11 @@ namespace AuroraPAR
             {
                 (double along, double value) = track.History[first + i];
                 Point logical = WorldToLogical(along, value);
-                Ellipse dot = track.Dots[i];
-                dot.Fill = track.Color;
-                Canvas.SetLeft(dot, ToScreenX(logical.X) - HistoryDotSize / 2);
-                Canvas.SetTop(dot, ToScreenY(logical.Y) - HistoryDotSize / 2);
+                Path dot = track.Dots[i];
+                dot.Stroke = track.Color;
+                dot.Fill = filled ? track.Color : null;
+                Canvas.SetLeft(dot, ToScreenX(logical.X));
+                Canvas.SetTop(dot, ToScreenY(logical.Y));
                 dot.Visibility = Visibility.Visible;
             }
         }

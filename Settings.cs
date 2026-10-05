@@ -187,6 +187,7 @@ namespace AuroraPAR
         public SymbolSetting ThresholdSymbol { get; set; } = new(SymbolShape.Line, 10);
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
+        public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
 
         public const int MinHistoryDots = 3;
         public const int MaxHistoryDots = 100;
@@ -205,6 +206,7 @@ namespace AuroraPAR
             ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));
             TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));
             AntennaSymbol = NormalizeSymbol(AntennaSymbol, new(SymbolShape.Square, 8));
+            HistorySymbol = NormalizeSymbol(HistorySymbol, new(SymbolShape.FilledCircle, 3));
         }
 
         private static SymbolSetting NormalizeSymbol(SymbolSetting? symbol, SymbolSetting fallback)

@@ -273,6 +273,7 @@ namespace AuroraPAR
         {
             SymbolShape[] all = Enum.GetValues<SymbolShape>();
             AddSymbolRow("Track", p => p.TrackSymbol, all.Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray());
+            AddSymbolRow("History dots", p => p.HistorySymbol, all.Where(s => s != SymbolShape.None).ToArray());
             AddSymbolRow("Threshold", p => p.ThresholdSymbol, all);
             AddSymbolRow("Touchdown point", p => p.TouchdownSymbol, all);
             AddSymbolRow("Antenna", p => p.AntennaSymbol, all);

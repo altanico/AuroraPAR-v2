@@ -426,6 +426,7 @@ namespace AuroraPAR
             viewOptions.ThresholdSymbol = profile.ThresholdSymbol;
             viewOptions.TouchdownSymbol = profile.TouchdownSymbol;
             viewOptions.AntennaSymbol = profile.AntennaSymbol;
+            viewOptions.HistorySymbol = profile.HistorySymbol;
             viewOptions.ElevationLabel = profile.ElevationLabel;
             viewOptions.AzimuthLabel = profile.AzimuthLabel;
             viewOptions.Version++;
