@@ -19,7 +19,20 @@ namespace AuroraPAR
         LastUsed,
         /// <summary>The default range of the runway, from runways.par.</summary>
         RunwayDefault,
-        /// <summary>Always <see cref="Profile.FixedStartupRange"/>.</summary>
+        /// <summary>Always <see cref="Profile.PreferredRange"/>.</summary>
+        Fixed
+    }
+
+    /// <summary>
+    /// Display range used when another runway is selected.
+    /// </summary>
+    internal enum RunwayChangeRange
+    {
+        /// <summary>The default range of the new runway, from runways.par.</summary>
+        RunwayDefault,
+        /// <summary>The range currently in use is kept.</summary>
+        KeepCurrent,
+        /// <summary>Always <see cref="Profile.PreferredRange"/>.</summary>
         Fixed
     }
 
@@ -64,9 +77,13 @@ namespace AuroraPAR
         /// </summary>
         public StartupRange StartupRange { get; set; } = StartupRange.LastUsed;
         /// <summary>
-        /// Range in NM used at start when <see cref="StartupRange"/> is Fixed.
+        /// Display range used when another runway is selected.
         /// </summary>
-        public double FixedStartupRange { get; set; } = 15;
+        public RunwayChangeRange RunwayChangeRange { get; set; } = RunwayChangeRange.RunwayDefault;
+        /// <summary>
+        /// Preferred range in NM, used at start and/or on runway change when set to Fixed.
+        /// </summary>
+        public double PreferredRange { get; set; } = 15;
 
         /// <summary>
         /// Deep copy (through JSON, so it stays correct when nested settings are added).

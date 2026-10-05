@@ -53,6 +53,10 @@ namespace AuroraPAR
         /// Distance from the runway to be displayed in NM.
         /// </summary>
         public double Distance { get; set; } = 10.0;
+        /// <summary>
+        /// Default display range of this runway in NM, as read from the runway file (not changed by zooming).
+        /// </summary>
+        public double DefaultDistance { get; set; } = 10.0;
         private double _width = 0;
         /// <summary>
         /// Width in meters.
@@ -310,7 +314,8 @@ namespace AuroraPAR
                         GlideSlope = glideSlope,
                         TCH = tch,
                         MDH = mdh,
-                        Distance = distance
+                        Distance = distance,
+                        DefaultDistance = distance
                     };
                     // Optional 13th field: touchdown point distance beyond the threshold, in meters.
                     if (linedata.Length >= 13 && TryParse(linedata[12], out double touchdown))

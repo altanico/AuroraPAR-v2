@@ -37,6 +37,10 @@ namespace AuroraPAR
         private volatile bool Open = true;
         private readonly AppSettings settings;
         /// <summary>
+        /// True while the last session's runway is being restored at start.
+        /// </summary>
+        private bool restoringSession;
+        /// <summary>
         /// Information area (runway, QNH, connection status), created once and updated at every refresh.
         /// </summary>
         private readonly StackPanel infoPanel = new();
@@ -178,23 +182,23 @@ namespace AuroraPAR
                 MessageBox.Show(this, $"Cannot read the runway file {Path.GetFullPath(dataPath)}:\n{ex.Message}", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
-            // Restore the runway used last time (selecting it also sets its default range).
+            // Restore the runway used last time.
             Runway? last = runways.FirstOrDefault(r => r.ToString() == settings.LastRunway);
             if (last != null)
             {
+                restoringSession = true;
                 RunwayComboBox.SelectedItem = last;
+                restoringSession = false;
             }
             // Range at start, as chosen in the profile.
-            double? startRange = settings.Active.StartupRange switch
+            Profile profile = settings.Active;
+            double startRange = profile.StartupRange switch
             {
-                StartupRange.LastUsed => last != null ? settings.LastRange : null,
-                StartupRange.Fixed => settings.Active.FixedStartupRange,
-                _ => null
+                StartupRange.LastUsed when last != null && settings.LastRange is double lastRange => lastRange,
+                StartupRange.Fixed => profile.PreferredRange,
+                _ => runway.DefaultDistance
             };
-            if (startRange is double range)
-            {
-                DistanceComboBox.SelectedIndex = IndexOfDistance(range);
-            }
+            DistanceComboBox.SelectedIndex = IndexOfDistance(startRange);
             timer.Start();
             await ConnectionLoop();
         }
@@ -203,12 +207,19 @@ namespace AuroraPAR
         {
             if (e.AddedItems.Count > 0 && e.AddedItems[0] is Runway r)
             {
-                // Read the runway's default distance before the distance box can change it.
-                double defaultDistance = r.Distance;
+                Runway previous = runway;
                 runway = r;
                 profileView.SetRunway(runway);
                 horizontalView.SetRunway(runway);
-                DistanceComboBox.SelectedIndex = IndexOfDistance(defaultDistance);
+                // Range for the new runway, as chosen in the profile (at start the startup rule applies instead).
+                Profile profile = settings.Active;
+                double range = restoringSession ? r.DefaultDistance : profile.RunwayChangeRange switch
+                {
+                    RunwayChangeRange.KeepCurrent => previous.Distance,
+                    RunwayChangeRange.Fixed => profile.PreferredRange,
+                    _ => r.DefaultDistance
+                };
+                DistanceComboBox.SelectedIndex = IndexOfDistance(range);
                 // Make sure runway and distance box always agree, even if the index did not change.
                 if (DistanceComboBox.SelectedItem is Distance d)
                 {

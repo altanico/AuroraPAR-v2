@@ -37,10 +37,13 @@ namespace AuroraPAR
             StartRangeLastRadio.Checked += (s, e) => SetStartupRange(StartupRange.LastUsed);
             StartRangeRunwayRadio.Checked += (s, e) => SetStartupRange(StartupRange.RunwayDefault);
             StartRangeFixedRadio.Checked += (s, e) => SetStartupRange(StartupRange.Fixed);
+            ChangeRangeKeepRadio.Checked += (s, e) => SetRunwayChangeRange(RunwayChangeRange.KeepCurrent);
+            ChangeRangeRunwayRadio.Checked += (s, e) => SetRunwayChangeRange(RunwayChangeRange.RunwayDefault);
+            ChangeRangeFixedRadio.Checked += (s, e) => SetRunwayChangeRange(RunwayChangeRange.Fixed);
             FixedRangeComboBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || FixedRangeComboBox.SelectedItem is not double range) return;
-                Active.FixedStartupRange = range;
+                Active.PreferredRange = range;
                 Commit();
             };
             CloseButton.Click += (s, e) => Close();
@@ -67,8 +70,10 @@ namespace AuroraPAR
                 StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;
                 StartRangeRunwayRadio.IsChecked = Active.StartupRange == StartupRange.RunwayDefault;
                 StartRangeFixedRadio.IsChecked = Active.StartupRange == StartupRange.Fixed;
-                FixedRangeComboBox.SelectedIndex = Ranges.IndexOfClosest(Active.FixedStartupRange);
-                FixedRangeComboBox.IsEnabled = Active.StartupRange == StartupRange.Fixed;
+                ChangeRangeKeepRadio.IsChecked = Active.RunwayChangeRange == RunwayChangeRange.KeepCurrent;
+                ChangeRangeRunwayRadio.IsChecked = Active.RunwayChangeRange == RunwayChangeRange.RunwayDefault;
+                ChangeRangeFixedRadio.IsChecked = Active.RunwayChangeRange == RunwayChangeRange.Fixed;
+                FixedRangeComboBox.SelectedIndex = Ranges.IndexOfClosest(Active.PreferredRange);
             }
             finally
             {
@@ -189,6 +194,13 @@ namespace AuroraPAR
         {
             if (refreshing || Active.StartupRange == startupRange) return;
             Active.StartupRange = startupRange;
+            Commit();
+        }
+
+        private void SetRunwayChangeRange(RunwayChangeRange runwayChangeRange)
+        {
+            if (refreshing || Active.RunwayChangeRange == runwayChangeRange) return;
+            Active.RunwayChangeRange = runwayChangeRange;
             Commit();
         }
 

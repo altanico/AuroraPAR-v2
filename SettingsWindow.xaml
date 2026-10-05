@@ -27,16 +27,24 @@
                     <RadioButton Name="RunwayLeftRadio" GroupName="RunwaySide" Content="Left" Margin="0,0,20,0"/>
                     <RadioButton Name="RunwayRightRadio" GroupName="RunwaySide" Content="Right"/>
                 </StackPanel>
-                <TextBlock Text="Range at start" Margin="0,12,0,0"/>
-                <StackPanel Margin="0,6,0,0">
-                    <RadioButton Name="StartRangeLastRadio" GroupName="StartRange" Content="Last used"/>
-                    <RadioButton Name="StartRangeRunwayRadio" GroupName="StartRange" Content="Runway default (from runways.par)" Margin="0,4,0,0"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                        <RadioButton Name="StartRangeFixedRadio" GroupName="StartRange" Content="Fixed:" VerticalAlignment="Center"/>
-                        <ComboBox Name="FixedRangeComboBox" Width="80" Margin="8,0,0,0"/>
-                        <TextBlock Text="NM" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                    </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <TextBlock Text="Preferred range:" VerticalAlignment="Center"/>
+                    <ComboBox Name="FixedRangeComboBox" Width="80" Margin="8,0,0,0"/>
+                    <TextBlock Text="NM" VerticalAlignment="Center" Margin="6,0,0,0"/>
                 </StackPanel>
+                <TextBlock Text="Range at start" Margin="0,10,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <RadioButton Name="StartRangeLastRadio" GroupName="StartRange" Content="Last used" Margin="0,0,16,0"/>
+                    <RadioButton Name="StartRangeRunwayRadio" GroupName="StartRange" Content="Runway default" Margin="0,0,16,0"/>
+                    <RadioButton Name="StartRangeFixedRadio" GroupName="StartRange" Content="Preferred"/>
+                </StackPanel>
+                <TextBlock Text="Range when the runway changes" Margin="0,10,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <RadioButton Name="ChangeRangeKeepRadio" GroupName="ChangeRange" Content="Keep current" Margin="0,0,16,0"/>
+                    <RadioButton Name="ChangeRangeRunwayRadio" GroupName="ChangeRange" Content="Runway default" Margin="0,0,16,0"/>
+                    <RadioButton Name="ChangeRangeFixedRadio" GroupName="ChangeRange" Content="Preferred"/>
+                </StackPanel>
+                <TextBlock Text="Runway default = the range set for the runway in runways.par." Foreground="Gray" FontSize="11" Margin="0,4,0,0"/>
             </StackPanel>
         </GroupBox>
         <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
