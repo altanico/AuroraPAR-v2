@@ -81,6 +81,18 @@ namespace AuroraPAR
         /// </summary>
         public double? TouchdownOverrideM { get; set; }
         /// <summary>
+        /// Line number in the runway file this runway was read from (null for a new runway).
+        /// </summary>
+        public int? SourceLine { get; set; }
+        /// <summary>
+        /// Original text of the line; when saving, an unchanged runway is written back exactly as it was.
+        /// </summary>
+        public string? SourceText { get; set; }
+        /// <summary>
+        /// For a new runway: line of the file after which it is saved (e.g. right after the runway it was copied from).
+        /// </summary>
+        public int? InsertAfterLine { get; set; }
+        /// <summary>
         /// Distance of the touchdown point beyond the threshold, in meters.
         /// Default: where the glide path, crossing the threshold at TCH, reaches the runway (TCH / tan(glide slope)).
         /// </summary>
@@ -293,12 +305,23 @@ namespace AuroraPAR
 
         public static async Task<Runway[]> GetRunways(string path)
         {
+            return Parse(await System.IO.File.ReadAllLinesAsync(path));
+        }
+
+        public static Runway[] ReadRunways(string path)
+        {
+            return Parse(System.IO.File.ReadAllLines(path));
+        }
+
+        private static Runway[] Parse(string[] lines)
+        {
             List<Runway> runways = [];
-            string[] data = await System.IO.File.ReadAllLinesAsync(path);
-            foreach (string line in data)
+            for (int i = 0; i < lines.Length; i++)
             {
-                if (TryParseLine(line, out Runway? runway))
+                if (TryParseLine(lines[i], out Runway? runway))
                 {
+                    runway.SourceLine = i;
+                    runway.SourceText = lines[i];
                     runways.Add(runway);
                 }
             }
@@ -354,44 +377,69 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// Writes the runway file. The previous file is kept as ".bak"; lines of the previous file that are not
-        /// runways (comments) are kept at the top. Saved values are the file values (DefaultMDH, DefaultDistance),
-        /// not the ones changed on the fly during the session.
+        /// Writes the runway file keeping its layout: every line that is not a runway (comments, separators)
+        /// stays where it was; runways read from the file are written at their original line (exactly as they were
+        /// if unchanged, see <see cref="Runway.SourceText"/>); deleted runways are removed; new runways go right after
+        /// <see cref="Runway.InsertAfterLine"/>, or at the end. The previous file is kept as ".bak".
+        /// Saved values are the file values (DefaultMDH, DefaultDistance), not the ones changed on the fly.
         /// </summary>
-        public static void SaveRunways(string path, IEnumerable<Runway> runways)
+        public static void SaveRunways(string path, IReadOnlyList<Runway> runways)
         {
+            string[] original = System.IO.File.Exists(path) ? System.IO.File.ReadAllLines(path) : [];
+            Dictionary<int, Runway> bySource = runways.Where(r => r.SourceLine != null).ToDictionary(r => r.SourceLine!.Value);
+            ILookup<int, Runway> inserted = runways.Where(r => r.SourceLine == null && r.InsertAfterLine != null).ToLookup(r => r.InsertAfterLine!.Value);
             List<string> lines = [];
-            if (System.IO.File.Exists(path))
+            if (original.Length == 0)
             {
-                foreach (string line in System.IO.File.ReadAllLines(path))
+                lines.Add(FormatComment);
+            }
+            for (int i = 0; i < original.Length; i++)
+            {
+                if (TryParseLine(original[i], out _))
                 {
-                    if (!string.IsNullOrWhiteSpace(line) && !TryParseLine(line, out _))
+                    if (bySource.TryGetValue(i, out Runway? runway))
                     {
-                        lines.Add(line);
+                        lines.Add(ToLine(runway));
                     }
                 }
-                System.IO.File.Copy(path, path + ".bak", overwrite: true);
-            }
-            if (!lines.Any(l => l.TrimStart().StartsWith('#')))
-            {
-                lines.Insert(0, FormatComment);
-            }
-            foreach (Runway r in runways)
-            {
-                string line = string.Join(";",
-                    r.ICAO, r.Designator, Format(r.Heading), Format(r.Elevation),
-                    CoordinateParser.Format(r.Latitude), CoordinateParser.Format(r.Longitude),
-                    Format(r.LengthM), Format(r.WidthM), Format(r.GlideSlope), Format(r.TCH),
-                    Format(r.DefaultMDH), Format(r.DefaultDistance));
-                if (r.TouchdownOverrideM is double touchdown)
+                else
                 {
-                    line += ";" + Format(touchdown);
+                    lines.Add(original[i]);
                 }
-                lines.Add(line);
+                foreach (Runway runway in inserted[i])
+                {
+                    lines.Add(ToLine(runway));
+                }
+            }
+            foreach (Runway runway in runways.Where(r => r.SourceLine == null && (r.InsertAfterLine == null || r.InsertAfterLine >= original.Length)))
+            {
+                lines.Add(ToLine(runway));
+            }
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Copy(path, path + ".bak", overwrite: true);
             }
             string temp = path + ".tmp";
             System.IO.File.WriteAllLines(temp, lines);
             System.IO.File.Move(temp, path, overwrite: true);
+        }
+
+        private static string ToLine(Runway r)
+        {
+            if (r.SourceText != null)
+            {
+                return r.SourceText;
+            }
+            string line = string.Join(";",
+                r.ICAO, r.Designator, Format(r.Heading), Format(r.Elevation),
+                CoordinateParser.Format(r.Latitude), CoordinateParser.Format(r.Longitude),
+                Format(r.LengthM), Format(r.WidthM), Format(r.GlideSlope), Format(r.TCH),
+                Format(r.DefaultMDH), Format(r.DefaultDistance));
+            if (r.TouchdownOverrideM is double touchdown)
+            {
+                line += ";" + Format(touchdown);
+            }
+            return line;
         }
 
         private static string Format(double value)

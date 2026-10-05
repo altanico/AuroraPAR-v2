@@ -18,6 +18,13 @@ namespace AuroraPAR
         private sealed class Draft
         {
             private readonly Dictionary<string, string> values = [];
+            /// <summary>Line in the file this runway comes from (null for a new runway).</summary>
+            public int? SourceLine;
+            /// <summary>Original line text, written back unchanged if the runway was not modified.</summary>
+            public string? SourceText;
+            /// <summary>For a new runway: file line after which it is saved.</summary>
+            public int? InsertAfterLine;
+            public bool Modified;
 
             public string this[string key]
             {
@@ -37,7 +44,8 @@ namespace AuroraPAR
 
             public override string ToString()
             {
-                string name = $"{this["icao"].Trim()} {this["designator"].Trim()}".Trim().ToUpperInvariant();
+                // Same text as Runway.ToString() of the saved runway (ICAO in upper case, designator as typed).
+                string name = $"{this["icao"].Trim().ToUpperInvariant()} {this["designator"].Trim()}".Trim();
                 return name.Length > 0 ? name : "(new runway)";
             }
         }
@@ -47,7 +55,7 @@ namespace AuroraPAR
         private static readonly FieldDefinition[] Fields =
         [
             new("icao", "Airport ICAO", "e.g. LIRF"),
-            new("designator", "Runway designator", "e.g. 16L"),
+            new("designator", "Runway / approach", "free text, e.g. 16L or 14 3.0"),
             new("heading", "Runway heading (° true)", "true heading, not magnetic"),
             new("elevation", "Threshold elevation (ft)", ""),
             new("latitude", "Threshold latitude", "any format: 41°48'10.5\"N, 414810.5N, 41.80292..."),
@@ -193,6 +201,7 @@ namespace AuroraPAR
             {
                 draft[key] = text;
             }
+            draft.Modified = true;
             dirty = true;
             if (key == "icao" || key == "designator")
             {
@@ -244,9 +253,12 @@ namespace AuroraPAR
             switch (key)
             {
                 case "icao":
-                case "designator":
                     if (text.Length == 0) return "required";
                     if (text.Contains(';') || text.Contains(' ')) return "spaces and ; are not allowed";
+                    return null;
+                case "designator":
+                    if (text.Length == 0) return "required";
+                    if (text.Contains(';')) return "; is not allowed";
                     return null;
                 case "heading": return CheckNumber(text, 0, 360);
                 case "elevation": return CheckNumber(text, -1500, 15000);
@@ -307,7 +319,22 @@ namespace AuroraPAR
 
         private static Draft FromRunway(Runway runway)
         {
-            Draft draft = new();
+            Draft draft = new()
+            {
+                SourceLine = runway.SourceLine,
+                SourceText = runway.SourceText
+            };
+            if (runway.SourceText != null)
+            {
+                // Show the values exactly as written in the file (e.g. 3.0 stays 3.0, 082.1 stays 082.1).
+                string[] f = runway.SourceText.Split(';', StringSplitOptions.TrimEntries);
+                string[] keys = ["icao", "designator", "heading", "elevation", "latitude", "longitude", "length", "width", "glideslope", "tch", "dh", "range", "touchdown"];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    draft[keys[i]] = i < f.Length ? f[i] : "";
+                }
+                return draft;
+            }
             draft["icao"] = runway.ICAO;
             draft["designator"] = runway.Designator;
             draft["heading"] = FormatNumber(runway.Heading);
@@ -332,8 +359,11 @@ namespace AuroraPAR
             double range = Number(draft, "range");
             return new Runway
             {
+                SourceLine = draft.SourceLine,
+                SourceText = draft.Modified ? null : draft.SourceText,
+                InsertAfterLine = draft.InsertAfterLine,
                 ICAO = draft["icao"].Trim().ToUpperInvariant(),
-                Designator = draft["designator"].Trim().ToUpperInvariant(),
+                Designator = draft["designator"].Trim(),
                 Heading = Number(draft, "heading"),
                 Elevation = Number(draft, "elevation"),
                 Latitude = latitude,
@@ -352,7 +382,7 @@ namespace AuroraPAR
 
         private static Draft NewDraft()
         {
-            Draft draft = new();
+            Draft draft = new() { Modified = true };
             draft["width"] = "45";
             draft["glideslope"] = "3.0";
             draft["tch"] = "50";
@@ -361,9 +391,10 @@ namespace AuroraPAR
             return draft;
         }
 
-        private void AddDraft(Draft draft)
+        private void AddDraft(Draft draft, int index = -1)
         {
-            drafts.Add(draft);
+            if (index < 0 || index > drafts.Count) drafts.Add(draft);
+            else drafts.Insert(index, draft);
             dirty = true;
             RunwayList.SelectedItem = draft;
             RunwayList.ScrollIntoView(draft);
@@ -379,7 +410,10 @@ namespace AuroraPAR
             if (Selected is not Draft draft) return;
             Draft copy = draft.Copy();
             copy["designator"] = "";
-            AddDraft(copy);
+            copy.Modified = true;
+            // Saved right after the runway it was copied from.
+            copy.InsertAfterLine = draft.SourceLine ?? draft.InsertAfterLine;
+            AddDraft(copy, drafts.IndexOf(draft) + 1);
             boxes["designator"].Focus();
         }
 
@@ -439,6 +473,24 @@ namespace AuroraPAR
             }
             Saved = true;
             dirty = false;
+            // Read the file again, so line numbers and texts match what was written (needed for a further save).
+            string? selectedName = Selected?.ToString();
+            try
+            {
+                Runway[] saved = DataFile.ReadRunways(path);
+                shown = null;
+                drafts.Clear();
+                foreach (Runway runway in saved)
+                {
+                    drafts.Add(FromRunway(runway));
+                }
+                RunwayList.SelectedItem = drafts.FirstOrDefault(d => d.ToString() == selectedName) ?? drafts.FirstOrDefault();
+                ShowSelected();
+            }
+            catch (Exception)
+            {
+                // The file was written; it will be read again by the main window.
+            }
             StatusText.Text = $"Saved {drafts.Count} runways to {path} (previous version kept as runways.par.bak).";
             return true;
         }
