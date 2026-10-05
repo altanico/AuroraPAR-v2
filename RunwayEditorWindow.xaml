@@ -1,0 +1,30 @@
+﻿<Window x:Class="AuroraPAR.RunwayEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aurora PAR - Runways" Width="820" Height="580" MinWidth="680" MinHeight="460"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="AuroraPAR.ico">
+    <DockPanel Margin="12">
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <Button Name="CloseButton" Content="Close" Width="80" Height="26" DockPanel.Dock="Right" Margin="6,0,0,0"/>
+            <Button Name="SaveButton" Content="Save" Width="80" Height="26" DockPanel.Dock="Right"/>
+            <TextBlock Name="StatusText" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="0,0,10,0"/>
+        </DockPanel>
+        <DockPanel DockPanel.Dock="Left" Width="190" Margin="0,0,14,0">
+            <UniformGrid DockPanel.Dock="Bottom" Columns="3" Margin="0,6,0,0">
+                <Button Name="NewButton" Content="New" Height="26" Margin="0,0,3,0"/>
+                <Button Name="DuplicateButton" Content="Duplicate" Margin="1,0,2,0"/>
+                <Button Name="DeleteButton" Content="Delete" Margin="3,0,0,0"/>
+            </UniformGrid>
+            <ListBox Name="RunwayList"/>
+        </DockPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Grid Name="FieldGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -33,7 +33,15 @@ namespace AuroraPAR
         private readonly HorizontalView horizontalView;
         private readonly Aurora aurora;
         private readonly Distance[] distances = Ranges.Values.Select(v => (Distance)v).ToArray();
-        private string dataPath = "runways.par";
+        /// <summary>
+        /// Runway file, next to the program (not in the current directory, which depends on how the program is started).
+        /// </summary>
+        private readonly string dataPath = Path.Combine(AppContext.BaseDirectory, "runways.par");
+        private Runway[] runways = [];
+        /// <summary>
+        /// True while the runway list is reloaded after editing, so the current range is kept.
+        /// </summary>
+        private bool reloadingRunways;
         private volatile bool Open = true;
         private readonly AppSettings settings;
         /// <summary>
@@ -86,6 +94,7 @@ namespace AuroraPAR
             Vertical.SizeChanged += (s, e) => InvalidateViews();
             Horizontal.SizeChanged += (s, e) => InvalidateViews();
             SettingsButton.Click += SettingsButton_Click;
+            RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
             DhDownButton.Click += (s, e) => SetDecisionHeight(runway.MDH - DecisionHeightStep);
             DhTextBox.KeyDown += (s, e) =>
@@ -175,7 +184,6 @@ namespace AuroraPAR
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            Runway[] runways = [];
             try
             {
                 runways = await DataFile.GetRunways(dataPath);
@@ -224,7 +232,7 @@ namespace AuroraPAR
                 horizontalView.SetRunway(runway);
                 // Range for the new runway, as chosen in the profile (at start the startup rule applies instead).
                 Profile profile = settings.Active;
-                double range = restoringSession ? r.DefaultDistance : profile.RunwayChangeRange switch
+                double range = restoringSession ? r.DefaultDistance : reloadingRunways ? previous.Distance : profile.RunwayChangeRange switch
                 {
                     RunwayChangeRange.KeepCurrent => previous.Distance,
                     RunwayChangeRange.Fixed => profile.PreferredRange,
@@ -269,6 +277,50 @@ namespace AuroraPAR
                 }
             }
             DhTextBox.Text = FormatHeight(runway.MDH);
+        }
+
+        private async void RunwaysButton_Click(object sender, RoutedEventArgs e)
+        {
+            RunwayEditorWindow window = new(dataPath, runways, (RunwayComboBox.SelectedItem as Runway)?.ToString())
+            {
+                Owner = this
+            };
+            window.ShowDialog();
+            if (window.Saved)
+            {
+                await ReloadRunways();
+            }
+        }
+
+        /// <summary>
+        /// Reads the runway file again after editing and selects the same runway as before, if it still exists.
+        /// </summary>
+        private async Task ReloadRunways()
+        {
+            string? currentName = (RunwayComboBox.SelectedItem as Runway)?.ToString();
+            try
+            {
+                runways = await DataFile.GetRunways(dataPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Cannot read the runway file {dataPath}:\n{ex.Message}", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            reloadingRunways = true;
+            try
+            {
+                RunwayComboBox.ItemsSource = runways;
+                Runway? same = runways.FirstOrDefault(r => r.ToString() == currentName);
+                if (same != null)
+                {
+                    RunwayComboBox.SelectedItem = same;
+                }
+            }
+            finally
+            {
+                reloadingRunways = false;
+            }
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)

@@ -289,54 +289,116 @@ namespace AuroraPAR
     internal class DataFile
     {
         //Format: ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH IN METERS;WIDTH IN METERS;GLIDE SLOPE;TCH;MDH;DEFAULT DISTANCE[;TOUCHDOWN DISTANCE FROM THRESHOLD IN METERS (optional)]
+        public const string FormatComment = "# ICAO;DESIGNATOR;HEADING(deg true);THRESHOLD ELEVATION(ft);THRESHOLD LATITUDE;THRESHOLD LONGITUDE;LENGTH(m);WIDTH(m);GLIDE SLOPE(deg);TCH(ft);DH(ft);DEFAULT RANGE(NM)[;TOUCHDOWN FROM THRESHOLD(m)]";
+
         public static async Task<Runway[]> GetRunways(string path)
         {
             List<Runway> runways = [];
             string[] data = await System.IO.File.ReadAllLinesAsync(path);
             foreach (string line in data)
             {
-                string[] linedata = line.Split(';', StringSplitOptions.TrimEntries);
-                // 12 fields are needed (indexes 0 to 11). Lines that are incomplete or contain
-                // invalid numbers (e.g. comments, empty lines) are skipped instead of crashing.
-                if (linedata.Length >= 12
-                    && TryParse(linedata[2], out double heading)
-                    && TryParse(linedata[3], out double elevation)
-                    && TryParse(linedata[4], out double latitude)
-                    && TryParse(linedata[5], out double longitude)
-                    && TryParse(linedata[6], out double length)
-                    && TryParse(linedata[7], out double width)
-                    && TryParse(linedata[8], out double glideSlope)
-                    && TryParse(linedata[9], out double tch)
-                    && TryParse(linedata[10], out double mdh)
-                    && TryParse(linedata[11], out double distance))
+                if (TryParseLine(line, out Runway? runway))
                 {
-                    Runway runway = new()
-                    {
-                        ICAO = linedata[0],
-                        Designator = linedata[1],
-                        Heading = heading,
-                        Elevation = elevation,
-                        Latitude = latitude,
-                        Longitude = longitude,
-                        LengthM = length,
-                        WidthM = width,
-                        GlideSlope = glideSlope,
-                        TCH = tch,
-                        MDH = mdh,
-                        DefaultMDH = mdh,
-                        Distance = distance,
-                        DefaultDistance = distance
-                    };
-                    // Optional 13th field: touchdown point distance beyond the threshold, in meters.
-                    if (linedata.Length >= 13 && TryParse(linedata[12], out double touchdown))
-                    {
-                        runway.TouchdownOverrideM = touchdown;
-                    }
                     runways.Add(runway);
                 }
             }
             return runways.ToArray();
         }
+
+        /// <summary>
+        /// Reads one line of the runway file. Lines that are incomplete or contain invalid numbers
+        /// (e.g. comments starting with #, empty lines) are not runways and return false.
+        /// </summary>
+        public static bool TryParseLine(string line, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Runway? runway)
+        {
+            runway = null;
+            string[] linedata = line.Split(';', StringSplitOptions.TrimEntries);
+            // 12 fields are needed (indexes 0 to 11).
+            if (linedata.Length >= 12
+                && TryParse(linedata[2], out double heading)
+                && TryParse(linedata[3], out double elevation)
+                && TryParse(linedata[4], out double latitude)
+                && TryParse(linedata[5], out double longitude)
+                && TryParse(linedata[6], out double length)
+                && TryParse(linedata[7], out double width)
+                && TryParse(linedata[8], out double glideSlope)
+                && TryParse(linedata[9], out double tch)
+                && TryParse(linedata[10], out double mdh)
+                && TryParse(linedata[11], out double distance))
+            {
+                runway = new()
+                {
+                    ICAO = linedata[0],
+                    Designator = linedata[1],
+                    Heading = heading,
+                    Elevation = elevation,
+                    Latitude = latitude,
+                    Longitude = longitude,
+                    LengthM = length,
+                    WidthM = width,
+                    GlideSlope = glideSlope,
+                    TCH = tch,
+                    MDH = mdh,
+                    DefaultMDH = mdh,
+                    Distance = distance,
+                    DefaultDistance = distance
+                };
+                // Optional 13th field: touchdown point distance beyond the threshold, in meters.
+                if (linedata.Length >= 13 && TryParse(linedata[12], out double touchdown))
+                {
+                    runway.TouchdownOverrideM = touchdown;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Writes the runway file. The previous file is kept as ".bak"; lines of the previous file that are not
+        /// runways (comments) are kept at the top. Saved values are the file values (DefaultMDH, DefaultDistance),
+        /// not the ones changed on the fly during the session.
+        /// </summary>
+        public static void SaveRunways(string path, IEnumerable<Runway> runways)
+        {
+            List<string> lines = [];
+            if (System.IO.File.Exists(path))
+            {
+                foreach (string line in System.IO.File.ReadAllLines(path))
+                {
+                    if (!string.IsNullOrWhiteSpace(line) && !TryParseLine(line, out _))
+                    {
+                        lines.Add(line);
+                    }
+                }
+                System.IO.File.Copy(path, path + ".bak", overwrite: true);
+            }
+            if (!lines.Any(l => l.TrimStart().StartsWith('#')))
+            {
+                lines.Insert(0, FormatComment);
+            }
+            foreach (Runway r in runways)
+            {
+                string line = string.Join(";",
+                    r.ICAO, r.Designator, Format(r.Heading), Format(r.Elevation),
+                    CoordinateParser.Format(r.Latitude), CoordinateParser.Format(r.Longitude),
+                    Format(r.LengthM), Format(r.WidthM), Format(r.GlideSlope), Format(r.TCH),
+                    Format(r.DefaultMDH), Format(r.DefaultDistance));
+                if (r.TouchdownOverrideM is double touchdown)
+                {
+                    line += ";" + Format(touchdown);
+                }
+                lines.Add(line);
+            }
+            string temp = path + ".tmp";
+            System.IO.File.WriteAllLines(temp, lines);
+            System.IO.File.Move(temp, path, overwrite: true);
+        }
+
+        private static string Format(double value)
+        {
+            return value.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
         /// <summary>
         /// Numbers in the file always use a dot as decimal separator, whatever the Windows language.
         /// </summary>

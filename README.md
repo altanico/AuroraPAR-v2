@@ -30,6 +30,10 @@ Settings are saved in `AuroraPAR.settings.json` in the user's settings folder (`
 
 ## Runway file (`runways.par`)
 
+Runways can be edited with **Runways...**: list on the left, fields on the right, *New*, *Duplicate* (handy for the opposite end of the same runway) and *Delete*. Values are checked while typing (wrong fields turn red) and written only with *Save*; the previous file is kept as `runways.par.bak` and comment lines (starting with `#`) are preserved. Threshold coordinates can be typed in any common format, e.g. `44.838694`, `44,838694`, `N44.838694`, `44°50'19.3"N`, `44 50 19.3 N`, `44°50.32'N`, `445019N`, `445019.30N`, `0004204W` (also `O` for west); a latitude and longitude pasted together in one field (e.g. `445019N 0004204W` or `44.8387, -0.701`) are split automatically.
+
+The file can also be edited with a text editor:
+
 One runway per line, fields separated by `;`, decimals written with a dot:
 
 ```
@@ -64,5 +68,6 @@ Invalid or incomplete lines are ignored.
 - Refreshes no longer overlap; the METAR is requested once a minute instead of ten times a second; US altimeter settings (`A2992`) are converted to hPa.
 - Default range is 10 NM; the range box now follows the selected runway's default distance.
 - Profile view: callsign label correctly placed at airports above sea level.
+- Graphical runway editor, accepting coordinates in any common format.
 - `runways.par` is copied next to the program when building; a clear message is shown if it is missing.
 - Automatic build on GitHub (see *Download*).
