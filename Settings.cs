@@ -33,6 +33,18 @@ namespace AuroraPAR
     }
 
     /// <summary>
+    /// Main window bounds in its normal (not maximized) state, plus whether it was maximized.
+    /// </summary>
+    internal class WindowPlacement
+    {
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public bool Maximized { get; set; }
+    }
+
+    /// <summary>
     /// Everything saved in the settings file: the profiles, the active one and the last session state.
     /// </summary>
     internal class AppSettings
@@ -49,6 +61,10 @@ namespace AuroraPAR
         /// Display range (NM) used when the program was closed, restored together with the runway.
         /// </summary>
         public double? LastRange { get; set; }
+        /// <summary>
+        /// Size and position of the main window when the program was closed, restored at start.
+        /// </summary>
+        public WindowPlacement? Window { get; set; }
 
         [JsonIgnore]
         public Profile Active => Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles[0];

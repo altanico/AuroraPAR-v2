@@ -58,6 +58,7 @@ namespace AuroraPAR
         {
             InitializeComponent();
             settings = SettingsStore.Load();
+            RestoreWindowPlacement();
             this.Loaded += MainWindow_Loaded;
             DistanceComboBox.ItemsSource = distances;
             DistanceComboBox.SelectedIndex = IndexOfDistance(runway.Distance);//10 nm
@@ -95,7 +96,69 @@ namespace AuroraPAR
                 settings.LastRunway = selected.ToString();
                 settings.LastRange = selected.Distance;
             }
+            SaveWindowPlacement();
             SettingsStore.Save(settings);
+        }
+
+        private const double MinWindowWidth = 400;
+        private const double MinWindowHeight = 300;
+
+        /// <summary>
+        /// Restores the window size and position of the last session. If the saved position is no longer on
+        /// any screen (e.g. a monitor was disconnected or the layout changed), the window keeps the saved size
+        /// (reduced to fit if needed) but is centred on the primary screen.
+        /// </summary>
+        private void RestoreWindowPlacement()
+        {
+            WindowPlacement? p = settings.Window;
+            if (p == null || !double.IsFinite(p.Left) || !double.IsFinite(p.Top)
+                || !double.IsFinite(p.Width) || !double.IsFinite(p.Height))
+            {
+                return;
+            }
+            Rect allScreens = new(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop,
+                                  SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
+            Width = Math.Clamp(p.Width, MinWindowWidth, Math.Max(MinWindowWidth, allScreens.Width));
+            Height = Math.Clamp(p.Height, MinWindowHeight, Math.Max(MinWindowHeight, allScreens.Height));
+            // The title bar must be reachable with the mouse: its centre and both of its ends must be on screen.
+            double titleY = p.Top + 10;
+            bool visible = allScreens.Contains(new Point(p.Left + Width / 2, titleY))
+                && allScreens.Contains(new Point(p.Left + 40, titleY))
+                && allScreens.Contains(new Point(p.Left + Width - 40, titleY));
+            if (visible)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = p.Left;
+                Top = p.Top;
+            }
+            else
+            {
+                Width = Math.Min(Width, SystemParameters.WorkArea.Width);
+                Height = Math.Min(Height, SystemParameters.WorkArea.Height);
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+            // Maximize after setting the normal bounds, so the window is maximized on the screen it was on.
+            if (p.Maximized)
+            {
+                WindowState = WindowState.Maximized;
+            }
+        }
+
+        /// <summary>
+        /// Saves the window's normal bounds (also when maximized or minimized) and whether it is maximized.
+        /// </summary>
+        private void SaveWindowPlacement()
+        {
+            Rect bounds = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
+            if (bounds.IsEmpty || bounds.Width <= 0 || bounds.Height <= 0) return;
+            settings.Window = new WindowPlacement
+            {
+                Left = bounds.Left,
+                Top = bounds.Top,
+                Width = bounds.Width,
+                Height = bounds.Height,
+                Maximized = WindowState == WindowState.Maximized
+            };
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
