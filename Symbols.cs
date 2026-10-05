@@ -19,7 +19,10 @@ namespace AuroraPAR
         TriangleDown,
         Plus,
         Cross,
-        /// <summary>Elongated "O", as on the PAR 2080.</summary>
+        /// <summary>
+        /// Filled vertical capsule (bar with rounded ends), as on older PAR displays.
+        /// The internal name is kept for compatibility with saved profiles.
+        /// </summary>
         ElongatedO
     }
 
@@ -58,7 +61,7 @@ namespace AuroraPAR
             SymbolShape.TriangleDown => "Inverted triangle",
             SymbolShape.Plus => "Cross +",
             SymbolShape.Cross => "Cross ×",
-            SymbolShape.ElongatedO => "Elongated O (PAR 2080)",
+            SymbolShape.ElongatedO => "Capsule",
             _ => shape.ToString()
         };
 
@@ -66,7 +69,7 @@ namespace AuroraPAR
         /// True for the shapes drawn filled with the symbol colour.
         /// </summary>
         public static bool IsFilled(SymbolShape shape) =>
-            shape is SymbolShape.FilledCircle or SymbolShape.Square or SymbolShape.TriangleUp or SymbolShape.TriangleDown;
+            shape is SymbolShape.FilledCircle or SymbolShape.Square or SymbolShape.TriangleUp or SymbolShape.TriangleDown or SymbolShape.ElongatedO;
 
         /// <summary>
         /// Geometry of the shape centred on (0, 0), fitting a square of the given size.
@@ -92,7 +95,7 @@ namespace AuroraPAR
                 SymbolShape.Cross => Group(
                     new LineGeometry(new Point(-r, -r), new Point(r, r)),
                     new LineGeometry(new Point(-r, r), new Point(r, -r))),
-                SymbolShape.ElongatedO => new EllipseGeometry(new Point(0, 0), r * 0.6, r),
+                SymbolShape.ElongatedO => new RectangleGeometry(new Rect(-r * 0.45, -r, r * 0.9, 2 * r), r * 0.3, r * 0.3),
                 _ => Geometry.Empty
             };
             if (geometry.CanFreeze) geometry.Freeze();
