@@ -394,6 +394,7 @@ namespace AuroraPAR
             {
                 profile.Name = Path.GetFileNameWithoutExtension(path);
             }
+            profile.Normalize();
             return profile;
         }
     }
