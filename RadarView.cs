@@ -6,6 +6,17 @@ using System.Windows.Shapes;
 namespace AuroraPAR
 {
     /// <summary>
+    /// Display options of the views, taken from the active profile.
+    /// </summary>
+    internal class ViewOptions
+    {
+        /// <summary>True: heights above the threshold (QFE); false: altitudes (QNH).</summary>
+        public bool Qfe { get; set; }
+        public bool ShowAltitudeScale { get; set; } = true;
+        public bool ScaleInMetres { get; set; }
+    }
+
+    /// <summary>
     /// Common part of the profile (elevation) and azimuth views.
     ///
     /// Static elements (runway, scan and approach limits, range marks...) are built only when something they
@@ -24,6 +35,11 @@ namespace AuroraPAR
 
         protected readonly Canvas Canvas;
         protected Runway Runway;
+        /// <summary>
+        /// Approach limits, scan limits and antenna tilt (shared by both views).
+        /// </summary>
+        protected readonly Radar Radar;
+        protected readonly ViewOptions Options;
         protected double xscale = 1;
         protected double yscale = 1;
         protected bool RunwayOnRight { get; private set; }
@@ -48,10 +64,14 @@ namespace AuroraPAR
             }
         }
 
-        protected RadarView(Canvas canvas, Runway runway)
+        protected RadarView(Canvas canvas, Runway runway, Radar radar, ViewOptions options)
         {
             Canvas = canvas;
             Runway = runway;
+            Radar = radar;
+            Options = options;
+            // Lines going beyond the view (e.g. a tilted scan limit) must not be drawn over the other view.
+            Canvas.ClipToBounds = true;
         }
 
         /// <summary>
@@ -116,7 +136,7 @@ namespace AuroraPAR
                     track = CreateTrack();
                     tracks[aircraft.Callsign] = track;
                 }
-                bool visible = aircraft.IsDisplayed(Runway) && UpdateTrack(track, aircraft);
+                bool visible = Radar.IsInsideScan(aircraft, Runway) && UpdateTrack(track, aircraft);
                 track.SetVisible(visible);
             }
             // Remove the tracks of aircraft no longer received from Aurora.
@@ -189,6 +209,49 @@ namespace AuroraPAR
             Canvas.SetLeft(textBlock, ToScreenX(x) + dx);
             Canvas.SetTop(textBlock, top);
             AddStatic(textBlock);
+        }
+
+        /// <summary>
+        /// Adds a static text near the side of the view where the runway is, vertically centred on logical y.
+        /// </summary>
+        protected void AddSideText(string text, double y, Brush foreground)
+        {
+            TextBlock textBlock = new()
+            {
+                Text = text,
+                FontSize = 11,
+                Foreground = foreground
+            };
+            textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double left = RunwayOnRight ? Canvas.ActualWidth - 12 - textBlock.DesiredSize.Width : 12;
+            Canvas.SetLeft(textBlock, left);
+            Canvas.SetTop(textBlock, ToScreenY(y) - textBlock.DesiredSize.Height / 2);
+            AddStatic(textBlock);
+        }
+
+        /// <summary>
+        /// Altitude of the aircraft for labels: altitude with QNH, height above the threshold with QFE (ft).
+        /// </summary>
+        protected string FormatAltitude(Aircraft aircraft)
+        {
+            double value = Options.Qfe ? aircraft.Altitude - Runway.Elevation : aircraft.Altitude;
+            return value.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Adds a small static filled square centred on a logical point (e.g. the radar antenna).
+        /// </summary>
+        protected void AddSquare(double x, double y, double size, Brush fill)
+        {
+            Rectangle square = new()
+            {
+                Width = size,
+                Height = size,
+                Fill = fill
+            };
+            Canvas.SetLeft(square, ToScreenX(x) - size / 2);
+            Canvas.SetTop(square, ToScreenY(y) - size / 2);
+            AddStatic(square);
         }
 
         private void AddStatic(UIElement element)

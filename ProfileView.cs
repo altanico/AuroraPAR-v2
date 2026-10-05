@@ -8,19 +8,22 @@ namespace AuroraPAR
     /// Elevation (profile) view. Logical x: pixels from the far end of the runway (runway end on the left,
     /// approach on the right); logical y: pixels from the top, ground (threshold elevation) at the bottom.
     /// </summary>
-    internal class ProfileView(Canvas canvas, Runway runway) : RadarView(canvas, runway)
+    internal class ProfileView(Canvas canvas, Runway runway, Radar radar, ViewOptions options) : RadarView(canvas, runway, radar, options)
     {
         private double H => Canvas.ActualHeight;
 
         /// <summary>
-        /// Angle of the upper scan limit, in degrees.
+        /// Distance of the antenna from the far end of the runway, in NM.
         /// </summary>
-        private double ScanAngle => Runway.ElevationScanAngle;
+        private double AntennaNM => Radar.AntennaFromRunwayEnd(Runway);
 
         protected override void CalculateScale()
         {
             xscale = (Canvas.ActualWidth - 50) / (Runway.Distance + Runway.LengthNM);
-            yscale = (Canvas.ActualHeight - 50) / ((Runway.Distance + Runway.LengthNM) * Math.Tan(ScanAngle * Math.PI / 180) * Runway.FeetPerNM);
+            // Vertical scale: the upper scan limit in neutral position reaches the top at the end of the range.
+            // It does not change with the tilt, so tilting moves the limits without changing the scale.
+            double top = Radar.ScanHeight(Runway.Distance + Runway.LengthNM - AntennaNM, Math.Max(Radar.ScanUp, 1));
+            yscale = (Canvas.ActualHeight - 50) / top;
         }
 
         /// <summary>
@@ -40,11 +43,11 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// Logical y of the upper scan limit at the given distance (NM) from the far end of the runway.
+        /// Logical y of an elevation scan limit (angle from the antenna) at the given distance (NM) from the far end of the runway.
         /// </summary>
-        private double ScanLimitY(double distanceFromRunwayEndNM)
+        private double ScanY(double fromRunwayEndNM, double angle)
         {
-            return H - distanceFromRunwayEndNM * Math.Tan(ScanAngle * Math.PI / 180) * Runway.FeetPerNM * yscale;
+            return Y(Radar.ScanHeight(Math.Max(0, fromRunwayEndNM - AntennaNM), angle));
         }
 
         /// <summary>
@@ -63,18 +66,26 @@ namespace AuroraPAR
         {
             double length = Runway.LengthNM;
             double range = Runway.Distance;
+            double end = length + range;
+            double upper = Radar.ElevationUpper;
+            double lower = Radar.ElevationLower;
             // Ground beyond the threshold.
-            AddLine(length * xscale, H, (range + length) * xscale, H, Brushes.Green, 2);
+            AddLine(length * xscale, H, end * xscale, H, Brushes.Green, 2);
             // Runway.
             AddLine(0, H, length * xscale, H, Brushes.Green, 3);
             // Threshold.
-            AddLine(length * xscale, H, length * xscale, ScanLimitY(length), Brushes.Green, 3);
-            // Upper scan limit.
-            AddLine(0, H, (length + range) * xscale, ScanLimitY(length + range), Brushes.CadetBlue, 3);
+            AddLine(length * xscale, H, length * xscale, Math.Min(H, ScanY(length, upper)), Brushes.Green, 3);
+            // Scan limits, from the antenna (the lower one only when above the ground).
+            AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, upper), Brushes.CadetBlue, 3);
+            if (lower > 0)
+            {
+                AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, lower), Brushes.CadetBlue, 3);
+            }
+            AddSquare(AntennaNM * xscale, H - 4, 8, Brushes.CadetBlue);
             // Glide path and its approach limits, all starting at the touchdown point.
             AddGlidePathLine(0, Brushes.Yellow, 2);
-            AddGlidePathLine(-Runway.GlidePathTolerance, Brushes.Red, 1);
-            AddGlidePathLine(Runway.GlidePathTolerance, Brushes.Red, 1);
+            AddGlidePathLine(-Radar.ApproachBelow, Brushes.Red, 1);
+            AddGlidePathLine(Radar.ApproachAbove, Brushes.Red, 1);
             // Decision height: horizontal line from the touchdown point to 3 NM (or the end of the display),
             // and a dashed vertical line from its intercept with the glide path down to the runway axis.
             double displayEnd = Runway.TouchdownNM + range;
@@ -86,13 +97,45 @@ namespace AuroraPAR
             }
             // Touchdown point: origin of the range marks and of the glide path.
             AddLine(X(0), Y(0), X(0), Y(0) - 12, Brushes.Yellow, 2);
-            // Range marks, measured from the touchdown point.
+            // Range marks, measured from the touchdown point, between the scan limits.
             int num = Runway.Distance == 15 ? 15 : 10;
             for (int i = 1; i <= num; i++)
             {
                 double markNM = length - Runway.TouchdownNM + i * range / num;
-                AddLine(markNM * xscale, H, markNM * xscale, ScanLimitY(markNM), Brushes.Green, 1);
+                double top = ScanY(markNM, upper);
+                double bottom = lower > 0 ? ScanY(markNM, lower) : H;
+                if (top < bottom)
+                {
+                    AddLine(markNM * xscale, bottom, markNM * xscale, top, Brushes.Green, 1);
+                }
                 AddText($"{i * range / num}NM", markNM * xscale, H, -10, Brushes.Yellow, aboveAnchor: true);
+            }
+            if (Options.ShowAltitudeScale)
+            {
+                DrawAltitudeScale();
+            }
+        }
+
+        /// <summary>
+        /// Altitude scale on the runway side: altitudes with QNH, heights above the threshold with QFE,
+        /// in feet or metres, at a round step chosen for the current zoom.
+        /// </summary>
+        private void DrawAltitudeScale()
+        {
+            const double FeetPerMetre = 1 / 0.3048;
+            double unitToFeet = Options.ScaleInMetres ? FeetPerMetre : 1;
+            string unit = Options.ScaleInMetres ? "m" : "ft";
+            // Value (in display units) at the bottom (threshold elevation) and at the top of the view.
+            double baseValue = Options.Qfe ? 0 : Runway.Elevation / unitToFeet;
+            double topValue = baseValue + H / yscale / unitToFeet;
+            double[] steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
+            double step = steps.FirstOrDefault(s => s >= (topValue - baseValue) / 6, steps[^1]);
+            for (double value = Math.Ceiling(baseValue / step) * step; value <= topValue; value += step)
+            {
+                double y = Y((value - baseValue) * unitToFeet);
+                if (y < 10 || y > H - 22) continue;
+                AddLine(0, y, 8, y, Brushes.Gray, 1);
+                AddSideText($"{value:0} {unit}", y, Brushes.Gray);
             }
         }
 
@@ -100,9 +143,9 @@ namespace AuroraPAR
         {
             double x = (aircraft.AlongTrackDistance(Runway) + Runway.LengthNM) * xscale;
             double y = Y(aircraft.Altitude - Runway.Elevation);
-            Brush color = aircraft.IsWithinGlidePathTolerance(Runway) ? Brushes.Green : Brushes.Red;
+            Brush color = Radar.IsWithinGlidePathLimits(aircraft, Runway) ? Brushes.Green : Brushes.Red;
             Point p = PlaceDot(track, x, y, color);
-            track.Label.Text = $"{aircraft.Callsign}\n{aircraft.Altitude}\n{aircraft.DistanceFromTouchdown(Runway):0.0}NM";
+            track.Label.Text = $"{aircraft.Callsign}\n{FormatAltitude(aircraft)}\n{aircraft.DistanceFromTouchdown(Runway):0.0}NM";
             // Label above the track: its bottom 15 px above the track's centre.
             Canvas.SetLeft(track.Label, p.X - 15);
             Canvas.SetTop(track.Label, p.Y - 15 - TextHeight(track.Label));

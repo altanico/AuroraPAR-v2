@@ -23,6 +23,7 @@
                 <RowDefinition Height="34"/>
                 <RowDefinition Height="34"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <ComboBox Grid.Row="0" Name="RunwayComboBox"></ComboBox>
             <ComboBox Grid.Row="1" Name="DistanceComboBox"></ComboBox>
@@ -30,12 +31,25 @@
             <Button Grid.Row="3" Name="RunwaysButton" Content="Runways..." Margin="0,4,0,0"/>
             <StackPanel Grid.Row="4" Margin="0,10,0,0"
                         ToolTip="Decision height for this session only: not saved, reset when the runway changes.">
-                <TextBlock Text="DH (ft)" Margin="2,0,0,2"/>
+                <TextBlock Name="DhLabel" Text="DH (ft)" Margin="2,0,0,2"/>
                 <DockPanel Height="26">
                     <Button Name="DhDownButton" Content="−" Width="26" DockPanel.Dock="Left"/>
                     <Button Name="DhUpButton" Content="+" Width="26" DockPanel.Dock="Right"/>
                     <TextBox Name="DhTextBox" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
                 </DockPanel>
+            </StackPanel>
+            <StackPanel Grid.Row="5" Margin="0,12,0,0"
+                        ToolTip="Antenna tilt. Keyboard: arrows to tilt (up/down elevation, left/right azimuth), Home for neutral.">
+                <TextBlock Text="Antenna tilt" Margin="2,0,0,2"/>
+                <UniformGrid Columns="2" Height="26">
+                    <Button Name="TiltUpButton" Content="EL ▲" Margin="0,0,1,0"/>
+                    <Button Name="TiltDownButton" Content="EL ▼" Margin="1,0,0,0"/>
+                </UniformGrid>
+                <UniformGrid Columns="2" Height="26" Margin="0,2,0,0">
+                    <Button Name="TiltLeftButton" Content="AZ L" Margin="0,0,1,0"/>
+                    <Button Name="TiltRightButton" Content="AZ R" Margin="1,0,0,0"/>
+                </UniformGrid>
+                <Button Name="TiltNeutralButton" Content="Neutral" Height="26" Margin="0,2,0,0"/>
             </StackPanel>
         </Grid>
     </Grid>

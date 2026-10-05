@@ -36,6 +36,73 @@ namespace AuroraPAR
         Fixed
     }
 
+    internal enum PressureReference
+    {
+        /// <summary>Altitudes (above mean sea level).</summary>
+        QNH,
+        /// <summary>Heights above the runway threshold.</summary>
+        QFE
+    }
+
+    internal enum PressureUnit
+    {
+        HectoPascal,
+        InchesOfMercury
+    }
+
+    /// <summary>
+    /// Name used for the minimum: the altitude form with QNH, the height form with QFE.
+    /// </summary>
+    internal enum MinimaLabel
+    {
+        DaDh,
+        OcaOch,
+        MdaMdh
+    }
+
+    internal enum LengthUnit
+    {
+        Feet,
+        Metres
+    }
+
+    /// <summary>
+    /// Pressure conversions and formatting.
+    /// </summary>
+    internal static class Pressure
+    {
+        public const double HectoPascalPerInch = 33.8639;
+
+        /// <summary>
+        /// QFE at the given elevation from the QNH (standard atmosphere), in hPa.
+        /// </summary>
+        public static double QfeFromQnh(double qnhHectoPascal, double elevationFt)
+        {
+            double metres = elevationFt * 0.3048;
+            return qnhHectoPascal * Math.Pow(1 - 0.0065 * metres / 288.15, 5.25588);
+        }
+
+        public static string Format(double hectoPascal, PressureUnit unit)
+        {
+            return unit == PressureUnit.InchesOfMercury
+                ? (hectoPascal / HectoPascalPerInch).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                : Math.Round(hectoPascal).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// The two names of a minimum: (altitude, height), e.g. ("OCA", "OCH").
+        /// </summary>
+        public static (string Altitude, string Height) Names(MinimaLabel label)
+        {
+            return label switch
+            {
+                MinimaLabel.OcaOch => ("OCA", "OCH"),
+                MinimaLabel.MdaMdh => ("MDA", "MDH"),
+                _ => ("DA", "DH")
+            };
+        }
+    }
+
     /// <summary>
     /// Display ranges available, in NM.
     /// </summary>
@@ -84,6 +151,28 @@ namespace AuroraPAR
         /// Preferred range in NM, used at start and/or on runway change when set to Fixed.
         /// </summary>
         public double PreferredRange { get; set; } = 15;
+
+        // Radar equipment (see Radar): angles in degrees.
+        /// <summary>Approach limits from the ideal glide path and centreline (green inside, red outside).</summary>
+        public double ApproachAbove { get; set; } = 0.5;
+        public double ApproachBelow { get; set; } = 0.5;
+        public double ApproachLeft { get; set; } = 1.5;
+        public double ApproachRight { get; set; } = 1.5;
+        /// <summary>Scan limits from the antenna, in neutral position.</summary>
+        public double ScanUp { get; set; } = 8;
+        public double ScanDown { get; set; } = -1;
+        public double ScanLeft { get; set; } = 10;
+        public double ScanRight { get; set; } = 10;
+        /// <summary>Antenna tilt step and maximum.</summary>
+        public double TiltStep { get; set; } = 2;
+        public double TiltMax { get; set; } = 10;
+
+        // Units and references.
+        public PressureReference PressureReference { get; set; } = PressureReference.QNH;
+        public PressureUnit PressureUnit { get; set; } = PressureUnit.HectoPascal;
+        public MinimaLabel MinimaLabel { get; set; } = MinimaLabel.DaDh;
+        public bool ShowAltitudeScale { get; set; } = true;
+        public LengthUnit AltitudeScaleUnit { get; set; } = LengthUnit.Feet;
 
         /// <summary>
         /// Deep copy (through JSON, so it stays correct when nested settings are added).

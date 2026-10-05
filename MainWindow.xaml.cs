@@ -2,6 +2,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace AuroraPAR
@@ -53,6 +54,15 @@ namespace AuroraPAR
         /// </summary>
         private readonly StackPanel infoPanel = new();
         private readonly TextBlock infoText = new() { FontSize = 14, Foreground = Brushes.White };
+        /// <summary>
+        /// Antenna tilt reminder, shown only when the antenna is not in neutral position.
+        /// </summary>
+        private readonly TextBlock tiltText = new() { FontSize = 14, Foreground = Brushes.Orange, FontWeight = FontWeights.Bold };
+        /// <summary>
+        /// Approach and scan limits and antenna tilt, shared by both views.
+        /// </summary>
+        private readonly Radar radar = new();
+        private readonly ViewOptions viewOptions = new();
         private readonly TextBlock statusText = new() { FontSize = 14 };
         private readonly TextBlock dataText = new() { FontSize = 14 };
         /// <summary>
@@ -85,9 +95,10 @@ namespace AuroraPAR
             DistanceComboBox.ItemsSource = distances;
             DistanceComboBox.SelectedIndex = IndexOfDistance(runway.Distance);//10 nm
             DistanceComboBox.SelectionChanged += DistanceComboBox_SelectionChanged;
-            profileView = new(Vertical, runway);
-            horizontalView = new(Horizontal, runway);
+            profileView = new(Vertical, runway, radar, viewOptions);
+            horizontalView = new(Horizontal, runway, radar, viewOptions);
             infoPanel.Children.Add(infoText);
+            infoPanel.Children.Add(tiltText);
             infoPanel.Children.Add(statusText);
             infoPanel.Children.Add(dataText);
             Panel.SetZIndex(infoPanel, 20);
@@ -105,6 +116,12 @@ namespace AuroraPAR
             Vertical.SizeChanged += (s, e) => InvalidateViews();
             Horizontal.SizeChanged += (s, e) => InvalidateViews();
             SettingsButton.Click += SettingsButton_Click;
+            TiltUpButton.Click += (s, e) => TiltAntenna(1, 0);
+            TiltDownButton.Click += (s, e) => TiltAntenna(-1, 0);
+            TiltLeftButton.Click += (s, e) => TiltAntenna(0, -1);
+            TiltRightButton.Click += (s, e) => TiltAntenna(0, 1);
+            TiltNeutralButton.Click += (s, e) => NeutralAntenna();
+            PreviewKeyDown += MainWindow_PreviewKeyDown;
             RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
             DhDownButton.Click += (s, e) => SetDecisionHeight(runway.MDH - DecisionHeightStep);
@@ -238,6 +255,8 @@ namespace AuroraPAR
                 runway = r;
                 // The decision height changed on the fly is not kept: back to the runway file value.
                 runway.MDH = runway.DefaultMDH;
+                // New runway, new antenna: back to neutral.
+                radar.Neutral();
                 DhTextBox.Text = FormatHeight(runway.MDH);
                 profileView.SetRunway(runway);
                 horizontalView.SetRunway(runway);
@@ -346,27 +365,71 @@ namespace AuroraPAR
         /// <summary>
         /// Applies the active profile's settings to the screen.
         /// </summary>
+        /// <summary>
+        /// Keyboard: arrows tilt the antenna (up/down elevation, left/right azimuth), Home brings it back to neutral.
+        /// Ignored while typing in a text field.
+        /// </summary>
+        private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keyboard.FocusedElement is TextBox) return;
+            switch (e.Key)
+            {
+                case Key.Up: TiltAntenna(1, 0); break;
+                case Key.Down: TiltAntenna(-1, 0); break;
+                case Key.Left: TiltAntenna(0, -1); break;
+                case Key.Right: TiltAntenna(0, 1); break;
+                case Key.Home: NeutralAntenna(); break;
+                default: return;
+            }
+            e.Handled = true;
+        }
+
+        private void TiltAntenna(int elevationSteps, int azimuthSteps)
+        {
+            if (radar.Tilt(elevationSteps, azimuthSteps))
+            {
+                InvalidateViews();
+            }
+        }
+
+        private void NeutralAntenna()
+        {
+            if (radar.Neutral())
+            {
+                InvalidateViews();
+            }
+        }
+
         private void ApplyProfile()
         {
-            bool right = settings.Active.RunwaySide == RunwaySide.Right;
+            Profile profile = settings.Active;
+            radar.ApplyProfile(profile);
+            viewOptions.Qfe = profile.PressureReference == PressureReference.QFE;
+            viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale;
+            viewOptions.ScaleInMetres = profile.AltitudeScaleUnit == LengthUnit.Metres;
+            DhLabel.Text = $"{Pressure.Names(profile.MinimaLabel).Height} (ft)";
+            bool right = profile.RunwaySide == RunwaySide.Right;
             profileView.SetRunwayOnRight(right);
             horizontalView.SetRunwayOnRight(right);
             // Information area in the top corner on the runway side, away from the far end of the scan limits.
+            // Leave room for the altitude scale, drawn on the same side.
+            double margin = profile.ShowAltitudeScale ? 75 : 4;
             if (right)
             {
                 infoPanel.ClearValue(Canvas.LeftProperty);
-                Canvas.SetRight(infoPanel, 4);
+                Canvas.SetRight(infoPanel, margin);
             }
             else
             {
                 infoPanel.ClearValue(Canvas.RightProperty);
-                Canvas.SetLeft(infoPanel, 0);
+                Canvas.SetLeft(infoPanel, margin);
             }
             Canvas.SetTop(infoPanel, 0);
             TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
             infoText.TextAlignment = alignment;
             statusText.TextAlignment = alignment;
             dataText.TextAlignment = alignment;
+            tiltText.TextAlignment = alignment;
             InvalidateViews();
         }
 
@@ -498,7 +561,33 @@ namespace AuroraPAR
         }
         private void UpdateInfo()
         {
-            infoText.Text = $"RWY {runway.Designator}\nQNH {qnh}\nDH {FormatHeight(runway.MDH)} ft";
+            Profile profile = settings.Active;
+            bool qfe = profile.PressureReference == PressureReference.QFE;
+            string pressure = qnh == 0 ? "----" : Pressure.Format(qfe ? Pressure.QfeFromQnh(qnh, runway.Elevation) : qnh, profile.PressureUnit);
+            (string altitudeName, string heightName) = Pressure.Names(profile.MinimaLabel);
+            string minimum = qfe
+                ? $"{heightName} {FormatHeight(runway.MDH)} ft"
+                : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
+            infoText.Text = $"RWY {runway.Designator}\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
+            // Antenna tilt: shown only when not neutral, so the controller does not forget it.
+            if (radar.IsNeutral)
+            {
+                tiltText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                List<string> parts = [];
+                if (radar.TiltElevation != 0)
+                {
+                    parts.Add($"EL TILT {Math.Abs(radar.TiltElevation).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} {(radar.TiltElevation > 0 ? "UP" : "DN")}");
+                }
+                if (radar.TiltAzimuth != 0)
+                {
+                    parts.Add($"AZ TILT {Math.Abs(radar.TiltAzimuth).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} {(radar.TiltAzimuth > 0 ? "R" : "L")}");
+                }
+                tiltText.Text = string.Join("\n", parts);
+                tiltText.Visibility = Visibility.Visible;
+            }
             if (aurora.Connected)
             {
                 statusText.Text = "STS OK";

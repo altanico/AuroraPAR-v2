@@ -1,10 +1,17 @@
 ﻿<Window x:Class="AuroraPAR.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Aurora PAR - Settings" Width="440" SizeToContent="Height"
+        Title="Aurora PAR - Settings" Width="880" SizeToContent="Height"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Icon="AuroraPAR.ico">
     <StackPanel Margin="12">
+        <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
         <GroupBox Header="Profile" Padding="8">
             <StackPanel>
                 <ComboBox Name="ProfileComboBox" Height="26"/>
@@ -47,6 +54,44 @@
                 <TextBlock Text="Runway default = the range set for the runway in runways.par." Foreground="Gray" FontSize="11" Margin="0,4,0,0"/>
             </StackPanel>
         </GroupBox>
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+            <GroupBox Header="Radar (angles in degrees)" Padding="8">
+                <Grid Name="RadarGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </GroupBox>
+            <GroupBox Header="Units and references" Padding="8" Margin="0,10,0,0">
+                <StackPanel>
+                    <TextBlock Text="Pressure reference (all runways)"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <RadioButton Name="QnhRadio" GroupName="PressureRef" Content="QNH (altitudes)" Margin="0,0,16,0"/>
+                        <RadioButton Name="QfeRadio" GroupName="PressureRef" Content="QFE (heights above threshold)"/>
+                    </StackPanel>
+                    <TextBlock Text="Pressure unit" Margin="0,8,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <RadioButton Name="HpaRadio" GroupName="PressureUnit" Content="hPa" Margin="0,0,16,0"/>
+                        <RadioButton Name="InHgRadio" GroupName="PressureUnit" Content="inHg"/>
+                    </StackPanel>
+                    <TextBlock Text="Name of the minimum" Margin="0,8,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <RadioButton Name="DaDhRadio" GroupName="Minima" Content="DA / DH" Margin="0,0,16,0"/>
+                        <RadioButton Name="OcaOchRadio" GroupName="Minima" Content="OCA / OCH" Margin="0,0,16,0"/>
+                        <RadioButton Name="MdaMdhRadio" GroupName="Minima" Content="MDA / MDH"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox Name="AltitudeScaleCheck" Content="Altitude scale in" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <RadioButton Name="ScaleFeetRadio" GroupName="ScaleUnit" Content="ft" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                        <RadioButton Name="ScaleMetresRadio" GroupName="ScaleUnit" Content="m" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+        </Grid>
         <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
         <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
     </StackPanel>

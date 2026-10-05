@@ -111,37 +111,13 @@ namespace AuroraPAR
         public double TouchdownNM => TouchdownM / 1852;
         public const double FeetPerNM = 6076.11549;
         /// <summary>
-        /// Half angle of the azimuth scan limits, in degrees.
-        /// </summary>
-        public const double AzimuthScanHalfAngle = 10;
-        /// <summary>
-        /// Angle of the upper elevation scan limit, in degrees.
-        /// </summary>
-        public double ElevationScanAngle => GlideSlope + 5;
-        /// <summary>
-        /// Vertical tolerance around the glide path, in degrees (each side).
-        /// </summary>
-        public double GlidePathTolerance { get; set; } = 0.5;
-        /// <summary>
-        /// Lateral tolerance around the extended centreline, in degrees (each side).
-        /// </summary>
-        public double CenterlineTolerance { get; set; } = 1.5;
-        /// <summary>
         /// Height in ft above the threshold elevation of a line starting at the touchdown point (on the runway)
         /// with angle GlideSlope + <paramref name="angleOffset"/>, at <paramref name="distanceFromTouchdownNM"/>.
-        /// With offset 0 this is the ideal glide path; with ±GlidePathTolerance the tolerance limits.
+        /// With offset 0 this is the ideal glide path; with the approach limits (see <see cref="Radar"/>) their lines.
         /// </summary>
         public double GlidePathHeight(double distanceFromTouchdownNM, double angleOffset = 0)
         {
             return distanceFromTouchdownNM * Math.Tan((GlideSlope + angleOffset) * Math.PI / 180) * FeetPerNM;
-        }
-        /// <summary>
-        /// Half width in NM of the centreline tolerance at <paramref name="distanceFromTouchdownNM"/>,
-        /// for lines starting at the touchdown point.
-        /// </summary>
-        public double CenterlineHalfWidth(double distanceFromTouchdownNM)
-        {
-            return distanceFromTouchdownNM * Math.Tan(CenterlineTolerance * Math.PI / 180);
         }
         /// <summary>
         /// Distance from the touchdown point, in NM, where the glide path reaches the MDH (missed approach point).
@@ -211,23 +187,6 @@ namespace AuroraPAR
         {
             return AlongTrackDistance(runway) + runway.TouchdownNM;
         }
-        /// <summary>
-        /// True when the aircraft is inside the vertical tolerance, measured as angles from the touchdown point.
-        /// </summary>
-        public bool IsWithinGlidePathTolerance(Runway runway)
-        {
-            double s = DistanceFromTouchdown(runway);
-            double height = Altitude - runway.Elevation;
-            return height > runway.GlidePathHeight(s, -runway.GlidePathTolerance)
-                && height < runway.GlidePathHeight(s, runway.GlidePathTolerance);
-        }
-        /// <summary>
-        /// True when the aircraft is inside the lateral tolerance, measured as angles from the touchdown point.
-        /// </summary>
-        public bool IsWithinCenterlineTolerance(Runway runway)
-        {
-            return Math.Abs(LateralOffset(runway)) <= runway.CenterlineHalfWidth(DistanceFromTouchdown(runway));
-        }
         public double LateralOffset(Runway runway)
         {
             // Calculate initial bearing from runway to aircraft
@@ -263,27 +222,6 @@ namespace AuroraPAR
                        Math.Sin(lat1Rad) * Math.Cos(lat2Rad) * Math.Cos(dLon);
             double bearingToAircraft = (Math.Atan2(y, x) * 180 / Math.PI + 360) % 360;
             return bearingToAircraft;
-        }
-        /// <summary>
-        /// True when the aircraft is inside the scan limits drawn on screen, also over the runway after the threshold:
-        /// between the far end of the runway and the end of the displayed range, inside the azimuth cone,
-        /// above the threshold elevation and below the upper elevation scan limit.
-        /// The cones start at the far end of the runway, as drawn.
-        /// </summary>
-        public bool IsDisplayed(Runway runway)
-        {
-            // Distance from the far end of the runway, along the centreline.
-            double fromRunwayEnd = runway.LengthNM + AlongTrackDistance(runway);
-            double coneLength = runway.LengthNM + runway.Distance;
-            if (fromRunwayEnd < 0 || fromRunwayEnd > coneLength) return false;
-            // Azimuth scan limits.
-            double azimuthHalfWidth = fromRunwayEnd / coneLength * runway.Distance * Math.Tan(Runway.AzimuthScanHalfAngle * Math.PI / 180);
-            if (Math.Abs(LateralOffset(runway)) > azimuthHalfWidth) return false;
-            // Elevation scan limits: above the ground, below the upper limit.
-            double height = Altitude - runway.Elevation;
-            if (height <= 0) return false;
-            if (height > fromRunwayEnd * Math.Tan(runway.ElevationScanAngle * Math.PI / 180) * Runway.FeetPerNM) return false;
-            return true;
         }
     }
     internal struct Distance(double distance)

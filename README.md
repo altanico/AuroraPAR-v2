@@ -8,8 +8,12 @@ This is a test version with bug fixes. It is not an official release of the orig
 
 AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR display for the selected runway:
 
-- **Top – elevation (profile):** glide path with ±0.5° tolerance and decision height (DH): a line from the touchdown point to 3 NM, and a dashed vertical line where it meets the glide path. The DH distance is also marked in the azimuth view.
-- **Bottom – azimuth:** runway centreline with ±1.5° tolerance.
+- **Top – elevation (profile):** glide path with its approach limits and decision height (DH): a line from the touchdown point to 3 NM, and a dashed vertical line where it meets the glide path. The DH distance is also marked in the azimuth view.
+- **Bottom – azimuth:** runway centreline with its approach limits.
+
+**Approach limits** (red lines, default 0.5° above/below the glide path and 1.5° left/right of the centreline, each side set separately in *Settings*) start at the touchdown point: inside them a track is green, outside red. **Scan limits** (blue lines) start from the radar antenna (small blue square, at half the runway length) and can be set in *Settings* (default 8° up, −1° down, 10° left and right): a track is shown only inside them. **Antenna tilt:** the scan limits can be moved up/down and left/right with the *Antenna tilt* buttons or the keyboard arrows (step 2°, up to 10°, both set in *Settings*); *Neutral* or the Home key brings the antenna back. While the antenna is tilted an orange reminder (e.g. `EL TILT 2.0 UP`, `AZ TILT 2.0 L`) is shown in the information area. The tilt goes back to neutral when the runway changes. Left/right are as seen by the pilot on the approach.
+
+**Information area** (top of the profile view): runway, QNH or QFE (computed from the METAR QNH and the threshold elevation), the minimum (e.g. `DA 392 ft` with QNH, `DH 241 ft` with QFE), antenna tilt when not neutral, connection status and traffic refresh check. An **altitude scale** (altitudes with QNH, heights with QFE; feet or metres) is drawn on the runway side.
 
 Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway in both views), as controllers give them on final. The glide path, the extended centreline and their tolerance limits also start at the touchdown point: dashed between touchdown and threshold, solid beyond it. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range. The DH can be changed on the fly with the **−/+** buttons or by typing it (10 ft steps): it is not saved and goes back to the `runways.par` value when the runway changes.
 
@@ -25,6 +29,8 @@ Click **Settings...** to manage profiles and display options. Changes are applie
 
 - **Profiles:** several named profiles can be kept and switched; *Duplicate*, *Rename*, *Delete*, and *Export* / *Import* to share a profile (a `.json` file) with other controllers.
 - **Runway position:** left or right of the screen. With the runway on the right the azimuth view is rotated by 180°, so the side of the centreline shown above/below stays consistent with the direction of flight.
+- **Radar:** approach limits (above, below, left, right), scan limits (up, down, left, right), tilt step and maximum. Each profile can hold the values of a different radar type.
+- **Units and references:** QNH or QFE for all runways; pressure in hPa or inHg; name of the minimum (DA/DH, OCA/OCH, MDA/MDH: the altitude form is used with QNH, the height form with QFE); altitude scale on/off, in feet or metres.
 - **Range:** a *preferred range*, and separate choices for the range at start (last used, runway default from `runways.par`, or preferred) and when the runway changes (keep current, runway default, or preferred).
 - The runway, range, window size and position (and whether it was maximized) are restored at the next start. If the saved position is no longer on any screen (e.g. a monitor was disconnected), the window is centred on the primary screen.
 
@@ -58,6 +64,8 @@ Invalid or incomplete lines are ignored.
 
 ## Changes from the original
 
+- Approach limits set separately for each side; scan limits from the antenna at half the runway, adjustable; antenna tilt from buttons or keyboard with on-screen reminder.
+- QNH/QFE, hPa/inHg, DA/DH, OCA/OCH or MDA/MDH; altitude scale in feet or metres.
 - Aircraft stay visible while inside the drawn scan limits, also over the runway after the threshold (previously they disappeared when crossing it).
 - Settings window with user profiles (saved, exportable/importable) and runway on the left or right of the screen.
 - Drawing rewritten: screen elements are updated instead of being recreated at every refresh.
