@@ -123,6 +123,8 @@ namespace AuroraPAR
             Options = options;
             // Lines going beyond the view (e.g. a tilted scan limit) must not be drawn over the other view.
             Canvas.ClipToBounds = true;
+            // Right click near a track (not only exactly on its small symbol) hides or shows its label.
+            Canvas.MouseRightButtonUp += Canvas_MouseRightButtonUp;
         }
 
         /// <summary>
@@ -429,7 +431,7 @@ namespace AuroraPAR
             Panel.SetZIndex(track.Label, LabelZIndex);
             track.Leader.IsHitTestVisible = false;
             track.Label.Cursor = Cursors.SizeAll;
-            track.Label.ToolTip = "Drag to move · double click: back to its place · right click: hide (right click on the track to show it again)";
+            track.Label.ToolTip = "Drag to move · double click: back to its place · right click: hide (right click near the track or key L twice to show it again)";
             Canvas.Children.Add(track.Symbol);
             Canvas.Children.Add(track.Leader);
             Canvas.Children.Add(track.Label);
@@ -468,12 +470,46 @@ namespace AuroraPAR
                 track.Leader.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             };
-            track.Symbol.MouseRightButtonUp += (s, e) =>
+            return track;
+        }
+
+        /// <summary>Maximum distance in pixels between a right click and a track for the click to apply to it.</summary>
+        private const double TrackClickDistance = 15;
+
+        private void Canvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            Point click = e.GetPosition(Canvas);
+            Track? nearest = null;
+            double best = TrackClickDistance;
+            foreach (Track track in tracks.Values)
+            {
+                if (track.Symbol.Visibility != Visibility.Visible) continue;
+                double distance = (track.Position - click).Length;
+                if (distance <= best)
+                {
+                    best = distance;
+                    nearest = track;
+                }
+            }
+            if (nearest == null) return;
+            nearest.LabelHidden = !nearest.LabelHidden;
+            if (nearest.LabelHidden)
+            {
+                nearest.Label.Visibility = Visibility.Collapsed;
+                nearest.Leader.Visibility = Visibility.Collapsed;
+            }
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Shows again the labels hidden one by one with a right click.
+        /// </summary>
+        public void ShowAllLabels()
+        {
+            foreach (Track track in tracks.Values)
             {
                 track.LabelHidden = false;
-                e.Handled = true;
-            };
-            return track;
+            }
         }
 
         protected double ToScreenX(double x)

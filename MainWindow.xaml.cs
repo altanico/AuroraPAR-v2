@@ -393,6 +393,12 @@ namespace AuroraPAR
         private void ToggleLabels()
         {
             viewOptions.ShowLabels = !viewOptions.ShowLabels;
+            if (viewOptions.ShowLabels)
+            {
+                // Showing the labels again also brings back those hidden one by one.
+                profileView.ShowAllLabels();
+                horizontalView.ShowAllLabels();
+            }
             LabelsButton.Content = viewOptions.ShowLabels ? "Hide labels (L)" : "Show labels (L)";
             Redraw();
         }
