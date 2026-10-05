@@ -24,6 +24,7 @@
                 <RowDefinition Height="34"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <ComboBox Grid.Row="0" Name="RunwayComboBox"></ComboBox>
             <ComboBox Grid.Row="1" Name="DistanceComboBox"></ComboBox>
@@ -51,6 +52,8 @@
                 </UniformGrid>
                 <Button Name="TiltNeutralButton" Content="Neutral" Height="26" Margin="0,2,0,0"/>
             </StackPanel>
+            <Button Grid.Row="6" Name="LabelsButton" Content="Hide labels (L)" Height="26" Margin="0,12,0,0"
+                    ToolTip="Show or hide the labels of all tracks (key L). Right click on a label hides only that one; right click on its track shows it again."/>
         </Grid>
     </Grid>
 </Window>

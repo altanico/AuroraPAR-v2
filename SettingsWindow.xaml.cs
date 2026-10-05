@@ -54,6 +54,19 @@ namespace AuroraPAR
             };
             CloseButton.Click += (s, e) => Close();
             BuildRadarFields();
+            BuildSymbolRows();
+            HistoryCheck.Checked += (s, e) => SetProfileValue(p => p.HistoryEnabled, p => p.HistoryEnabled = true);
+            HistoryCheck.Unchecked += (s, e) => SetProfileValue(p => !p.HistoryEnabled, p => p.HistoryEnabled = false);
+            HistoryDotsBox.LostFocus += (s, e) => ApplyHistoryDots();
+            HistoryDotsBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter) ApplyHistoryDots();
+            };
+            EditLabelsButton.Click += (s, e) =>
+            {
+                LabelEditorWindow editor = new(settings, Commit) { Owner = this };
+                editor.ShowDialog();
+            };
             QnhRadio.Checked += (s, e) => SetProfileValue(p => p.PressureReference == PressureReference.QNH, p => p.PressureReference = PressureReference.QNH);
             QfeRadio.Checked += (s, e) => SetProfileValue(p => p.PressureReference == PressureReference.QFE, p => p.PressureReference = PressureReference.QFE);
             HpaRadio.Checked += (s, e) => SetProfileValue(p => p.PressureUnit == PressureUnit.HectoPascal, p => p.PressureUnit = PressureUnit.HectoPascal);
@@ -102,6 +115,8 @@ namespace AuroraPAR
                 AltitudeScaleCheck.IsChecked = Active.ShowAltitudeScale;
                 ScaleFeetRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Feet;
                 ScaleMetresRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Metres;
+                HistoryCheck.IsChecked = Active.HistoryEnabled;
+                HistoryDotsBox.Text = Active.HistoryDots.ToString(CultureInfo.InvariantCulture);
                 foreach (Action refresh in refreshers)
                 {
                     refresh();
@@ -230,6 +245,102 @@ namespace AuroraPAR
             if (refreshing || alreadySet(Active)) return;
             set(Active);
             Commit();
+        }
+
+        private void ApplyHistoryDots()
+        {
+            if (refreshing) return;
+            if (int.TryParse(HistoryDotsBox.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int dots)
+                && dots >= Profile.MinHistoryDots && dots <= Profile.MaxHistoryDots)
+            {
+                if (dots != Active.HistoryDots)
+                {
+                    Active.HistoryDots = dots;
+                    Commit();
+                }
+                return;
+            }
+            System.Media.SystemSounds.Beep.Play();
+            HistoryDotsBox.Text = Active.HistoryDots.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// One row per symbol (track, threshold, touchdown point, antenna): shape and size.
+        /// </summary>
+        private void BuildSymbolRows()
+        {
+            SymbolShape[] all = Enum.GetValues<SymbolShape>();
+            AddSymbolRow("Track", p => p.TrackSymbol, all.Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray());
+            AddSymbolRow("Threshold", p => p.ThresholdSymbol, all);
+            AddSymbolRow("Touchdown point", p => p.TouchdownSymbol, all);
+            AddSymbolRow("Antenna", p => p.AntennaSymbol, all);
+        }
+
+        private void AddSymbolRow(string label, Func<Profile, SymbolSetting> get, SymbolShape[] shapes)
+        {
+            int row = SymbolGrid.RowDefinitions.Count;
+            SymbolGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            TextBlock text = new() { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 2, 8, 2) };
+            ComboBox shapeBox = new()
+            {
+                ItemsSource = shapes.Select(Symbols.DisplayName).ToList(),
+                Margin = new Thickness(0, 2, 6, 2)
+            };
+            TextBox sizeBox = new()
+            {
+                Width = 40,
+                Height = 22,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalContentAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 2, 4, 2),
+                ToolTip = "Size in pixels (2 to 60)"
+            };
+            TextBlock unit = new() { Text = "px", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetRow(text, row);
+            Grid.SetRow(shapeBox, row);
+            Grid.SetRow(sizeBox, row);
+            Grid.SetRow(unit, row);
+            Grid.SetColumn(shapeBox, 1);
+            Grid.SetColumn(sizeBox, 2);
+            Grid.SetColumn(unit, 3);
+            SymbolGrid.Children.Add(text);
+            SymbolGrid.Children.Add(shapeBox);
+            SymbolGrid.Children.Add(sizeBox);
+            SymbolGrid.Children.Add(unit);
+            shapeBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || shapeBox.SelectedIndex < 0) return;
+                SymbolShape shape = shapes[shapeBox.SelectedIndex];
+                if (shape == get(Active).Shape) return;
+                get(Active).Shape = shape;
+                Commit();
+            };
+            void ApplySize()
+            {
+                if (refreshing) return;
+                if (double.TryParse(sizeBox.Text.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double size)
+                    && size >= 2 && size <= 60)
+                {
+                    if (size != get(Active).Size)
+                    {
+                        get(Active).Size = size;
+                        Commit();
+                    }
+                    return;
+                }
+                System.Media.SystemSounds.Beep.Play();
+                sizeBox.Text = FormatNumber(get(Active).Size);
+            }
+            sizeBox.LostFocus += (s, e) => ApplySize();
+            sizeBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter) ApplySize();
+            };
+            refreshers.Add(() =>
+            {
+                shapeBox.SelectedIndex = Array.IndexOf(shapes, get(Active).Shape);
+                sizeBox.Text = FormatNumber(get(Active).Size);
+            });
         }
 
         private void BuildRadarFields()

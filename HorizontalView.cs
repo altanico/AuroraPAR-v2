@@ -54,13 +54,20 @@ namespace AuroraPAR
             double cy = CenterY;
             double left = Radar.AzimuthLeftEdge;
             double right = Radar.AzimuthRightEdge;
-            // Runway and threshold.
+            // Runway and threshold (a line across the runway, or a symbol).
             AddLine(0, cy, length * xscale, cy, Brushes.Green, 3);
-            AddLine(length * xscale, cy - Runway.WidthNM * yscale, length * xscale, cy + Runway.WidthNM * yscale, Brushes.Green, 3);
+            if (Options.ThresholdSymbol.Shape == SymbolShape.Line)
+            {
+                AddLine(length * xscale, cy - Runway.WidthNM * yscale, length * xscale, cy + Runway.WidthNM * yscale, Brushes.Green, 3);
+            }
+            else
+            {
+                AddSymbol(Options.ThresholdSymbol, length * xscale, cy, Brushes.Green);
+            }
             // Scan limits, from the antenna.
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, left), Brushes.CadetBlue, 3);
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, right), Brushes.CadetBlue, 3);
-            AddSquare(AntennaNM * xscale, cy, 8, Brushes.CadetBlue);
+            AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, cy, Brushes.CadetBlue);
             // Extended centreline and its approach limits, all starting at the touchdown point:
             // dashed between touchdown and threshold, solid beyond the threshold.
             double xTouchdown = (length - Runway.TouchdownNM) * xscale;
@@ -77,7 +84,15 @@ namespace AuroraPAR
                 AddLine(xThreshold, atThreshold, xEnd, atEnd, Brushes.Red, 1);
             }
             // Touchdown point.
-            AddLine(xTouchdown, cy - 8, xTouchdown, cy + 8, Brushes.Yellow, 2);
+            if (Options.TouchdownSymbol.Shape == SymbolShape.Line)
+            {
+                double half = Options.TouchdownSymbol.Size * 2 / 3;
+                AddLine(xTouchdown, cy - half, xTouchdown, cy + half, Brushes.Yellow, 2);
+            }
+            else
+            {
+                AddSymbol(Options.TouchdownSymbol, xTouchdown, cy, Brushes.Yellow);
+            }
             // Distance where the glide path reaches the decision height: vertical line between the scan limits.
             double interceptNM = length - Runway.TouchdownNM + Runway.MissedApproachPointNM;
             if (interceptNM <= end)
@@ -93,18 +108,26 @@ namespace AuroraPAR
             }
         }
 
-        protected override bool UpdateTrack(Track track, Aircraft aircraft)
+        protected override (double Along, double Value) ToWorld(Aircraft aircraft)
         {
-            double x = (aircraft.AlongTrackDistance(Runway) + Runway.LengthNM) * xscale;
-            double y = LateralY(aircraft.LateralOffset(Runway));
-            if (ToScreenY(y) < 0 || ToScreenY(y) > Canvas.ActualHeight) return false;
-            Brush color = Radar.IsWithinCenterlineLimits(aircraft, Runway) ? Brushes.Green : Brushes.Red;
-            Point p = PlaceDot(track, x, y, color);
-            track.Label.Text = $"{aircraft.Callsign}\n{FormatAltitude(aircraft)}";
-            // Label above the track.
-            Canvas.SetLeft(track.Label, p.X - 15);
-            Canvas.SetTop(track.Label, p.Y - 40);
-            return true;
+            return (aircraft.AlongTrackDistance(Runway), aircraft.LateralOffset(Runway));
         }
+
+        protected override Point WorldToLogical(double along, double value)
+        {
+            return new Point((along + Runway.LengthNM) * xscale, LateralY(value));
+        }
+
+        protected override bool IsDrawable(Point logical)
+        {
+            return logical.Y >= 0 && logical.Y <= Canvas.ActualHeight;
+        }
+
+        protected override Brush TrackColor(Aircraft aircraft)
+        {
+            return Radar.IsWithinCenterlineLimits(aircraft, Runway) ? Brushes.Green : Brushes.Red;
+        }
+
+        protected override LabelLayout Layout => Options.AzimuthLabel;
     }
 }

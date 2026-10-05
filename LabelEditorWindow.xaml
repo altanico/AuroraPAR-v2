@@ -1,0 +1,17 @@
+﻿<Window x:Class="AuroraPAR.LabelEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aurora PAR - Labels" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="AuroraPAR.ico">
+    <StackPanel Margin="12">
+        <TextBlock TextWrapping="Wrap" MaxWidth="640" Foreground="Gray"
+                   Text="Choose the number of rows and columns and the value shown in each cell. Empty rows are not shown; a label with no values shows only the track symbol. Changes are applied immediately."/>
+        <GroupBox Header="Elevation (profile) label" Padding="8" Margin="0,10,0,0">
+            <StackPanel Name="ElevationPanel"/>
+        </GroupBox>
+        <GroupBox Header="Azimuth label" Padding="8" Margin="0,10,0,0">
+            <StackPanel Name="AzimuthPanel"/>
+        </GroupBox>
+        <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
+    </StackPanel>
+</Window>

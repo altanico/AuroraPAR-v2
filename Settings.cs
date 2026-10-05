@@ -172,7 +172,47 @@ namespace AuroraPAR
         public PressureUnit PressureUnit { get; set; } = PressureUnit.HectoPascal;
         public MinimaLabel MinimaLabel { get; set; } = MinimaLabel.DaDh;
         public bool ShowAltitudeScale { get; set; } = true;
+        /// <summary>
+        /// Unit of heights: altitude scale and labels (altitude, deviations in ft or m, vertical speed in ft/min or m/s).
+        /// </summary>
         public LengthUnit AltitudeScaleUnit { get; set; } = LengthUnit.Feet;
+
+        // Tracks and labels.
+        public LabelLayout ElevationLabel { get; set; } = LabelLayout.DefaultElevation();
+        public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
+        /// <summary>History tails: previous positions of each track.</summary>
+        public bool HistoryEnabled { get; set; } = true;
+        public int HistoryDots { get; set; } = 50;
+        public SymbolSetting TrackSymbol { get; set; } = new(SymbolShape.CrossCircle, 12);
+        public SymbolSetting ThresholdSymbol { get; set; } = new(SymbolShape.Line, 10);
+        public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
+        public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
+
+        public const int MinHistoryDots = 3;
+        public const int MaxHistoryDots = 100;
+
+        /// <summary>
+        /// Repairs values missing or out of range (profiles from older versions or edited by hand).
+        /// </summary>
+        public void Normalize()
+        {
+            ElevationLabel ??= LabelLayout.DefaultElevation();
+            AzimuthLabel ??= LabelLayout.DefaultAzimuth();
+            ElevationLabel.Normalize();
+            AzimuthLabel.Normalize();
+            HistoryDots = Math.Clamp(HistoryDots, MinHistoryDots, MaxHistoryDots);
+            TrackSymbol = NormalizeSymbol(TrackSymbol, new(SymbolShape.CrossCircle, 12));
+            ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));
+            TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));
+            AntennaSymbol = NormalizeSymbol(AntennaSymbol, new(SymbolShape.Square, 8));
+        }
+
+        private static SymbolSetting NormalizeSymbol(SymbolSetting? symbol, SymbolSetting fallback)
+        {
+            if (symbol == null || !Enum.IsDefined(symbol.Shape)) return fallback;
+            symbol.Size = Math.Clamp(symbol.Size, 2, 60);
+            return symbol;
+        }
 
         /// <summary>
         /// Deep copy (through JSON, so it stays correct when nested settings are added).
@@ -231,6 +271,7 @@ namespace AuroraPAR
             Profiles = [];
             foreach (Profile p in valid)
             {
+                p.Normalize();
                 p.Name = UniqueName(string.IsNullOrWhiteSpace(p.Name) ? "Profile" : p.Name.Trim());
                 Profiles.Add(p);
             }

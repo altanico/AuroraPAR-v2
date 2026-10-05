@@ -70,6 +70,7 @@ namespace AuroraPAR
         /// </summary>
         private const double MaxGoodDataInterval = 1.5;
         private readonly RefreshRateMonitor refreshMonitor = new();
+        private readonly VerticalSpeedEstimator verticalSpeed = new();
         /// <summary>
         /// Measured interval between position updates from Aurora (s), NaN when unknown. Written by the refresh timer.
         /// </summary>
@@ -121,6 +122,7 @@ namespace AuroraPAR
             TiltLeftButton.Click += (s, e) => TiltAntenna(0, -1);
             TiltRightButton.Click += (s, e) => TiltAntenna(0, 1);
             TiltNeutralButton.Click += (s, e) => NeutralAntenna();
+            LabelsButton.Click += (s, e) => ToggleLabels();
             PreviewKeyDown += MainWindow_PreviewKeyDown;
             RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
@@ -379,9 +381,20 @@ namespace AuroraPAR
                 case Key.Left: TiltAntenna(0, -1); break;
                 case Key.Right: TiltAntenna(0, 1); break;
                 case Key.Home: NeutralAntenna(); break;
+                case Key.L: ToggleLabels(); break;
                 default: return;
             }
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// Shows or hides the labels of all tracks, in both views (for this session).
+        /// </summary>
+        private void ToggleLabels()
+        {
+            viewOptions.ShowLabels = !viewOptions.ShowLabels;
+            LabelsButton.Content = viewOptions.ShowLabels ? "Hide labels (L)" : "Show labels (L)";
+            Redraw();
         }
 
         private void TiltAntenna(int elevationSteps, int azimuthSteps)
@@ -407,6 +420,15 @@ namespace AuroraPAR
             viewOptions.Qfe = profile.PressureReference == PressureReference.QFE;
             viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale;
             viewOptions.ScaleInMetres = profile.AltitudeScaleUnit == LengthUnit.Metres;
+            viewOptions.HistoryEnabled = profile.HistoryEnabled;
+            viewOptions.HistoryDots = profile.HistoryDots;
+            viewOptions.TrackSymbol = profile.TrackSymbol;
+            viewOptions.ThresholdSymbol = profile.ThresholdSymbol;
+            viewOptions.TouchdownSymbol = profile.TouchdownSymbol;
+            viewOptions.AntennaSymbol = profile.AntennaSymbol;
+            viewOptions.ElevationLabel = profile.ElevationLabel;
+            viewOptions.AzimuthLabel = profile.AzimuthLabel;
+            viewOptions.Version++;
             DhLabel.Text = $"{Pressure.Names(profile.MinimaLabel).Height} (ft)";
             bool right = profile.RunwaySide == RunwaySide.Right;
             profileView.SetRunwayOnRight(right);
@@ -505,6 +527,7 @@ namespace AuroraPAR
                         }
                     }
                 }
+                verticalSpeed.Update(aircrafts, DateTime.UtcNow);
                 if (aurora.Connected)
                 {
                     refreshMonitor.Update(aircrafts, DateTime.UtcNow);

@@ -54,6 +54,24 @@
                 <TextBlock Text="Runway default = the range set for the runway in runways.par." Foreground="Gray" FontSize="11" Margin="0,4,0,0"/>
             </StackPanel>
         </GroupBox>
+        <GroupBox Header="Tracks and labels" Padding="8" Margin="0,10,0,0">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox Name="HistoryCheck" Content="History tails, number of dots:" VerticalAlignment="Center"/>
+                    <TextBox Name="HistoryDotsBox" Width="50" Height="22" Margin="8,0,4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"/>
+                    <TextBlock Text="(3 to 100)" Foreground="Gray" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Grid Name="SymbolGrid" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+                <Button Name="EditLabelsButton" Content="Edit labels..." HorizontalAlignment="Left" Width="120" Height="26" Margin="0,8,0,0"/>
+            </StackPanel>
+        </GroupBox>
         </StackPanel>
         <StackPanel Grid.Column="2">
             <GroupBox Header="Radar (angles in degrees)" Padding="8">
@@ -83,11 +101,12 @@
                         <RadioButton Name="OcaOchRadio" GroupName="Minima" Content="OCA / OCH" Margin="0,0,16,0"/>
                         <RadioButton Name="MdaMdhRadio" GroupName="Minima" Content="MDA / MDH"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <CheckBox Name="AltitudeScaleCheck" Content="Altitude scale in" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <RadioButton Name="ScaleFeetRadio" GroupName="ScaleUnit" Content="ft" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                        <RadioButton Name="ScaleMetresRadio" GroupName="ScaleUnit" Content="m" VerticalAlignment="Center"/>
+                    <TextBlock Text="Heights, deviations and vertical speed (scale and labels)" Margin="0,8,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <RadioButton Name="ScaleFeetRadio" GroupName="ScaleUnit" Content="ft, ft/min" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                        <RadioButton Name="ScaleMetresRadio" GroupName="ScaleUnit" Content="m, m/s" VerticalAlignment="Center"/>
                     </StackPanel>
+                    <CheckBox Name="AltitudeScaleCheck" Content="Show the altitude scale" Margin="0,8,0,0"/>
                 </StackPanel>
             </GroupBox>
         </StackPanel>

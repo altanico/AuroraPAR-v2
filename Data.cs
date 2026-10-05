@@ -146,6 +146,10 @@ namespace AuroraPAR
         public double Track { get; set; }
         public double Speed { get; set; }
         /// <summary>
+        /// Vertical speed in ft/min (negative descending), estimated from the altitude history; null when not known yet.
+        /// </summary>
+        public double? VerticalSpeedFpm { get; set; }
+        /// <summary>
         /// Distance to runway.
         /// </summary>
         /// <param name="runway">Runway.</param>
