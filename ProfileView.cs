@@ -20,9 +20,9 @@ namespace AuroraPAR
         protected override void CalculateScale()
         {
             xscale = (Canvas.ActualWidth - 50) / (Runway.Distance + Runway.LengthNM);
-            // Vertical scale: the upper scan limit in neutral position reaches the top at the end of the range.
-            // It does not change with the tilt, so tilting moves the limits without changing the scale.
-            double top = Radar.ScanHeight(Runway.Distance + Runway.LengthNM - AntennaNM, Math.Max(Radar.ScanUp, 1));
+            // Fixed vertical scale, depending only on the range: the default upper scan limit (8°) reaches the top at
+            // the end of the range. Other scan limits or a tilt move the lines (beyond the view if needed), as on a real PAR.
+            double top = Radar.ScanHeight(Runway.Distance + Runway.LengthNM - AntennaNM, Radar.ReferenceScanUp);
             yscale = (Canvas.ActualHeight - 50) / top;
         }
 

@@ -23,6 +23,13 @@ namespace AuroraPAR
         public double ScanLeft { get; set; } = 10;
         public double ScanRight { get; set; } = 10;
 
+        /// <summary>
+        /// Fixed angles used for the scale of the views (the default scan limits), so the scale depends only on the
+        /// range: changing the scan limits or tilting the antenna moves the lines without resizing everything else.
+        /// </summary>
+        public const double ReferenceScanUp = 8;
+        public const double ReferenceScanHalfWidth = 10;
+
         public double TiltStep { get; set; } = 2;
         public double TiltMax { get; set; } = 10;
 
