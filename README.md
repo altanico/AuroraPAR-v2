@@ -8,10 +8,10 @@ This is a test version with bug fixes. It is not an official release of the orig
 
 AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR display for the selected runway:
 
-- **Top – elevation (profile):** glide path with ±0.5° tolerance, MDH and missed approach point.
+- **Top – elevation (profile):** glide path with ±0.5° tolerance and decision height (DH): a line from the touchdown point to 3 NM, and a dashed vertical line where it meets the glide path. The DH distance is also marked in the azimuth view.
 - **Bottom – azimuth:** runway centreline with ±1.5° tolerance.
 
-Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway in both views), as controllers give them on final. The glide path, the extended centreline and their tolerance limits also start at the touchdown point: dashed between touchdown and threshold, solid beyond it. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range.
+Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway in both views), as controllers give them on final. The glide path, the extended centreline and their tolerance limits also start at the touchdown point: dashed between touchdown and threshold, solid beyond it. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range. The DH can be changed on the fly with the **−/+** buttons or by typing it (10 ft steps): it is not saved and goes back to the `runways.par` value when the runway changes.
 
 ## Download
 

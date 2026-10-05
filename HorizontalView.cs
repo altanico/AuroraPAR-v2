@@ -55,6 +55,13 @@ namespace AuroraPAR
             }
             // Touchdown point.
             AddLine(xTouchdown, cy - 8, xTouchdown, cy + 8, Brushes.Yellow, 2);
+            // Distance where the glide path reaches the decision height: vertical line between the scan limits.
+            double interceptNM = length - Runway.TouchdownNM + Runway.MissedApproachPointNM;
+            if (interceptNM <= length + range)
+            {
+                double interceptHalf = interceptNM / (length + range) * scanHalf;
+                AddLine(interceptNM * xscale, cy - interceptHalf, interceptNM * xscale, cy + interceptHalf, Brushes.Red, 2);
+            }
             // Range marks, measured from the touchdown point, between the scan limits.
             int num = Runway.Distance == 15 ? 15 : 10;
             for (int i = 1; i <= num; i++)

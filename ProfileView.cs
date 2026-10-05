@@ -75,10 +75,15 @@ namespace AuroraPAR
             AddGlidePathLine(0, Brushes.Yellow, 2);
             AddGlidePathLine(-Runway.GlidePathTolerance, Brushes.Red, 1);
             AddGlidePathLine(Runway.GlidePathTolerance, Brushes.Red, 1);
-            // Minimum (MDH) line and missed approach point, where the glide path reaches it.
-            double mapt = Runway.MissedApproachPointNM;
-            AddLine(0, Y(Runway.MDH), X(mapt), Y(Runway.MDH), Brushes.Red, 2);
-            AddLine(X(mapt), Y(0), X(mapt), Y(Runway.MDH), Brushes.Red, 2);
+            // Decision height: horizontal line from the touchdown point to 3 NM (or the end of the display),
+            // and a dashed vertical line from its intercept with the glide path down to the runway axis.
+            double displayEnd = Runway.TouchdownNM + range;
+            AddLine(X(0), Y(Runway.MDH), X(Math.Min(Runway.DecisionHeightLineLength, displayEnd)), Y(Runway.MDH), Brushes.Red, 2);
+            double intercept = Runway.MissedApproachPointNM;
+            if (intercept <= displayEnd)
+            {
+                AddLine(X(intercept), Y(0), X(intercept), Y(Runway.MDH), Brushes.Red, 2, dashed: true);
+            }
             // Touchdown point: origin of the range marks and of the glide path.
             AddLine(X(0), Y(0), X(0), Y(0) - 12, Brushes.Yellow, 2);
             // Range marks, measured from the touchdown point.

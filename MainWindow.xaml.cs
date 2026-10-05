@@ -86,6 +86,14 @@ namespace AuroraPAR
             Vertical.SizeChanged += (s, e) => InvalidateViews();
             Horizontal.SizeChanged += (s, e) => InvalidateViews();
             SettingsButton.Click += SettingsButton_Click;
+            DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
+            DhDownButton.Click += (s, e) => SetDecisionHeight(runway.MDH - DecisionHeightStep);
+            DhTextBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == System.Windows.Input.Key.Enter) ApplyDecisionHeightText();
+            };
+            DhTextBox.LostFocus += (s, e) => ApplyDecisionHeightText();
+            DhTextBox.Text = FormatHeight(runway.MDH);
             ApplyProfile();
         }
 
@@ -209,6 +217,9 @@ namespace AuroraPAR
             {
                 Runway previous = runway;
                 runway = r;
+                // The decision height changed on the fly is not kept: back to the runway file value.
+                runway.MDH = runway.DefaultMDH;
+                DhTextBox.Text = FormatHeight(runway.MDH);
                 profileView.SetRunway(runway);
                 horizontalView.SetRunway(runway);
                 // Range for the new runway, as chosen in the profile (at start the startup rule applies instead).
@@ -227,6 +238,37 @@ namespace AuroraPAR
                 }
                 InvalidateViews();
             }
+        }
+
+        private const double DecisionHeightStep = 10;
+
+        private static string FormatHeight(double feet)
+        {
+            return feet.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Changes the decision height of the current runway for this session only (never saved).
+        /// </summary>
+        private void SetDecisionHeight(double feet)
+        {
+            runway.MDH = Math.Clamp(Math.Round(feet), 0, 5000);
+            DhTextBox.Text = FormatHeight(runway.MDH);
+            InvalidateViews();
+        }
+
+        private void ApplyDecisionHeightText()
+        {
+            if (double.TryParse(DhTextBox.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out double feet)
+                || double.TryParse(DhTextBox.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out feet))
+            {
+                if (Math.Round(feet) != runway.MDH)
+                {
+                    SetDecisionHeight(feet);
+                    return;
+                }
+            }
+            DhTextBox.Text = FormatHeight(runway.MDH);
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -382,7 +424,7 @@ namespace AuroraPAR
         }
         private void UpdateInfo()
         {
-            infoText.Text = $"RWY {runway.Designator}\nQNH {qnh}";
+            infoText.Text = $"RWY {runway.Designator}\nQNH {qnh}\nDH {FormatHeight(runway.MDH)} ft";
             if (aurora.Connected)
             {
                 statusText.Text = "STS OK";

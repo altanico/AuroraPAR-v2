@@ -50,6 +50,15 @@ namespace AuroraPAR
         /// </summary>
         public double MDH { get; set; } = 200;
         /// <summary>
+        /// Decision height from the runway file. <see cref="MDH"/> can be changed on the fly during the session
+        /// (never saved) and is reset to this value when the runway is selected again.
+        /// </summary>
+        public double DefaultMDH { get; set; } = 200;
+        /// <summary>
+        /// Length of the decision height line from the touchdown point, in NM.
+        /// </summary>
+        public const double DecisionHeightLineLength = 3;
+        /// <summary>
         /// Distance from the runway to be displayed in NM.
         /// </summary>
         public double Distance { get; set; } = 10.0;
@@ -314,6 +323,7 @@ namespace AuroraPAR
                         GlideSlope = glideSlope,
                         TCH = tch,
                         MDH = mdh,
+                        DefaultMDH = mdh,
                         Distance = distance,
                         DefaultDistance = distance
                     };
