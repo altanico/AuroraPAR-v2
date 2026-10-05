@@ -54,6 +54,16 @@ namespace AuroraPAR
         private readonly StackPanel infoPanel = new();
         private readonly TextBlock infoText = new() { FontSize = 14, Foreground = Brushes.White };
         private readonly TextBlock statusText = new() { FontSize = 14 };
+        private readonly TextBlock dataText = new() { FontSize = 14 };
+        /// <summary>
+        /// Above this interval between position updates, Aurora's traffic refresh rate is too slow for a PAR.
+        /// </summary>
+        private const double MaxGoodDataInterval = 1.5;
+        private readonly RefreshRateMonitor refreshMonitor = new();
+        /// <summary>
+        /// Measured interval between position updates from Aurora (s), NaN when unknown. Written by the refresh timer.
+        /// </summary>
+        private double dataInterval = double.NaN;
         private Runway runway = new()
         {
             ICAO = "EDDF",
@@ -79,6 +89,7 @@ namespace AuroraPAR
             horizontalView = new(Horizontal, runway);
             infoPanel.Children.Add(infoText);
             infoPanel.Children.Add(statusText);
+            infoPanel.Children.Add(dataText);
             Panel.SetZIndex(infoPanel, 20);
             Vertical.Children.Add(infoPanel);
             aurora = new();
@@ -355,6 +366,7 @@ namespace AuroraPAR
             TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
             infoText.TextAlignment = alignment;
             statusText.TextAlignment = alignment;
+            dataText.TextAlignment = alignment;
             InvalidateViews();
         }
 
@@ -430,6 +442,16 @@ namespace AuroraPAR
                         }
                     }
                 }
+                if (aurora.Connected)
+                {
+                    refreshMonitor.Update(aircrafts, DateTime.UtcNow);
+                    dataInterval = refreshMonitor.IntervalSeconds;
+                }
+                else
+                {
+                    refreshMonitor.Reset();
+                    dataInterval = double.NaN;
+                }
                 lastAircrafts = aircrafts;
                 Draw();
             }
@@ -486,6 +508,27 @@ namespace AuroraPAR
             {
                 statusText.Text = "STS FAIL";
                 statusText.Foreground = Brushes.Red;
+            }
+            // Measured update interval of the traffic (shown when there is moving traffic to measure it).
+            double interval = dataInterval;
+            if (double.IsNaN(interval))
+            {
+                dataText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                dataText.Visibility = Visibility.Visible;
+                string seconds = interval.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+                if (interval > MaxGoodDataInterval)
+                {
+                    dataText.Text = $"DATA {seconds}s - SET AURORA TRAFFIC REFRESH TO 0.5s";
+                    dataText.Foreground = Brushes.Red;
+                }
+                else
+                {
+                    dataText.Text = $"DATA {seconds}s";
+                    dataText.Foreground = Brushes.Green;
+                }
             }
         }
         private void Window_MouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)

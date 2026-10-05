@@ -13,6 +13,8 @@ AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR displ
 
 Range marks and the distance shown next to each aircraft are measured **from the touchdown point** (small yellow mark on the runway in both views), as controllers give them on final. The glide path, the extended centreline and their tolerance limits also start at the touchdown point: dashed between touchdown and threshold, solid beyond it. Aircraft are green when within tolerance and red when outside. Use the mouse wheel or the box on the right to change the displayed range. The DH can be changed on the fly with the **−/+** buttons or by typing it (10 ft steps): it is not saved and goes back to the `runways.par` value when the runway changes.
 
+**Traffic refresh check:** AuroraPAR measures how often the positions received from Aurora really change and shows it below the connection status (`DATA 0.5s` in green). If Aurora's traffic refresh rate is left at the normal 3 s, tracks move in jumps and a red warning appears (`DATA 3.0s - SET AURORA TRAFFIC REFRESH TO 0.5s`); it disappears by itself once the setting is changed. Only moving aircraft (above 50 kt) are measured, and about 10–20 seconds of traffic are needed.
+
 ## Download
 
 Go to the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section. Unzip it and run `AuroraPAR.exe` (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
@@ -68,6 +70,7 @@ Invalid or incomplete lines are ignored.
 - Refreshes no longer overlap; the METAR is requested once a minute instead of ten times a second; US altimeter settings (`A2992`) are converted to hPa.
 - Default range is 10 NM; the range box now follows the selected runway's default distance.
 - Profile view: callsign label correctly placed at airports above sea level.
+- Warning when Aurora's traffic refresh rate is too slow for a PAR.
 - Graphical runway editor, accepting coordinates in any common format.
 - `runways.par` is copied next to the program when building; a clear message is shown if it is missing.
 - Automatic build on GitHub (see *Download*).
