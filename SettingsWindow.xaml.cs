@@ -33,6 +33,16 @@ namespace AuroraPAR
             ExportButton.Click += (s, e) => ExportProfile();
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
             RunwayRightRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Right);
+            FixedRangeComboBox.ItemsSource = Ranges.Values;
+            StartRangeLastRadio.Checked += (s, e) => SetStartupRange(StartupRange.LastUsed);
+            StartRangeRunwayRadio.Checked += (s, e) => SetStartupRange(StartupRange.RunwayDefault);
+            StartRangeFixedRadio.Checked += (s, e) => SetStartupRange(StartupRange.Fixed);
+            FixedRangeComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || FixedRangeComboBox.SelectedItem is not double range) return;
+                Active.FixedStartupRange = range;
+                Commit();
+            };
             CloseButton.Click += (s, e) => Close();
             FileLocationText.Text = $"Settings file{(SettingsStore.IsPortable ? " (portable mode)" : "")}: {SettingsStore.FilePath}";
             RefreshControls();
@@ -54,6 +64,11 @@ namespace AuroraPAR
                 DeleteButton.IsEnabled = settings.Profiles.Count > 1;
                 RunwayLeftRadio.IsChecked = Active.RunwaySide == RunwaySide.Left;
                 RunwayRightRadio.IsChecked = Active.RunwaySide == RunwaySide.Right;
+                StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;
+                StartRangeRunwayRadio.IsChecked = Active.StartupRange == StartupRange.RunwayDefault;
+                StartRangeFixedRadio.IsChecked = Active.StartupRange == StartupRange.Fixed;
+                FixedRangeComboBox.SelectedIndex = Ranges.IndexOfClosest(Active.FixedStartupRange);
+                FixedRangeComboBox.IsEnabled = Active.StartupRange == StartupRange.Fixed;
             }
             finally
             {
@@ -167,6 +182,13 @@ namespace AuroraPAR
         {
             if (refreshing || Active.RunwaySide == side) return;
             Active.RunwaySide = side;
+            Commit();
+        }
+
+        private void SetStartupRange(StartupRange startupRange)
+        {
+            if (refreshing || Active.StartupRange == startupRange) return;
+            Active.StartupRange = startupRange;
             Commit();
         }
 

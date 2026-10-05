@@ -11,6 +11,43 @@ namespace AuroraPAR
     }
 
     /// <summary>
+    /// Display range used when the program starts.
+    /// </summary>
+    internal enum StartupRange
+    {
+        /// <summary>The range in use when the program was last closed.</summary>
+        LastUsed,
+        /// <summary>The default range of the runway, from runways.par.</summary>
+        RunwayDefault,
+        /// <summary>Always <see cref="Profile.FixedStartupRange"/>.</summary>
+        Fixed
+    }
+
+    /// <summary>
+    /// Display ranges available, in NM.
+    /// </summary>
+    internal static class Ranges
+    {
+        public static readonly double[] Values = [1, 2.5, 5, 10, 15, 20];
+
+        /// <summary>
+        /// Index of the available range closest to the given one.
+        /// </summary>
+        public static int IndexOfClosest(double range)
+        {
+            int best = 0;
+            for (int i = 1; i < Values.Length; i++)
+            {
+                if (Math.Abs(Values[i] - range) < Math.Abs(Values[best] - range))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
+    }
+
+    /// <summary>
     /// A named set of user preferences. New preferences are added here as properties with a default value:
     /// profiles saved by older versions simply get the default for the missing ones.
     /// </summary>
@@ -22,6 +59,14 @@ namespace AuroraPAR
         /// mirrored horizontally and the azimuth view is rotated by 180°, so left/right of the approach stay correct.
         /// </summary>
         public RunwaySide RunwaySide { get; set; } = RunwaySide.Left;
+        /// <summary>
+        /// Display range used when the program starts.
+        /// </summary>
+        public StartupRange StartupRange { get; set; } = StartupRange.LastUsed;
+        /// <summary>
+        /// Range in NM used at start when <see cref="StartupRange"/> is Fixed.
+        /// </summary>
+        public double FixedStartupRange { get; set; } = 15;
 
         /// <summary>
         /// Deep copy (through JSON, so it stays correct when nested settings are added).

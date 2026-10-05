@@ -32,7 +32,7 @@ namespace AuroraPAR
         private readonly ProfileView profileView;
         private readonly HorizontalView horizontalView;
         private readonly Aurora aurora;
-        private readonly Distance[] distances = new Distance[] {1, 2.5, 5, 10, 15, 20};
+        private readonly Distance[] distances = Ranges.Values.Select(v => (Distance)v).ToArray();
         private string dataPath = "runways.par";
         private volatile bool Open = true;
         private readonly AppSettings settings;
@@ -178,15 +178,22 @@ namespace AuroraPAR
                 MessageBox.Show(this, $"Cannot read the runway file {Path.GetFullPath(dataPath)}:\n{ex.Message}", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
-            // Restore the runway and range used last time.
+            // Restore the runway used last time (selecting it also sets its default range).
             Runway? last = runways.FirstOrDefault(r => r.ToString() == settings.LastRunway);
             if (last != null)
             {
                 RunwayComboBox.SelectedItem = last;
-                if (settings.LastRange is double range)
-                {
-                    DistanceComboBox.SelectedIndex = IndexOfDistance(range);
-                }
+            }
+            // Range at start, as chosen in the profile.
+            double? startRange = settings.Active.StartupRange switch
+            {
+                StartupRange.LastUsed => last != null ? settings.LastRange : null,
+                StartupRange.Fixed => settings.Active.FixedStartupRange,
+                _ => null
+            };
+            if (startRange is double range)
+            {
+                DistanceComboBox.SelectedIndex = IndexOfDistance(range);
             }
             timer.Start();
             await ConnectionLoop();
@@ -272,15 +279,7 @@ namespace AuroraPAR
         /// </summary>
         private int IndexOfDistance(double distance)
         {
-            int best = 0;
-            for (int i = 1; i < distances.Length; i++)
-            {
-                if (Math.Abs(distances[i] - distance) < Math.Abs(distances[best] - distance))
-                {
-                    best = i;
-                }
-            }
-            return best;
+            return Ranges.IndexOfClosest(distance);
         }
 
         private void DistanceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -23,6 +23,7 @@ Click **Settings...** to manage profiles and display options. Changes are applie
 
 - **Profiles:** several named profiles can be kept and switched; *Duplicate*, *Rename*, *Delete*, and *Export* / *Import* to share a profile (a `.json` file) with other controllers.
 - **Runway position:** left or right of the screen. With the runway on the right the azimuth view is rotated by 180°, so the side of the centreline shown above/below stays consistent with the direction of flight.
+- **Range at start:** last used, the runway's default from `runways.par`, or a fixed value.
 - The runway, range, window size and position (and whether it was maximized) are restored at the next start. If the saved position is no longer on any screen (e.g. a monitor was disconnected), the window is centred on the primary screen.
 
 Settings are saved in `AuroraPAR.settings.json` in the user's settings folder (`%AppData%\AuroraPAR` on Windows), so they are kept when a new version is downloaded. **Portable mode:** create an empty file named `AuroraPAR.settings.json` next to `AuroraPAR.exe`, and the program will use that one instead. A damaged settings file is kept as `AuroraPAR.settings.json.bad` and the defaults are used.
