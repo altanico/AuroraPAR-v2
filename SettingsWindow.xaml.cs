@@ -1,7 +1,9 @@
 ﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using Microsoft.Win32;
 
 namespace AuroraPAR
@@ -283,7 +285,8 @@ namespace AuroraPAR
             TextBlock text = new() { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 2, 8, 2) };
             ComboBox shapeBox = new()
             {
-                ItemsSource = shapes.Select(Symbols.DisplayName).ToList(),
+                ItemsSource = shapes.Select(shape => new SymbolChoice(shape)).ToList(),
+                ItemTemplate = SymbolTemplate,
                 Margin = new Thickness(0, 2, 6, 2)
             };
             TextBox sizeBox = new()
@@ -341,6 +344,54 @@ namespace AuroraPAR
                 shapeBox.SelectedIndex = Array.IndexOf(shapes, get(Active).Shape);
                 sizeBox.Text = FormatNumber(get(Active).Size);
             });
+        }
+
+        /// <summary>
+        /// An item of the symbol lists: the drawn symbol followed by its name.
+        /// </summary>
+        public sealed class SymbolChoice
+        {
+            internal SymbolChoice(SymbolShape shape)
+            {
+                Name = Symbols.DisplayName(shape);
+                Icon = Symbols.Create(shape, 14);
+                Fill = Symbols.IsFilled(shape) ? Brushes.Black : null;
+            }
+
+            public string Name { get; }
+            public Geometry Icon { get; }
+            public Brush? Fill { get; }
+        }
+
+        /// <summary>
+        /// Shows a symbol choice as the drawn symbol (centred in a small box) and its name.
+        /// </summary>
+        private static readonly DataTemplate SymbolTemplate = CreateSymbolTemplate();
+
+        private static DataTemplate CreateSymbolTemplate()
+        {
+            FrameworkElementFactory panel = new(typeof(StackPanel));
+            panel.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+            FrameworkElementFactory box = new(typeof(Canvas));
+            box.SetValue(WidthProperty, 22.0);
+            box.SetValue(HeightProperty, 18.0);
+            box.SetValue(MarginProperty, new Thickness(0, 0, 6, 0));
+            FrameworkElementFactory path = new(typeof(System.Windows.Shapes.Path));
+            path.SetValue(Canvas.LeftProperty, 11.0);
+            path.SetValue(Canvas.TopProperty, 9.0);
+            path.SetValue(System.Windows.Shapes.Shape.StrokeProperty, Brushes.Black);
+            path.SetValue(System.Windows.Shapes.Shape.StrokeThicknessProperty, 1.5);
+            path.SetBinding(System.Windows.Shapes.Path.DataProperty, new Binding(nameof(SymbolChoice.Icon)));
+            path.SetBinding(System.Windows.Shapes.Shape.FillProperty, new Binding(nameof(SymbolChoice.Fill)));
+            box.AppendChild(path);
+            FrameworkElementFactory text = new(typeof(TextBlock));
+            text.SetBinding(TextBlock.TextProperty, new Binding(nameof(SymbolChoice.Name)));
+            text.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+            panel.AppendChild(box);
+            panel.AppendChild(text);
+            DataTemplate template = new() { VisualTree = panel };
+            template.Seal();
+            return template;
         }
 
         private void BuildRadarFields()
