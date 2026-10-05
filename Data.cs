@@ -86,6 +86,14 @@ namespace AuroraPAR
         public double TouchdownNM => TouchdownM / 1852;
         public const double FeetPerNM = 6076.11549;
         /// <summary>
+        /// Half angle of the azimuth scan limits, in degrees.
+        /// </summary>
+        public const double AzimuthScanHalfAngle = 10;
+        /// <summary>
+        /// Angle of the upper elevation scan limit, in degrees.
+        /// </summary>
+        public double ElevationScanAngle => GlideSlope + 5;
+        /// <summary>
         /// Vertical tolerance around the glide path, in degrees (each side).
         /// </summary>
         public double GlidePathTolerance { get; set; } = 0.5;
@@ -163,7 +171,12 @@ namespace AuroraPAR
         {
             double d = Distance(runway);
             double xt = LateralOffset(runway);
-            return Math.Sqrt(Math.Max(0, d * d - xt * xt));
+            double along = Math.Sqrt(Math.Max(0, d * d - xt * xt));
+            // Positive on the approach side of the threshold, negative once the aircraft has passed it
+            // (over the runway): the approach direction is the opposite of the runway heading.
+            double approachBearing = (runway.Heading + 180) % 360;
+            bool pastThreshold = Math.Cos((BearingFromRunway(runway) - approachBearing) * Math.PI / 180) < 0;
+            return pastThreshold ? -along : along;
         }
         /// <summary>
         /// Distance from the touchdown point measured along the extended runway centreline, in NM.
@@ -226,15 +239,25 @@ namespace AuroraPAR
             double bearingToAircraft = (Math.Atan2(y, x) * 180 / Math.PI + 360) % 360;
             return bearingToAircraft;
         }
+        /// <summary>
+        /// True when the aircraft is inside the scan limits drawn on screen, also over the runway after the threshold:
+        /// between the far end of the runway and the end of the displayed range, inside the azimuth cone,
+        /// above the threshold elevation and below the upper elevation scan limit.
+        /// The cones start at the far end of the runway, as drawn.
+        /// </summary>
         public bool IsDisplayed(Runway runway)
         {
-            double diff = (BearingFromRunway(runway) - runway.Heading + 360) % 360 - 180;
-            //Prevent opposite runway
-            if (Math.Abs(diff) >= 10) return false;
-            //Prevent far away aircrafts
-            if (Distance(runway) > runway.Distance) return false;
-            //Prevent aircrafts below runway elevation
-            if (Altitude <= runway.Elevation) return false;
+            // Distance from the far end of the runway, along the centreline.
+            double fromRunwayEnd = runway.LengthNM + AlongTrackDistance(runway);
+            double coneLength = runway.LengthNM + runway.Distance;
+            if (fromRunwayEnd < 0 || fromRunwayEnd > coneLength) return false;
+            // Azimuth scan limits.
+            double azimuthHalfWidth = fromRunwayEnd / coneLength * runway.Distance * Math.Tan(Runway.AzimuthScanHalfAngle * Math.PI / 180);
+            if (Math.Abs(LateralOffset(runway)) > azimuthHalfWidth) return false;
+            // Elevation scan limits: above the ground, below the upper limit.
+            double height = Altitude - runway.Elevation;
+            if (height <= 0) return false;
+            if (height > fromRunwayEnd * Math.Tan(runway.ElevationScanAngle * Math.PI / 180) * Runway.FeetPerNM) return false;
             return true;
         }
     }

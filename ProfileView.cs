@@ -15,7 +15,7 @@ namespace AuroraPAR
         /// <summary>
         /// Angle of the upper scan limit, in degrees.
         /// </summary>
-        private double ScanAngle => Runway.GlideSlope + 5;
+        private double ScanAngle => Runway.ElevationScanAngle;
 
         protected override void CalculateScale()
         {

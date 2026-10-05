@@ -15,7 +15,7 @@ namespace AuroraPAR
         /// <summary>
         /// Half angle of the scan limits, in degrees.
         /// </summary>
-        private const double ScanHalfAngle = 10;
+        private const double ScanHalfAngle = Runway.AzimuthScanHalfAngle;
 
         protected override bool FlipVertically => true;
 

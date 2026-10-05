@@ -51,6 +51,7 @@ Invalid or incomplete lines are ignored.
 
 ## Changes from the original
 
+- Aircraft stay visible while inside the drawn scan limits, also over the runway after the threshold (previously they disappeared when crossing it).
 - Settings window with user profiles (saved, exportable/importable) and runway on the left or right of the screen.
 - Drawing rewritten: screen elements are updated instead of being recreated at every refresh.
 - Fixed traffic disappearing until restart: answers from Aurora are now matched to their request, so one late answer can no longer shift all the following ones.
