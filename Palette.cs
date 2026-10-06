@@ -23,6 +23,8 @@ namespace AuroraPAR
         public required Brush DecisionHeight { get; init; }
         public required Brush Touchdown { get; init; }
         public required Brush RangeMark { get; init; }
+        /// <summary>Intermediate range marks (no distance written), e.g. the half miles at 5 NM.</summary>
+        public required Brush RangeMarkMinor { get; init; }
         public required Brush RangeText { get; init; }
         public required Brush ScaleText { get; init; }
         public required Brush TrackIn { get; init; }
@@ -39,6 +41,7 @@ namespace AuroraPAR
             DecisionHeight = Brushes.Red,
             Touchdown = Brushes.Yellow,
             RangeMark = Brushes.Green,
+            RangeMarkMinor = Brushes.Green,
             RangeText = Brushes.Yellow,
             ScaleText = Brushes.Gray,
             TrackIn = Brushes.Green,
@@ -59,6 +62,7 @@ namespace AuroraPAR
             DecisionHeight = Phosphor0(0.6),
             Touchdown = Phosphor0(0.9),
             RangeMark = Phosphor0(0.5),
+            RangeMarkMinor = Phosphor0(0.3),
             RangeText = Phosphor0(0.55),
             ScaleText = Phosphor0(0.5),
             TrackIn = Phosphor0(1),

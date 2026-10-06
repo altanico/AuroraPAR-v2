@@ -112,17 +112,20 @@ namespace AuroraPAR
                 AddSymbol(Options.TouchdownSymbol, X(0), H - Options.TouchdownSymbol.Size / 2, Options.Palette.Touchdown);
             }
             // Range marks, measured from the touchdown point, between the scan limits.
-            int num = Runway.Distance == 15 ? 15 : 10;
-            for (int i = 1; i <= num; i++)
+            foreach ((double distance, bool major) in RangeMarks.For(range))
             {
-                double markNM = length - Runway.TouchdownNM + i * range / num;
+                double markNM = length - Runway.TouchdownNM + distance;
                 double top = ScanY(markNM, upper);
                 double bottom = lower > 0 ? ScanY(markNM, lower) : H;
                 if (top < bottom)
                 {
-                    AddLine(markNM * xscale, bottom, markNM * xscale, top, Options.Palette.RangeMark, 1);
+                    AddLine(markNM * xscale, bottom, markNM * xscale, top,
+                        major ? Options.Palette.RangeMark : Options.Palette.RangeMarkMinor, 1, dashed: !major);
                 }
-                AddText($"{(i * range / num).ToString(System.Globalization.CultureInfo.InvariantCulture)}NM", markNM * xscale, H, -10, Options.Palette.RangeText, aboveAnchor: true);
+                if (major)
+                {
+                    AddText(RangeMarks.Label(distance), markNM * xscale, H, -10, Options.Palette.RangeText, aboveAnchor: true);
+                }
             }
             if (Options.ShowAltitudeScale)
             {

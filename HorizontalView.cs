@@ -100,11 +100,11 @@ namespace AuroraPAR
                 AddLine(interceptNM * xscale, ScanY(interceptNM, left), interceptNM * xscale, ScanY(interceptNM, right), Options.Palette.DecisionHeight, 2);
             }
             // Range marks, measured from the touchdown point, between the scan limits.
-            int num = Runway.Distance == 15 ? 15 : 10;
-            for (int i = 1; i <= num; i++)
+            foreach ((double distance, bool major) in RangeMarks.For(range))
             {
-                double markNM = i * range / num - Runway.TouchdownNM + length;
-                AddLine(markNM * xscale, ScanY(markNM, left), markNM * xscale, ScanY(markNM, right), Options.Palette.RangeMark, 1);
+                double markNM = distance - Runway.TouchdownNM + length;
+                AddLine(markNM * xscale, ScanY(markNM, left), markNM * xscale, ScanY(markNM, right),
+                    major ? Options.Palette.RangeMark : Options.Palette.RangeMarkMinor, 1, dashed: !major);
             }
         }
 
