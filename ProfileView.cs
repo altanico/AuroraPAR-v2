@@ -122,7 +122,7 @@ namespace AuroraPAR
                 {
                     AddLine(markNM * xscale, bottom, markNM * xscale, top, Options.Palette.RangeMark, 1);
                 }
-                AddText($"{i * range / num}NM", markNM * xscale, H, -10, Options.Palette.RangeText, aboveAnchor: true);
+                AddText($"{(i * range / num).ToString(System.Globalization.CultureInfo.InvariantCulture)}NM", markNM * xscale, H, -10, Options.Palette.RangeText, aboveAnchor: true);
             }
             if (Options.ShowAltitudeScale)
             {
