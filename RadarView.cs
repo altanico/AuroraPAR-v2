@@ -559,6 +559,7 @@ namespace AuroraPAR
             Panel.SetZIndex(track.Label, LabelZIndex);
             track.Leader.IsHitTestVisible = false;
             track.Label.Cursor = Cursors.SizeAll;
+            ToolTips.KeepOpen(track.Label);
             track.Label.ToolTip = "Drag to move · double click: back to its place · right click: hide (right click near the track or key L twice to show it again)";
             Canvas.Children.Add(track.Symbol);
             Canvas.Children.Add(track.Leader);
@@ -768,6 +769,7 @@ namespace AuroraPAR
                 StrokeDashArray = Theme.DashArray(reminder.Dash),
                 ToolTip = reminder.ToolTip()
             };
+            ToolTips.KeepOpen(line);
             AddStatic(line);
         }
 
@@ -784,6 +786,7 @@ namespace AuroraPAR
                 Fill = Symbols.IsFilled(reminder.Symbol) ? brush : Brushes.Transparent,
                 ToolTip = reminder.ToolTip()
             };
+            ToolTips.KeepOpen(path);
             Canvas.SetLeft(path, ToScreenX(x));
             Canvas.SetTop(path, ToScreenY(y));
             AddStatic(path);

@@ -119,7 +119,8 @@ namespace AuroraPAR
             profileView = new(Vertical, runway, radar, viewOptions);
             horizontalView = new(Horizontal, runway, radar, viewOptions);
             infoPanel.Children.Add(infoText);
-            infoPanel.Children.Add(courseText);
+            infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob }) ToolTips.KeepOpen(knob);
             infoPanel.Children.Add(infoText2);
             infoPanel.Children.Add(tiltText);
             infoPanel.Children.Add(statusText);
@@ -819,6 +820,11 @@ namespace AuroraPAR
             profileView.Render(aircrafts);
             horizontalView.Render(aircrafts);
         }
+        private static void SetText(TextBlock block, string text)
+        {
+            if (block.Text != text) block.Text = text;
+        }
+
         private void UpdateInfo()
         {
             if (viewOptions.Analog) UpdateKnobs();
@@ -831,9 +837,10 @@ namespace AuroraPAR
                 : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
             string course = runway.FinalCourse(profile.MagneticVariation).ToString("000", System.Globalization.CultureInfo.InvariantCulture);
             string glidePath = runway.GlideSlope.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture);
-            infoText.Text = $"RWY {runway.Designator}";
-            courseText.Text = $"CRS {course}";
-            infoText2.Text = $"GP {glidePath}°\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
+            // Texts changed only when different, so an open tooltip is not disturbed by the refresh.
+            SetText(infoText, $"RWY {runway.Designator}");
+            SetText(courseText, $"CRS {course}");
+            SetText(infoText2, $"GP {glidePath}°\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}");
             if (viewOptions.Analog)
             {
                 consolePanel.Update(new ConsoleData(

@@ -53,6 +53,11 @@ namespace AuroraPAR
         private readonly Lamp refreshLamp = new();
         private readonly Lamp tiltLamp = new();
         private readonly FrameworkElement refreshRow;
+        /// <summary>
+        /// Tooltip of ANT. R/R: one object whose text is updated, so it stays open while the measured value changes
+        /// (replacing the tooltip at every refresh closed it after a fraction of a second).
+        /// </summary>
+        private readonly TextBlock refreshToolTipText = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 420 };
 
         public ConsolePanel()
         {
@@ -87,6 +92,7 @@ namespace AuroraPAR
             });
             stack.Children.Add(LampRow(statusLamp, "STS", "Connection to Aurora: green connected, red not connected."));
             refreshRow = LampRow(refreshLamp, "ANT. R/R", "");
+            refreshRow.ToolTip = new ToolTip { Content = refreshToolTipText };
             stack.Children.Add(refreshRow);
             stack.Children.Add(LampRow(tiltLamp, "TILT", "Antenna tilted (not in neutral position)."));
             Child = stack;
@@ -108,6 +114,7 @@ namespace AuroraPAR
         private static FrameworkElement Row(TextBlock label, SegmentDisplay display, string toolTip)
         {
             DockPanel row = new() { Margin = new Thickness(0, 0, 0, 6), ToolTip = toolTip, Background = Brushes.Transparent };
+            ToolTips.KeepOpen(row);
             display.HorizontalAlignment = HorizontalAlignment.Right;
             DockPanel.SetDock(display, Dock.Right);
             row.Children.Add(display);
@@ -124,6 +131,7 @@ namespace AuroraPAR
                 ToolTip = toolTip,
                 Background = Brushes.Transparent
             };
+            ToolTips.KeepOpen(row);
             lamp.Margin = new Thickness(0, 0, 10, 0);
             row.Children.Add(lamp);
             TextBlock label = Label(text);
@@ -164,7 +172,7 @@ namespace AuroraPAR
                 + "OFF: not measured yet.\n\n"
                 + measured;
             // Changed only when different, so an open tooltip is not closed at every refresh.
-            if (!Equals(refreshRow.ToolTip, toolTip)) refreshRow.ToolTip = toolTip;
+            if (refreshToolTipText.Text != toolTip) refreshToolTipText.Text = toolTip;
             tiltLamp.State = data.TiltElevation != 0 || data.TiltAzimuth != 0 ? LampState.Amber : LampState.Off;
         }
 
