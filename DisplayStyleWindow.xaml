@@ -13,6 +13,26 @@
                     <Button Name="RangeMarksDefaultButton" Content="Default" HorizontalAlignment="Left" Width="80" Height="26" Margin="0,10,0,0"/>
                 </StackPanel>
             </TabItem>
+            <TabItem Header="Colours &amp; lines">
+                <StackPanel Margin="10">
+                    <TextBlock TextWrapping="Wrap" MaxWidth="600" Foreground="Gray"
+                               Text="Modern display: colour, line style and width of each element. Plots are the history dots, tracks the aircraft symbols. Changes are applied immediately."/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="520" Margin="0,10,0,0">
+                        <Grid Name="StyleGrid"/>
+                    </ScrollViewer>
+                    <Button Name="StyleDefaultButton" Content="Default" HorizontalAlignment="Left" Width="80" Height="26" Margin="0,10,0,0"/>
+                    <GroupBox Header="Analog scope" Padding="8" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" MaxWidth="580" Foreground="Gray"
+                                       Text="The analog scope has a fixed theme: choose the colour of its phosphor, all the elements use it with different brightness."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Phosphor:" VerticalAlignment="Center"/>
+                                <ComboBox Name="PhosphorComboBox" Width="190" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
         </TabControl>
         <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
     </StackPanel>
