@@ -34,3 +34,14 @@ jobs:
             publish/AuroraPAR.exe
             publish/runways.par
             publish/MANUAL.md
+
+      - name: Build AuroraCoord (standalone coordination panel)
+        run: >
+          dotnet publish Coord/AuroraCoord.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish-coord
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AuroraCoord-win-x64
+          path: publish-coord/AuroraCoord.exe

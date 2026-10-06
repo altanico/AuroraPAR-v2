@@ -262,7 +262,9 @@ The knobs always follow the real state, also when it is changed with the keyboar
 
 ## 9b. Coordination panel
 
-The **Coordination** button opens a small panel for **voiceless coordination** between the radar (PAR / approach) and the tower, as on the light panels of real PAR rooms. The tower controller runs AuroraPAR too and opens only this panel.
+The **Coordination** button opens a small panel for **voiceless coordination** between the radar (PAR / approach) and the tower, as on the light panels of real PAR rooms.
+
+**For the tower: AuroraCoord.** The tower controller does not need the PAR display: download **AuroraCoord-win-x64** (same *Actions* page as AuroraPAR) and run `AuroraCoord.exe`, a small program with only this panel. It works with the panel inside AuroraPAR (and two AuroraCoord can also work together). It needs Aurora running on the same PC, like AuroraPAR. Its options are saved in `%AppData%\AuroraPAR\AuroraCoord.settings.json` (or in a file with that name next to `AuroraCoord.exe`, portable mode).
 
 | | |
 |---|---|

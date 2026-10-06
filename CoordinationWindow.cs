@@ -17,7 +17,6 @@ namespace AuroraPAR
     /// </summary>
     internal sealed class CoordinationWindow : Window
     {
-        private readonly AppSettings settings;
         private readonly CoordinationLink link = new();
         private readonly CoordinationLamp[] lamps = new CoordinationLamp[CoordinationSettings.Lights + 1];
         private readonly TextBlock status = new() { Foreground = new SolidColorBrush(Color.FromRgb(0xD8, 0xD8, 0xD0)), FontSize = 12, Margin = new Thickness(0, 0, 0, 10) };
@@ -34,17 +33,22 @@ namespace AuroraPAR
         private bool flashPhase;
         private bool loading;
 
-        private CoordinationSettings Options => settings.Coordination;
+        private CoordinationSettings Options { get; }
 
-        public CoordinationWindow(AppSettings settings, Action save, string? callsign)
+        /// <summary>Panel colour, as the console of the analog scope.</summary>
+        private static readonly Color PanelColor = Color.FromRgb(0x2E, 0x30, 0x2C);
+
+        /// <param name="options">Options of the panel (saved by <paramref name="save"/>).</param>
+        /// <param name="callsign">Callsign connected in Aurora, if known (see <see cref="SetCallsign"/>).</param>
+        public CoordinationWindow(CoordinationSettings options, Action save, string? callsign)
         {
-            this.settings = settings;
+            Options = options;
             this.save = save;
             this.callsign = callsign;
             Title = "Aurora PAR - Coordination";
             SizeToContent = SizeToContent.WidthAndHeight;
             ResizeMode = ResizeMode.CanMinimize;
-            Background = new SolidColorBrush(ScopeBezel.PanelColor);
+            Background = new SolidColorBrush(PanelColor);
             Topmost = Options.Topmost;
             try
             {

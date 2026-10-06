@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- AuroraCoord: the coordination light panel as a standalone program (for the tower, who does not need the PAR display).
+       It uses the same source files as the panel inside AuroraPAR, so the two always work together. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>AuroraCoord</AssemblyName>
+    <RootNamespace>AuroraPAR</RootNamespace>
+    <ApplicationIcon>..\AuroraPAR.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Coordination.cs" Link="Coordination.cs" />
+    <Compile Include="..\CoordinationWindow.cs" Link="CoordinationWindow.cs" />
+    <Compile Include="..\ColorPicker.cs" Link="ColorPicker.cs" />
+    <Compile Include="..\ColorText.cs" Link="ColorText.cs" />
+    <Resource Include="..\AuroraPAR.ico" Link="AuroraPAR.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
+  </ItemGroup>
+
+</Project>

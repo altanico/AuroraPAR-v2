@@ -179,7 +179,7 @@ namespace AuroraPAR
         {
             if (coordinationWindow == null)
             {
-                coordinationWindow = new CoordinationWindow(settings, () => SettingsStore.Save(settings), connectedCallsign);
+                coordinationWindow = new CoordinationWindow(settings.Coordination, () => SettingsStore.Save(settings), connectedCallsign);
                 coordinationWindow.Closed += (s, e) => coordinationWindow = null;
                 coordinationWindow.Show();
             }

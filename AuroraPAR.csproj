@@ -16,6 +16,13 @@
     <Resource Include="Fonts\B612-Regular.ttf" />
   </ItemGroup>
 
+  <!-- The standalone coordination panel (Coord folder) is a separate program. -->
+  <ItemGroup>
+    <Compile Remove="Coord\**" />
+    <None Remove="Coord\**" />
+    <Page Remove="Coord\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- MQTT client for the coordination light panel (MIT license). -->
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
