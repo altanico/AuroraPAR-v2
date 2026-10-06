@@ -54,6 +54,27 @@ namespace AuroraPAR
         }
 
         /// <summary>
+        /// Seconds since the beam last passed over <paramref name="position"/> (0..1, see <see cref="Position"/>) in a
+        /// view: used by the analog scope to light up an echo when the beam hits it, then let it fade.
+        /// </summary>
+        public static double SinceLastPass(double t, ScanEffectSpeed speed, bool elevation, double position)
+        {
+            double p = SweepSeconds(speed);
+            double cycle = 4 * p;
+            position = Math.Clamp(position, 0, 1);
+            // Times within the cycle when the beam is at this position (see Position).
+            double first = (elevation ? 0 : p) + position * p;
+            double second = (elevation ? 2 * p : 3 * p) + (1 - position) * p;
+            return Math.Min(Modulo(t - first, cycle), Modulo(t - second, cycle));
+        }
+
+        private static double Modulo(double value, double divisor)
+        {
+            double r = value % divisor;
+            return r < 0 ? r + divisor : r;
+        }
+
+        /// <summary>
         /// Beam and glow lines of a view at time <paramref name="t"/>: position (see <see cref="Position"/>, null = not
         /// drawn) and opacity of each line, the beam first. The glow fades also after the beam has moved to the other view.
         /// </summary>

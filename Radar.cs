@@ -91,6 +91,26 @@ namespace AuroraPAR
         }
 
         /// <summary>
+        /// Elevation (or azimuth) only back to neutral. Returns true if it moved.
+        /// </summary>
+        public bool NeutralElevation()
+        {
+            bool moved = TiltElevation != 0;
+            TiltElevation = 0;
+            return moved;
+        }
+
+        public bool NeutralAzimuth()
+        {
+            bool moved = TiltAzimuth != 0;
+            TiltAzimuth = 0;
+            return moved;
+        }
+
+        /// <summary>Number of tilt steps from neutral to the maximum.</summary>
+        public int TiltSteps => TiltStep > 0 ? (int)Math.Ceiling(Math.Round(TiltMax / TiltStep, 3)) : 0;
+
+        /// <summary>
         /// Distance of the antenna from the far end of the runway, in NM.
         /// </summary>
         public static double AntennaFromRunwayEnd(Runway runway) => runway.LengthNM / 2;

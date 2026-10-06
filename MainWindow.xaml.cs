@@ -34,6 +34,14 @@ namespace AuroraPAR
         private readonly HorizontalView horizontalView;
         /// <summary>Clock of the antenna scan effect.</summary>
         private readonly System.Diagnostics.Stopwatch sweepClock = System.Diagnostics.Stopwatch.StartNew();
+        /// <summary>Knobs of the analog console.</summary>
+        private readonly Knob rangeKnob = new() { Title = "RANGE NM", ToolTip = "Range. Turn with the mouse wheel, drag up/down or click right/left." };
+        private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = "Antenna elevation tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
+        private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = "Antenna azimuth tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
+        private readonly Knob dhKnob = new() { Title = "DH", ToolTip = "Decision height, 10 ft per step. Turn with the mouse wheel, drag up/down or click right/left; double click: runway value." };
+        private static readonly Brush AmberBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xB0, 0x30));
+        private static readonly Brush PanelTextBrush = CreateFrozenBrush(Color.FromRgb(0xD8, 0xD8, 0xD0));
+        private readonly Brush glassBrush = ScopeBezel.CreateGlassBrush();
         private readonly Aurora aurora;
         private readonly Distance[] distances = Ranges.Values.Select(v => (Distance)v).ToArray();
         /// <summary>
@@ -125,6 +133,9 @@ namespace AuroraPAR
             TiltRightButton.Click += (s, e) => TiltAntenna(0, 1);
             TiltNeutralButton.Click += (s, e) => NeutralAntenna();
             LabelsButton.Click += (s, e) => ToggleLabels();
+            ModeButton.Click += (s, e) => ToggleDisplayMode();
+            BuildKnobs();
+            DisplayArea.SizeChanged += (s, e) => LayoutDisplay();
             PreviewKeyDown += MainWindow_PreviewKeyDown;
             RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
@@ -144,8 +155,176 @@ namespace AuroraPAR
         {
             Profile profile = settings.Active;
             double t = sweepClock.Elapsed.TotalSeconds;
-            profileView.RenderSweep(profile.ScanEffect, t, profile.ScanEffectSpeed);
-            horizontalView.RenderSweep(profile.ScanEffect, t, profile.ScanEffectSpeed);
+            // The analog scope always has its beam.
+            bool enabled = profile.ScanEffect || viewOptions.Analog;
+            profileView.RenderSweep(enabled, t, profile.ScanEffectSpeed);
+            horizontalView.RenderSweep(enabled, t, profile.ScanEffectSpeed);
+        }
+
+        private static Brush CreateFrozenBrush(Color color)
+        {
+            SolidColorBrush brush = new(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        /// <summary>
+        /// Knobs of the analog console: range, antenna tilt (elevation, azimuth) and decision height.
+        /// </summary>
+        private void BuildKnobs()
+        {
+            rangeKnob.Positions = Ranges.Values.Length;
+            rangeKnob.LabelFor = i => Ranges.Values[i].ToString(System.Globalization.CultureInfo.InvariantCulture);
+            rangeKnob.Turned += steps =>
+            {
+                DistanceComboBox.SelectedIndex = Math.Clamp(DistanceComboBox.SelectedIndex + steps, 0, DistanceComboBox.Items.Count - 1);
+                UpdateKnobs();
+            };
+            elevationKnob.Turned += steps => TiltAntenna(steps, 0);
+            elevationKnob.Reset += () =>
+            {
+                if (radar.NeutralElevation()) InvalidateViews();
+                UpdateKnobs();
+            };
+            azimuthKnob.Turned += steps => TiltAntenna(0, steps);
+            azimuthKnob.Reset += () =>
+            {
+                if (radar.NeutralAzimuth()) InvalidateViews();
+                UpdateKnobs();
+            };
+            dhKnob.Turned += steps => SetDecisionHeight(runway.MDH + steps * DecisionHeightStep);
+            dhKnob.Reset += () => SetDecisionHeight(runway.DefaultMDH);
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob })
+            {
+                KnobPanel.Children.Add(knob);
+            }
+        }
+
+        /// <summary>
+        /// Puts the knobs in the position of the current range and tilt (also changed with keyboard and mouse wheel).
+        /// </summary>
+        private void UpdateKnobs()
+        {
+            int steps = radar.TiltSteps;
+            foreach ((Knob knob, double tilt, string low, string high) in new[]
+            {
+                (elevationKnob, radar.TiltElevation, "DN", "UP"),
+                (azimuthKnob, radar.TiltAzimuth, "L", "R")
+            })
+            {
+                if (knob.Positions != 2 * steps + 1)
+                {
+                    knob.Positions = 2 * steps + 1;
+                    knob.LabelFor = i => i == 0 ? low : i == steps ? "0" : i == 2 * steps ? high : null;
+                    knob.InvalidateVisual();
+                }
+                knob.Index = steps + (radar.TiltStep > 0 ? (int)Math.Round(tilt / radar.TiltStep) : 0);
+            }
+            rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
+        }
+
+        /// <summary>
+        /// Modern display or analog scope: switched with the button or the A key, saved in the profile.
+        /// </summary>
+        private void ToggleDisplayMode()
+        {
+            Profile profile = settings.Active;
+            profile.DisplayMode = profile.DisplayMode == DisplayMode.Analog ? DisplayMode.Modern : DisplayMode.Analog;
+            SettingsStore.Save(settings);
+            ApplyProfile();
+        }
+
+        /// <summary>Glow of the phosphor of the analog scope.</summary>
+        private readonly System.Windows.Media.Effects.DropShadowEffect phosphorGlow = new()
+        {
+            Color = Palette.Phosphor,
+            ShadowDepth = 0,
+            BlurRadius = 8,
+            Opacity = 0.85
+        };
+
+        /// <summary>
+        /// Switches the window between the modern display and the analog console.
+        /// </summary>
+        private void ApplyDisplayMode(bool analog)
+        {
+            Panel target = analog ? PanelInfoHost : Vertical;
+            if (infoPanel.Parent != target)
+            {
+                (infoPanel.Parent as Panel)?.Children.Remove(infoPanel);
+                target.Children.Add(infoPanel);
+            }
+            infoText.Foreground = analog ? AmberBrush : Brushes.White;
+            foreach (Canvas canvas in new[] { Vertical, Horizontal })
+            {
+                // Transparent in the analog mode: the glass is behind, and the glow follows only the drawn lines.
+                canvas.Background = analog ? Brushes.Transparent : Brushes.Black;
+                canvas.Effect = analog ? phosphorGlow : null;
+            }
+            if (analog)
+            {
+                ControlPanel.Background = new SolidColorBrush(ScopeBezel.PanelColor);
+                DhLabel.Foreground = PanelTextBrush;
+            }
+            else
+            {
+                ControlPanel.ClearValue(Border.BackgroundProperty);
+                DhLabel.ClearValue(TextBlock.ForegroundProperty);
+            }
+            Visibility modern = analog ? Visibility.Collapsed : Visibility.Visible;
+            DistanceComboBox.Visibility = modern;
+            TiltPanel.Visibility = modern;
+            DhDownButton.Visibility = modern;
+            DhUpButton.Visibility = modern;
+            LabelsButton.Visibility = modern;
+            KnobPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
+            ModeButton.Content = analog ? "Modern (A)" : "Analog (A)";
+            LayoutDisplay();
+            UpdateKnobs();
+        }
+
+        /// <summary>
+        /// Places the views: full area in the modern display; in the analog mode a round screen in a metal ring
+        /// on the console panel, with the two views one above the other inside it (as on the old PAR scopes).
+        /// </summary>
+        private void LayoutDisplay()
+        {
+            bool analog = viewOptions.Analog;
+            bool right = settings.Active.RunwaySide == RunwaySide.Right;
+            double width = DisplayArea.ActualWidth;
+            double height = DisplayArea.ActualHeight;
+            if (!analog || width <= 0 || height <= 0)
+            {
+                ScopeArea.ClearValue(WidthProperty);
+                ScopeArea.ClearValue(HeightProperty);
+                ScopeArea.HorizontalAlignment = HorizontalAlignment.Stretch;
+                ScopeArea.VerticalAlignment = VerticalAlignment.Stretch;
+                ScopeArea.Clip = null;
+                ScopeArea.Background = null;
+                Vertical.Margin = new Thickness(0);
+                Horizontal.Margin = new Thickness(0);
+                BezelLayer.Children.Clear();
+                DisplayArea.Background = Brushes.Black;
+                return;
+            }
+            double size = Math.Min(width, height);
+            double ring = Math.Max(10, size * 0.045);
+            double radius = Math.Max(60, size / 2 - ring - 8);
+            double diameter = 2 * radius;
+            ScopeArea.Width = diameter;
+            ScopeArea.Height = diameter;
+            ScopeArea.HorizontalAlignment = HorizontalAlignment.Center;
+            ScopeArea.VerticalAlignment = VerticalAlignment.Center;
+            ScopeArea.Clip = new EllipseGeometry(new Point(radius, radius), radius, radius);
+            ScopeArea.Background = glassBrush;
+            // The antenna side is moved in, so the origin of both views is inside the circle.
+            double inner = diameter * 0.12;
+            double outer = diameter * 0.04;
+            double edge = diameter * 0.07;
+            Vertical.Margin = right ? new Thickness(outer, edge, inner, 0) : new Thickness(inner, edge, outer, 0);
+            Horizontal.Margin = right ? new Thickness(outer, 0, inner, edge) : new Thickness(inner, 0, outer, edge);
+            DisplayArea.Background = new SolidColorBrush(ScopeBezel.PanelColor);
+            ScopeBezel.Draw(BezelLayer, new Size(width, height), new Point(width / 2, height / 2), radius, ring);
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -394,6 +573,7 @@ namespace AuroraPAR
                 case Key.Right: TiltAntenna(0, 1); break;
                 case Key.Home: NeutralAntenna(); break;
                 case Key.L: ToggleLabels(); break;
+                case Key.A: ToggleDisplayMode(); break;
                 default: return;
             }
             e.Handled = true;
@@ -404,6 +584,8 @@ namespace AuroraPAR
         /// </summary>
         private void ToggleLabels()
         {
+            // The analog scope has no labels.
+            if (viewOptions.Analog) return;
             viewOptions.ShowLabels = !viewOptions.ShowLabels;
             if (viewOptions.ShowLabels)
             {
@@ -421,6 +603,7 @@ namespace AuroraPAR
             {
                 InvalidateViews();
             }
+            UpdateKnobs();
         }
 
         private void NeutralAntenna()
@@ -429,6 +612,7 @@ namespace AuroraPAR
             {
                 InvalidateViews();
             }
+            UpdateKnobs();
         }
 
         private void ApplyProfile()
@@ -436,7 +620,11 @@ namespace AuroraPAR
             Profile profile = settings.Active;
             radar.ApplyProfile(profile);
             viewOptions.Qfe = profile.PressureReference == PressureReference.QFE;
-            viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale;
+            bool analog = profile.DisplayMode == DisplayMode.Analog;
+            viewOptions.Analog = analog;
+            viewOptions.Palette = analog ? Palette.Analog : Palette.Modern;
+            // The old scopes had no altitude scale.
+            viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale && !analog;
             viewOptions.ScaleInMetres = profile.AltitudeScaleUnit == LengthUnit.Metres;
             viewOptions.HistoryEnabled = profile.HistoryEnabled;
             viewOptions.HistoryDots = profile.HistoryDots;
@@ -454,7 +642,14 @@ namespace AuroraPAR
             horizontalView.SetRunwayOnRight(right);
             // Information area in the top corner on the runway side, away from the far end of the scan limits.
             // Leave room for the altitude scale, drawn on the same side.
-            double margin = profile.ShowAltitudeScale ? 75 : 4;
+            double margin = viewOptions.ShowAltitudeScale ? 75 : 4;
+            ApplyDisplayMode(analog);
+            if (analog)
+            {
+                // Analog: written on the console panel, in the top left corner.
+                margin = 10;
+                right = false;
+            }
             if (right)
             {
                 infoPanel.ClearValue(Canvas.LeftProperty);
@@ -465,7 +660,7 @@ namespace AuroraPAR
                 infoPanel.ClearValue(Canvas.RightProperty);
                 Canvas.SetLeft(infoPanel, margin);
             }
-            Canvas.SetTop(infoPanel, 0);
+            Canvas.SetTop(infoPanel, analog ? 8 : 0);
             TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
             infoText.TextAlignment = alignment;
             statusText.TextAlignment = alignment;
@@ -603,6 +798,7 @@ namespace AuroraPAR
         }
         private void UpdateInfo()
         {
+            if (viewOptions.Analog) UpdateKnobs();
             Profile profile = settings.Active;
             bool qfe = profile.PressureReference == PressureReference.QFE;
             string pressure = qnh == 0 ? "----" : Pressure.Format(qfe ? Pressure.QfeFromQnh(qnh, runway.Elevation) : qnh, profile.PressureUnit);

@@ -39,6 +39,8 @@ namespace AuroraPAR
             DeleteButton.Click += (s, e) => DeleteProfile();
             ImportButton.Click += (s, e) => ImportProfile();
             ExportButton.Click += (s, e) => ExportProfile();
+            ModernRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Modern, p => p.DisplayMode = DisplayMode.Modern);
+            AnalogRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Analog, p => p.DisplayMode = DisplayMode.Analog);
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
             RunwayRightRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Right);
             FixedRangeComboBox.ItemsSource = Ranges.Values;
@@ -107,6 +109,8 @@ namespace AuroraPAR
                 ProfileComboBox.SelectedItem = Active.Name;
                 ProfileNameTextBox.Text = Active.Name;
                 DeleteButton.IsEnabled = settings.Profiles.Count > 1;
+                ModernRadio.IsChecked = Active.DisplayMode == DisplayMode.Modern;
+                AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
                 RunwayLeftRadio.IsChecked = Active.RunwaySide == RunwaySide.Left;
                 RunwayRightRadio.IsChecked = Active.RunwaySide == RunwaySide.Right;
                 StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;

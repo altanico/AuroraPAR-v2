@@ -29,6 +29,9 @@ namespace AuroraPAR
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         public LabelLayout ElevationLabel { get; set; } = LabelLayout.DefaultElevation();
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
+        /// <summary>Analog scope: monochrome phosphor, echoes lit by the beam, no labels.</summary>
+        public bool Analog { get; set; }
+        public Palette Palette { get; set; } = Palette.Modern;
     }
 
     /// <summary>
@@ -78,7 +81,8 @@ namespace AuroraPAR
         private Point dragStart;
         /// <summary>Lines of the antenna scan effect (beam and glow), created when first needed.</summary>
         private readonly List<Line> sweepLines = [];
-        private static readonly Brush SweepBrush = CreateFrozenBrush(Color.FromRgb(0x70, 0xF0, 0xE0));
+        /// <summary>Echo of an aircraft on the analog scope: a small blob, longer along the range.</summary>
+        private static readonly Geometry EchoGeometry = CreateEchoGeometry();
         private Vector dragStartOffset;
 
         /// <summary>
@@ -103,6 +107,8 @@ namespace AuroraPAR
             public double LastAltitude = double.NaN;
             /// <summary>Screen position of the track.</summary>
             public Point Position;
+            /// <summary>Logical position of the track (see the class description).</summary>
+            public Point Logical;
             /// <summary>True when the label was dragged: <see cref="Offset"/> is then its top-left corner from the track.</summary>
             public bool Moved;
             public Vector Offset;
@@ -261,6 +267,7 @@ namespace AuroraPAR
             if (!enabled || !staticValid || Canvas.ActualWidth <= 0 || Canvas.ActualHeight <= 0)
             {
                 foreach (Line line in sweepLines) line.Visibility = Visibility.Collapsed;
+                foreach (Track track in tracks.Values) track.Symbol.Opacity = 1;
                 return;
             }
             var beams = new (double? Position, double Opacity)[ScanEffect.Lines];
@@ -269,7 +276,6 @@ namespace AuroraPAR
             {
                 Line line = new()
                 {
-                    Stroke = SweepBrush,
                     StrokeThickness = sweepLines.Count == 0 ? 2 : 3,
                     IsHitTestVisible = false
                 };
@@ -291,16 +297,48 @@ namespace AuroraPAR
                 line.Y1 = ToScreenY(origin.Y);
                 line.X2 = ToScreenX(end.X);
                 line.Y2 = ToScreenY(end.Y);
+                line.Stroke = Options.Palette.Sweep;
                 line.Opacity = beams[i].Opacity;
                 line.Visibility = Visibility.Visible;
             }
+            UpdateEchoBrightness(t, speed);
         }
 
-        private static Brush CreateFrozenBrush(Color color)
+        /// <summary>
+        /// Analog scope: each echo lights up when the beam passes over it, then fades until the next pass,
+        /// like the phosphor of the old screens. The position is always the latest one received from Aurora.
+        /// </summary>
+        private void UpdateEchoBrightness(double t, ScanEffectSpeed speed)
         {
-            SolidColorBrush brush = new(color);
-            brush.Freeze();
-            return brush;
+            if (!Options.Analog)
+            {
+                foreach (Track track in tracks.Values) track.Symbol.Opacity = 1;
+                return;
+            }
+            Point origin = SweepOrigin();
+            Point low = SweepEnd(0);
+            Point high = SweepEnd(1);
+            foreach (Track track in tracks.Values)
+            {
+                if (track.Symbol.Visibility != Visibility.Visible) continue;
+                // Position of the echo across the scan (0..1), from its direction seen from the antenna.
+                double position = 0.5;
+                double dx = track.Logical.X - origin.X;
+                if (dx > 1 && Math.Abs(high.Y - low.Y) > 1)
+                {
+                    double y = origin.Y + (track.Logical.Y - origin.Y) * (low.X - origin.X) / dx;
+                    position = (y - low.Y) / (high.Y - low.Y);
+                }
+                double age = ScanEffect.SinceLastPass(t, speed, IsElevation, position);
+                track.Symbol.Opacity = 0.18 + 0.82 * Math.Exp(-age / 0.6);
+            }
+        }
+
+        private static Geometry CreateEchoGeometry()
+        {
+            EllipseGeometry geometry = new(new Point(0, 0), 5, 2.2);
+            geometry.Freeze();
+            return geometry;
         }
 
         private void UpdateTrack(Track track, Aircraft aircraft)
@@ -331,15 +369,16 @@ namespace AuroraPAR
                 return;
             }
             track.Color = TrackColor(aircraft);
+            track.Logical = logical;
             track.Position = new Point(ToScreenX(logical.X), ToScreenY(logical.Y));
             // Track symbol.
             if (track.SymbolVersion != Options.Version)
             {
-                track.Symbol.Data = Symbols.Create(Options.TrackSymbol.Shape, Options.TrackSymbol.Size);
+                track.Symbol.Data = Options.Analog ? EchoGeometry : Symbols.Create(Options.TrackSymbol.Shape, Options.TrackSymbol.Size);
                 track.SymbolVersion = Options.Version;
             }
             track.Symbol.Stroke = track.Color;
-            track.Symbol.Fill = Symbols.IsFilled(Options.TrackSymbol.Shape) ? track.Color : Brushes.Transparent;
+            track.Symbol.Fill = Options.Analog || Symbols.IsFilled(Options.TrackSymbol.Shape) ? track.Color : Brushes.Transparent;
             Canvas.SetLeft(track.Symbol, track.Position.X);
             Canvas.SetTop(track.Symbol, track.Position.Y);
             track.Symbol.Visibility = Visibility.Visible;
@@ -395,6 +434,8 @@ namespace AuroraPAR
                 Path dot = track.Dots[i];
                 dot.Stroke = track.Color;
                 dot.Fill = filled ? track.Color : null;
+                // Analog scope: the older the position, the dimmer its glow.
+                dot.Opacity = Options.Analog ? 0.08 + 0.42 * (i + 1) / count : 1;
                 Canvas.SetLeft(dot, ToScreenX(logical.X));
                 Canvas.SetTop(dot, ToScreenY(logical.Y));
                 dot.Visibility = Visibility.Visible;
@@ -404,7 +445,7 @@ namespace AuroraPAR
         private void UpdateLabel(Track track, Aircraft aircraft)
         {
             LabelLayout layout = Layout;
-            if (!Options.ShowLabels || track.LabelHidden || layout.IsEmpty)
+            if (!Options.ShowLabels || Options.Analog || track.LabelHidden || layout.IsEmpty)
             {
                 track.Label.Visibility = Visibility.Collapsed;
                 track.Leader.Visibility = Visibility.Collapsed;
@@ -548,6 +589,7 @@ namespace AuroraPAR
         /// </summary>
         private void Canvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (Options.Analog) return;
             Point click = e.GetPosition(Canvas);
             List<Track> nearby = tracks.Values
                 .Where(t => t.Symbol.Visibility == Visibility.Visible && (t.Position - click).Length <= TrackClickDistance)
