@@ -85,6 +85,11 @@ namespace AuroraPAR
             {
                 if (e.Key == Key.Enter) ApplyHistoryDots();
             };
+            DisplayStyleButton.Click += (s, e) =>
+            {
+                DisplayStyleWindow window = new(settings, Commit) { Owner = this };
+                window.ShowDialog();
+            };
             EditLabelsButton.Click += (s, e) =>
             {
                 LabelEditorWindow editor = new(settings, Commit) { Owner = this };

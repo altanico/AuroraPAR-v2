@@ -33,7 +33,10 @@ namespace AuroraPAR
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
         /// <summary>Analog scope: monochrome phosphor, echoes lit by the beam, no labels.</summary>
         public bool Analog { get; set; }
-        public Palette Palette { get; set; } = Palette.Modern;
+        /// <summary>Colours, widths and dash styles of the elements.</summary>
+        public Theme Theme { get; set; } = Theme.Modern(DisplayStyleSettings.CreateDefault());
+        /// <summary>Range marks drawn at each range.</summary>
+        public RangeMarkSettings RangeMarks { get; set; } = RangeMarkSettings.Default();
     }
 
     /// <summary>
@@ -122,6 +125,8 @@ namespace AuroraPAR
             /// <summary>Label hidden with a right click.</summary>
             public bool LabelHidden;
             public Brush Color = Brushes.Green;
+            /// <summary>Colour of the history dots (plots), inside or outside the approach limits like the track.</summary>
+            public Brush PlotColor = Brushes.Green;
             public string Callsign = "";
 
             public IEnumerable<UIElement> Elements()
@@ -162,7 +167,7 @@ namespace AuroraPAR
         /// <summary>Logical position (pixels) of a world position.</summary>
         protected abstract Point WorldToLogical(double along, double value);
         /// <summary>Colour of the track: green inside the approach limits, red outside.</summary>
-        protected abstract Brush TrackColor(Aircraft aircraft);
+        protected abstract bool IsWithinLimits(Aircraft aircraft);
         /// <summary>Label layout of this view.</summary>
         protected abstract LabelLayout Layout { get; }
         /// <summary>True for the elevation view (for the antenna scan effect).</summary>
@@ -304,7 +309,7 @@ namespace AuroraPAR
                 line.Y1 = ToScreenY(origin.Y);
                 line.X2 = ToScreenX(end.X);
                 line.Y2 = ToScreenY(end.Y);
-                line.Stroke = Options.Palette.Sweep;
+                line.Stroke = Options.Theme.Sweep;
                 line.Opacity = beams[i].Opacity;
                 line.Visibility = Visibility.Visible;
             }
@@ -378,7 +383,9 @@ namespace AuroraPAR
                 SetTrackVisible(track, false);
                 return;
             }
-            track.Color = TrackColor(aircraft);
+            bool within = IsWithinLimits(aircraft);
+            track.Color = Options.Theme.Brush(within ? StyleElement.TrackInside : StyleElement.TrackOutside);
+            track.PlotColor = Options.Theme.Brush(within ? StyleElement.PlotInside : StyleElement.PlotOutside);
             track.Logical = logical;
             track.Position = new Point(ToScreenX(logical.X), ToScreenY(logical.Y));
             // Track symbol.
@@ -442,8 +449,8 @@ namespace AuroraPAR
                 (double along, double value, bool wasInside) = track.History[first + i];
                 Point logical = WorldToLogical(along, value);
                 Path dot = track.Dots[i];
-                dot.Stroke = track.Color;
-                dot.Fill = filled ? track.Color : null;
+                dot.Stroke = track.PlotColor;
+                dot.Fill = filled ? track.PlotColor : null;
                 // Analog scope: the older the position, the dimmer its glow.
                 dot.Opacity = Options.Analog ? 0.08 + 0.42 * (i + 1) / count : 1;
                 Canvas.SetLeft(dot, ToScreenX(logical.X));
@@ -473,6 +480,7 @@ namespace AuroraPAR
                 if (field != LabelField.None)
                 {
                     track.Cells[i].Text = LabelFormatter.Format(field, aircraft, Runway, Options);
+                    track.Cells[i].Foreground = Options.Theme.Brush(StyleElement.LabelText);
                 }
             }
             track.Label.Visibility = Visibility.Visible;
@@ -701,6 +709,28 @@ namespace AuroraPAR
         /// <summary>
         /// Adds a static line. Coordinates are logical (see class description).
         /// </summary>
+        /// <summary>
+        /// Adds a static line with the colour, width and dash style of an element; <paramref name="dashed"/> forces a
+        /// dashed line (e.g. glide path between touchdown and threshold).
+        /// </summary>
+        protected void AddLine(double x1, double y1, double x2, double y2, StyleElement element, bool dashed = false)
+        {
+            Line line = new()
+            {
+                X1 = ToScreenX(x1),
+                Y1 = ToScreenY(y1),
+                X2 = ToScreenX(x2),
+                Y2 = ToScreenY(y2),
+                Stroke = Options.Theme.Brush(element),
+                StrokeThickness = Options.Theme.Width(element),
+                StrokeDashArray = Theme.DashArray(dashed ? LineDash.Dashed : Options.Theme.Dash(element)),
+                IsHitTestVisible = false
+            };
+            AddStatic(line);
+        }
+
+        protected Brush Brush(StyleElement element) => Options.Theme.Brush(element);
+
         protected void AddLine(double x1, double y1, double x2, double y2, Brush stroke, double thickness, bool dashed = false)
         {
             Line line = new()

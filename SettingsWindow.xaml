@@ -86,7 +86,11 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                 </Grid>
-                <Button Name="EditLabelsButton" Content="Edit labels..." HorizontalAlignment="Left" Width="120" Height="26" Margin="0,8,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Name="EditLabelsButton" Content="Edit labels..." Width="120" Height="26"/>
+                    <Button Name="DisplayStyleButton" Content="Display style..." Width="120" Height="26" Margin="8,0,0,0"
+                            ToolTip="Range marks at each range, colours, line styles and widths."/>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
         </StackPanel>

@@ -198,6 +198,12 @@ namespace AuroraPAR
         public bool ScanEffect { get; set; } = true;
         /// <summary>Modern display, or analog scope (round phosphor screen, echoes lit by the beam, no labels, knobs).</summary>
         public DisplayMode DisplayMode { get; set; } = DisplayMode.Modern;
+        /// <summary>Range marks drawn at each display range.</summary>
+        public RangeMarkSettings RangeMarks { get; set; } = RangeMarkSettings.Default();
+        /// <summary>Colours, dash styles and widths of the modern display.</summary>
+        public DisplayStyleSettings Style { get; set; } = DisplayStyleSettings.CreateDefault();
+        /// <summary>Phosphor colour of the analog scope (#RRGGBB).</summary>
+        public string AnalogColor { get; set; } = "#A8FF60";
         /// <summary>
         /// Default magnetic variation (degrees, East positive) for the final course of runways without their own
         /// value in runways.par (the headings in the file are true).
@@ -223,6 +229,11 @@ namespace AuroraPAR
             HistoryInterval = double.IsNaN(HistoryInterval) ? 2 : Math.Clamp(HistoryInterval, MinHistoryInterval, MaxHistoryInterval);
             if (!Enum.IsDefined(ScanEffectSpeed)) ScanEffectSpeed = ScanEffectSpeed.Normal;
             if (!Enum.IsDefined(DisplayMode)) DisplayMode = DisplayMode.Modern;
+            RangeMarks ??= RangeMarkSettings.Default();
+            RangeMarks.Normalize();
+            Style ??= DisplayStyleSettings.CreateDefault();
+            Style.Normalize();
+            if (!ColorText.TryParse(AnalogColor, out _)) AnalogColor = "#A8FF60";
             if (double.IsNaN(MagneticVariation) || Math.Abs(MagneticVariation) > 90) MagneticVariation = 0;
             TrackSymbol = NormalizeSymbol(TrackSymbol, new(SymbolShape.CrossCircle, 12));
             ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));

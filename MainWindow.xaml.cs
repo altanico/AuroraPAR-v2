@@ -252,7 +252,7 @@ namespace AuroraPAR
         /// <summary>Glow of the phosphor of the analog scope.</summary>
         private readonly System.Windows.Media.Effects.DropShadowEffect phosphorGlow = new()
         {
-            Color = Palette.Phosphor,
+            Color = Theme.DefaultPhosphor,
             ShadowDepth = 0,
             BlurRadius = 8,
             Opacity = 0.85
@@ -269,7 +269,7 @@ namespace AuroraPAR
             foreach (Canvas canvas in new[] { Vertical, Horizontal })
             {
                 // Transparent in the analog mode: the glass is behind, and the glow follows only the drawn lines.
-                canvas.Background = analog ? Brushes.Transparent : Brushes.Black;
+                canvas.Background = analog ? Brushes.Transparent : viewOptions.Theme.Brush(StyleElement.Background);
                 canvas.Effect = analog ? phosphorGlow : null;
             }
             if (analog)
@@ -315,7 +315,7 @@ namespace AuroraPAR
                 Vertical.Margin = new Thickness(0);
                 Horizontal.Margin = new Thickness(0);
                 BezelLayer.Children.Clear();
-                DisplayArea.Background = Brushes.Black;
+                DisplayArea.Background = viewOptions.Theme.Brush(StyleElement.Background);
                 return;
             }
             double ring = Math.Max(5, Math.Min(width, height) * 0.018);
@@ -639,7 +639,11 @@ namespace AuroraPAR
             viewOptions.Qfe = profile.PressureReference == PressureReference.QFE;
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             viewOptions.Analog = analog;
-            viewOptions.Palette = analog ? Palette.Analog : Palette.Modern;
+            viewOptions.Theme = analog
+                ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor))
+                : Theme.Modern(profile.Style);
+            viewOptions.RangeMarks = profile.RangeMarks;
+            phosphorGlow.Color = viewOptions.Theme.Glow;
             // The old scopes had no altitude scale.
             viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale && !analog;
             viewOptions.ScaleInMetres = profile.AltitudeScaleUnit == LengthUnit.Metres;

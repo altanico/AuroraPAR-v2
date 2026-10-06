@@ -1,0 +1,19 @@
+<Window x:Class="AuroraPAR.DisplayStyleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aurora PAR - Display style" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="AuroraPAR.ico">
+    <StackPanel Margin="12">
+        <TabControl Name="Tabs">
+            <TabItem Header="Range marks">
+                <StackPanel Margin="10">
+                    <TextBlock TextWrapping="Wrap" MaxWidth="600" Foreground="Gray"
+                               Text="For each display range, choose the range marks to draw and the marks where the distance is written. Where marks of different types meet (e.g. 1 NM is also a half and a quarter mile) one line is drawn, with the style of the largest type. Changes are applied immediately."/>
+                    <Grid Name="RangeMarkGrid" Margin="0,10,0,0"/>
+                    <Button Name="RangeMarksDefaultButton" Content="Default" HorizontalAlignment="Left" Width="80" Height="26" Margin="0,10,0,0"/>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+        <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
+    </StackPanel>
+</Window>
