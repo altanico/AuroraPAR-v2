@@ -21,6 +21,8 @@ Range marks and the distance shown next to each aircraft are measured **from the
 
 **Antenna scan effect:** as on the old PAR screens, a beam sweeps the elevation view (up and down) and the azimuth view (left and right) in turn, leaving a fading glow behind it. It is only a graphic effect drawn over the display: tracks are updated as usual, whatever the position of the beam. It can be switched off, or made slower/faster, in *Settings → Display*.
 
+**Analog mode:** the *Analog (A)* button (or the A key) turns the display into an old PAR scope: one round screen in a metal ring on the console panel, with the elevation view above and the azimuth view below, everything drawn in green phosphor with a soft glow. The beam is always on; each aircraft is an echo that lights up when the beam passes over it and then fades until the next pass (its position is still the latest one from Aurora). As on the real scopes there are no labels and no altitude scale; the history tail fades with age. Range, antenna tilt and decision height are set with **knobs** on the right: turn them with the mouse wheel, drag up/down, or click on the right/left half; double click puts the tilt back to neutral or the DH back to the runway value. The information (runway, QNH, minimum, tilt, status) is written in amber on the panel. *Modern (A)* goes back to the normal display; the choice is saved in the profile.
+
 **Traffic refresh check:** AuroraPAR measures how often the positions received from Aurora really change and shows it below the connection status (`DATA 0.5s` in green). If Aurora's traffic refresh rate is left at the normal 3 s, tracks move in jumps and a red warning appears (`DATA 3.0s - SET AURORA TRAFFIC REFRESH TO 0.5s`); it disappears by itself once the setting is changed. Only moving aircraft (above 50 kt) are measured, and about 10–20 seconds of traffic are needed.
 
 ## Download
@@ -32,6 +34,7 @@ Go to the **Actions** tab, open the latest successful **Build** run and download
 Click **Settings...** to manage profiles and display options. Changes are applied and saved immediately.
 
 - **Profiles:** several named profiles can be kept and switched; *Duplicate*, *Rename*, *Delete*, and *Export* / *Import* to share a profile (a `.json` file) with other controllers.
+- **Display mode:** Modern or Analog (old radar scope, see above).
 - **Runway position:** left or right of the screen. With the runway on the right the azimuth view is rotated by 180°, so the side of the centreline shown above/below stays consistent with the direction of flight.
 - **Radar:** approach limits (above, below, left, right), scan limits (up, down, left, right), tilt step and maximum. Each profile can hold the values of a different radar type.
 - **Tracks and labels:** history tails on/off and number of dots; symbol and size of the track, history dots (smaller, default 3 px dots), threshold, touchdown point and antenna (circle, filled circle, circle with cross, square, diamond, triangle, inverted triangle, +, ×, capsule (filled vertical bar with rounded ends), line, none); *Edit labels...* for the label layouts.
@@ -69,7 +72,7 @@ Invalid or incomplete lines are ignored.
 
 ## Changes from the original
 
-- Antenna scan effect (graphic only, can be switched off).
+- Analog display mode (round phosphor scope with knobs) and antenna scan effect (graphic only, can be switched off).
 - Configurable, draggable labels with leader lines; history tails; symbol library; labels on/off.
 - Approach limits set separately for each side; scan limits from the antenna at half the runway, adjustable; antenna tilt from buttons or keyboard with on-screen reminder.
 - QNH/QFE, hPa/inHg, DA/DH, OCA/OCH or MDA/MDH; altitude scale in feet or metres.
