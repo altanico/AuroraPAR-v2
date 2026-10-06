@@ -115,20 +115,28 @@ namespace AuroraPAR
 
         /// <summary>
         /// Marks to draw at a range: distance from touchdown, style element and whether the distance is written.
-        /// Where marks of different types coincide (e.g. 1 NM is also a half and a quarter mile) one line is
-        /// drawn, with the style of the largest type.
+        /// A mark is drawn at every multiple of each selected interval. Its style is that of the largest selected
+        /// type the distance is a multiple of, and whole and half miles are always at least 1 NM and ½ NM marks
+        /// (e.g. at 2.5 NM with only quarter miles selected: 1 and 2 NM as 1 NM marks, 0.5 and 1.5 as ½ NM marks).
         /// </summary>
         public IEnumerable<(double Distance, StyleElement Element, bool Text)> Marks(double range)
         {
             RangeMarkRow row = For(range);
-            List<MarkInterval> lines = row.Lines.OrderByDescending(MarkIntervals.Nm).ToList();
-            if (lines.Count == 0) yield break;
-            double step = MarkIntervals.Nm(lines[^1]);
-            int count = (int)Math.Floor(range / step + 1e-6);
+            List<MarkInterval> selected = row.Lines.ToList();
+            if (selected.Count == 0) yield break;
+            // Types used to name each distance, largest first: the selected ones plus 1, ½ and ¼ NM. So with only
+            // the quarter miles selected the whole miles still look like 1 NM marks and the halves like ½ NM marks,
+            // while a 10 NM view with 1 NM marks keeps them all as 1 NM marks.
+            List<MarkInterval> types = selected.Concat([MarkInterval.One, MarkInterval.Half, MarkInterval.Quarter])
+                .Distinct().Where(i => MarkIntervals.Nm(i) <= range + 1e-6)
+                .OrderByDescending(MarkIntervals.Nm).ToList();
+            const double finest = 0.25;
+            int count = (int)Math.Floor(range / finest + 1e-6);
             for (int k = 1; k <= count; k++)
             {
-                double distance = Math.Round(k * step, 3);
-                MarkInterval type = lines.First(i => IsMultiple(distance, MarkIntervals.Nm(i)));
+                double distance = Math.Round(k * finest, 3);
+                if (!selected.Any(i => IsMultiple(distance, MarkIntervals.Nm(i)))) continue;
+                MarkInterval type = types.FirstOrDefault(i => IsMultiple(distance, MarkIntervals.Nm(i)), MarkInterval.Quarter);
                 bool text = row.Text is MarkInterval t && IsMultiple(distance, MarkIntervals.Nm(t));
                 yield return (distance, MarkIntervals.Element(type), text);
             }

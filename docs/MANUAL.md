@@ -359,7 +359,7 @@ A table with one row per display range. For each range choose:
 - which marks are drawn: every **5, 2, 1, ½ or ¼ NM** (marks longer than the range are disabled);
 - on which marks the **distance is written** (or none).
 
-Defaults: every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; every ¼ NM at 2.5 and 1 NM. Where marks of different types meet (1 NM is also a ½ and a ¼ mile) one line is drawn, with the style of the largest type. **Default** restores these values.
+Defaults: every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; every ¼ NM at 2.5 and 1 NM. Where marks of different types meet (1 NM is also a ½ and a ¼ mile) one line is drawn, with the style of the largest type; whole and half miles always keep the 1 NM and ½ NM styles (e.g. at 2.5 NM with only quarter miles selected, 1 and 2 NM use the 1 NM style and 0.5 / 1.5 NM the ½ NM style). **Default** restores these values.
 
 ### 11.2 Colours & lines
 
