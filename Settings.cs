@@ -183,6 +183,11 @@ namespace AuroraPAR
         /// <summary>History tails: previous positions of each track.</summary>
         public bool HistoryEnabled { get; set; } = true;
         public int HistoryDots { get; set; } = 50;
+        /// <summary>
+        /// Seconds between two history dots. Aurora sends a position every 0.5 s: one dot per update made the
+        /// tail look like a continuous line.
+        /// </summary>
+        public double HistoryInterval { get; set; } = 2;
         public SymbolSetting TrackSymbol { get; set; } = new(SymbolShape.CrossCircle, 12);
         public SymbolSetting ThresholdSymbol { get; set; } = new(SymbolShape.Line, 10);
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
@@ -202,6 +207,8 @@ namespace AuroraPAR
 
         public const int MinHistoryDots = 3;
         public const int MaxHistoryDots = 100;
+        public const double MinHistoryInterval = 0.5;
+        public const double MaxHistoryInterval = 10;
 
         /// <summary>
         /// Repairs values missing or out of range (profiles from older versions or edited by hand).
@@ -213,6 +220,7 @@ namespace AuroraPAR
             ElevationLabel.Normalize();
             AzimuthLabel.Normalize();
             HistoryDots = Math.Clamp(HistoryDots, MinHistoryDots, MaxHistoryDots);
+            HistoryInterval = double.IsNaN(HistoryInterval) ? 2 : Math.Clamp(HistoryInterval, MinHistoryInterval, MaxHistoryInterval);
             if (!Enum.IsDefined(ScanEffectSpeed)) ScanEffectSpeed = ScanEffectSpeed.Normal;
             if (!Enum.IsDefined(DisplayMode)) DisplayMode = DisplayMode.Modern;
             if (double.IsNaN(MagneticVariation) || Math.Abs(MagneticVariation) > 90) MagneticVariation = 0;

@@ -634,6 +634,7 @@ namespace AuroraPAR
             viewOptions.ScaleInMetres = profile.AltitudeScaleUnit == LengthUnit.Metres;
             viewOptions.HistoryEnabled = profile.HistoryEnabled;
             viewOptions.HistoryDots = profile.HistoryDots;
+            viewOptions.HistoryInterval = profile.HistoryInterval;
             viewOptions.TrackSymbol = profile.TrackSymbol;
             viewOptions.ThresholdSymbol = profile.ThresholdSymbol;
             viewOptions.TouchdownSymbol = profile.TouchdownSymbol;
@@ -807,7 +808,8 @@ namespace AuroraPAR
                 ? $"{heightName} {FormatHeight(runway.MDH)} ft"
                 : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
             string course = runway.FinalCourse(profile.MagneticVariation).ToString("000", System.Globalization.CultureInfo.InvariantCulture);
-            infoText.Text = $"RWY {runway.Designator}\nCRS {course}\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
+            string glidePath = runway.GlideSlope.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture);
+            infoText.Text = $"RWY {runway.Designator}\nCRS {course}\nGP {glidePath}°\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
             if (viewOptions.Analog)
             {
                 consolePanel.Update(new ConsoleData(

@@ -71,6 +71,11 @@ namespace AuroraPAR
             HistoryCheck.Checked += (s, e) => SetProfileValue(p => p.HistoryEnabled, p => p.HistoryEnabled = true);
             HistoryCheck.Unchecked += (s, e) => SetProfileValue(p => !p.HistoryEnabled, p => p.HistoryEnabled = false);
             HistoryDotsBox.LostFocus += (s, e) => ApplyHistoryDots();
+            HistoryIntervalBox.LostFocus += (s, e) => ApplyHistoryInterval();
+            HistoryIntervalBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter) ApplyHistoryInterval();
+            };
             MagVarBox.LostFocus += (s, e) => ApplyMagneticVariation();
             MagVarBox.KeyDown += (s, e) =>
             {
@@ -139,6 +144,7 @@ namespace AuroraPAR
                 ScanEffectCheck.IsChecked = Active.ScanEffect;
                 ScanEffectSpeedComboBox.SelectedIndex = Array.IndexOf(Enum.GetValues<ScanEffectSpeed>(), Active.ScanEffectSpeed);
                 HistoryDotsBox.Text = Active.HistoryDots.ToString(CultureInfo.InvariantCulture);
+                HistoryIntervalBox.Text = Active.HistoryInterval.ToString("0.#", CultureInfo.InvariantCulture);
                 MagVarBox.Text = MagneticVariation.Format(Active.MagneticVariation);
                 MagVarNote.Text = "e.g. 3E or 2W";
                 MagVarNote.Foreground = Brushes.Gray;
@@ -292,6 +298,23 @@ namespace AuroraPAR
             {
                 RefreshControls();
             }
+        }
+
+        private void ApplyHistoryInterval()
+        {
+            if (refreshing) return;
+            if (double.TryParse(HistoryIntervalBox.Text.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                && seconds >= Profile.MinHistoryInterval && seconds <= Profile.MaxHistoryInterval)
+            {
+                if (seconds != Active.HistoryInterval)
+                {
+                    Active.HistoryInterval = seconds;
+                    Commit();
+                }
+                return;
+            }
+            System.Media.SystemSounds.Beep.Play();
+            HistoryIntervalBox.Text = Active.HistoryInterval.ToString("0.#", CultureInfo.InvariantCulture);
         }
 
         private void ApplyHistoryDots()

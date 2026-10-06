@@ -69,7 +69,11 @@
                 <StackPanel Orientation="Horizontal">
                     <CheckBox Name="HistoryCheck" Content="History tails, number of dots:" VerticalAlignment="Center"/>
                     <TextBox Name="HistoryDotsBox" Width="50" Height="22" Margin="8,0,4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"/>
-                    <TextBlock Text="(3 to 100)" Foreground="Gray" VerticalAlignment="Center"/>
+                    <TextBlock Text="(3 to 100)," Foreground="Gray" VerticalAlignment="Center"/>
+                    <TextBlock Text="one every" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    <TextBox Name="HistoryIntervalBox" Width="40" Height="22" Margin="6,0,4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"
+                             ToolTip="Seconds between two dots of the history tail (0.5 to 10). Aurora sends a position every 0.5 s: with a dot at every position the tail looks like a line."/>
+                    <TextBlock Text="s" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Grid Name="SymbolGrid" Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>

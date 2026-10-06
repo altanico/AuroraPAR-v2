@@ -22,6 +22,8 @@ namespace AuroraPAR
         public bool ShowLabels { get; set; } = true;
         public bool HistoryEnabled { get; set; } = true;
         public int HistoryDots { get; set; } = 50;
+        /// <summary>Seconds between two history dots.</summary>
+        public double HistoryInterval { get; set; } = 2;
         public SymbolSetting TrackSymbol { get; set; } = new(SymbolShape.CrossCircle, 12);
         public SymbolSetting ThresholdSymbol { get; set; } = new(SymbolShape.Line, 10);
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
@@ -79,6 +81,8 @@ namespace AuroraPAR
         private Geometry historyGeometry = Geometry.Empty;
         private int historyGeometryVersion = -1;
         private Point dragStart;
+        /// <summary>Clock of the history dots.</summary>
+        private static readonly System.Diagnostics.Stopwatch HistoryClock = System.Diagnostics.Stopwatch.StartNew();
         /// <summary>Lines of the antenna scan effect (beam and glow), created when first needed.</summary>
         private readonly List<Line> sweepLines = [];
         /// <summary>Echo of an aircraft on the analog scope: a small blob, longer along the range.</summary>
@@ -105,6 +109,8 @@ namespace AuroraPAR
             public double LastLatitude = double.NaN;
             public double LastLongitude = double.NaN;
             public double LastAltitude = double.NaN;
+            /// <summary>Time of the last history dot (see <see cref="HistoryClock"/>).</summary>
+            public double LastHistoryTime = double.NegativeInfinity;
             /// <summary>Screen position of the track.</summary>
             public Point Position;
             /// <summary>Logical position of the track (see the class description).</summary>
@@ -344,12 +350,14 @@ namespace AuroraPAR
         private void UpdateTrack(Track track, Aircraft aircraft)
         {
             (double along, double value) = ToWorld(aircraft);
-            // History: the previous position is added each time Aurora gives a new one (one "antenna sweep").
+            // History: a dot every HistoryInterval seconds, at a new position given by Aurora.
             bool changed = aircraft.Latitude != track.LastLatitude || aircraft.Longitude != track.LastLongitude || aircraft.Altitude != track.LastAltitude;
             if (changed)
             {
-                if (!double.IsNaN(track.LastLatitude))
+                double now = HistoryClock.Elapsed.TotalSeconds;
+                if (!double.IsNaN(track.LastLatitude) && now - track.LastHistoryTime >= Options.HistoryInterval - 0.05)
                 {
+                    track.LastHistoryTime = now;
                     track.History.Add(track.LastWorld);
                     if (track.History.Count > Profile.MaxHistoryDots)
                     {
