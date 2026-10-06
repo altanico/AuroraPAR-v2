@@ -303,6 +303,8 @@ namespace AuroraPAR
         /// Distance reminders of single runways, by "ICAO DESIGNATOR" (in addition to those of the profile).
         /// </summary>
         public Dictionary<string, List<DistanceReminder>> RunwayReminders { get; set; } = [];
+        /// <summary>Coordination light panel with the tower.</summary>
+        public CoordinationSettings Coordination { get; set; } = new();
 
         /// <summary>Reminders of a runway (created empty if needed).</summary>
         public List<DistanceReminder> RemindersOf(string runway)
@@ -333,6 +335,8 @@ namespace AuroraPAR
         {
             Profiles ??= [];
             RunwayReminders ??= [];
+            Coordination ??= new();
+            Coordination.Normalize();
             foreach (string key in RunwayReminders.Keys.ToList())
             {
                 if (RunwayReminders[key] == null || RunwayReminders[key].Count == 0) RunwayReminders.Remove(key);

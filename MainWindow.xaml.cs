@@ -147,6 +147,7 @@ namespace AuroraPAR
             TiltNeutralButton.Click += (s, e) => NeutralAntenna();
             LabelsButton.Click += (s, e) => ToggleLabels();
             ModeButton.Click += (s, e) => ToggleDisplayMode();
+            CoordinationButton.Click += (s, e) => OpenCoordination();
             BuildKnobs();
             ScopeHost.SizeChanged += (s, e) => LayoutDisplay();
             // Console panel at most about a quarter of the display (it is scaled to fit, see the XAML).
@@ -165,6 +166,28 @@ namespace AuroraPAR
             ApplyProfile();
             // Antenna scan effect: redrawn at every frame of the screen (graphic only, independent of the traffic refresh).
             CompositionTarget.Rendering += (s, e) => RenderSweep();
+        }
+
+        /// <summary>Coordination light panel (one window, opened on demand).</summary>
+        private CoordinationWindow? coordinationWindow;
+        /// <summary>Callsign this Aurora is connected with, checked every few seconds.</summary>
+        private string? connectedCallsign;
+        private DateTime lastCallsignCheck = DateTime.MinValue;
+        private static readonly TimeSpan CallsignCheckInterval = TimeSpan.FromSeconds(10);
+
+        private void OpenCoordination()
+        {
+            if (coordinationWindow == null)
+            {
+                coordinationWindow = new CoordinationWindow(settings, () => SettingsStore.Save(settings), connectedCallsign);
+                coordinationWindow.Closed += (s, e) => coordinationWindow = null;
+                coordinationWindow.Show();
+            }
+            else
+            {
+                if (coordinationWindow.WindowState == WindowState.Minimized) coordinationWindow.WindowState = WindowState.Normal;
+                coordinationWindow.Activate();
+            }
         }
 
         private void RenderSweep()
@@ -347,6 +370,7 @@ namespace AuroraPAR
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
+            coordinationWindow?.Close();
             Open = false;
             timer.Stop();
             aurora.Close();
@@ -756,6 +780,13 @@ namespace AuroraPAR
                         lastQnhIcao = current.ICAO;
                         lastQnhUpdate = DateTime.UtcNow;
                     }
+                    if (DateTime.UtcNow - lastCallsignCheck >= CallsignCheckInterval)
+                    {
+                        lastCallsignCheck = DateTime.UtcNow;
+                        string? own = await aurora.GetConnectedCallsign();
+                        connectedCallsign = own;
+                        _ = Dispatcher.BeginInvoke(() => coordinationWindow?.SetCallsign(own));
+                    }
                     string[] callsigns = await aurora.GetTrafficList();
                     foreach (string callsign in callsigns)
                     {
@@ -765,6 +796,12 @@ namespace AuroraPAR
                             aircrafts.Add(aircraft);
                         }
                     }
+                }
+                if (!aurora.Connected && connectedCallsign != null)
+                {
+                    connectedCallsign = null;
+                    lastCallsignCheck = DateTime.MinValue;
+                    _ = Dispatcher.BeginInvoke(() => coordinationWindow?.SetCallsign(null));
                 }
                 verticalSpeed.Update(aircrafts, DateTime.UtcNow);
                 if (aurora.Connected)

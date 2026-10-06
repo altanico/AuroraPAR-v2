@@ -67,6 +67,8 @@
                         ToolTip="Show or hide the labels of all tracks (key L). Showing them again also brings back the labels hidden one by one. Right click on a label (or near its track) hides only that one; right click near the track shows it again."/>
                 <Button Name="ModeButton" Content="Analog (A)" Height="26" Margin="0,12,0,0"
                         ToolTip="Switch between the modern display and the analog scope (key A)."/>
+                <Button Name="CoordinationButton" Content="Coordination" Height="26" Margin="0,6,0,0"
+                        ToolTip="Coordination light panel with the tower (voiceless coordination)."/>
             </StackPanel>
             </Viewbox>
         </Border>

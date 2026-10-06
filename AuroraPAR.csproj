@@ -17,6 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- MQTT client for the coordination light panel (MIT license). -->
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="runways.par">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

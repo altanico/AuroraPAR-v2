@@ -179,6 +179,20 @@ namespace AuroraPAR
         /// QNH in hPa from the METAR of the runway's airport, or 0 when not available.
         /// Altimeter settings in inches of mercury (e.g. A2992) are converted to hPa.
         /// </summary>
+        /// <summary>
+        /// Callsign this Aurora is connected to the network with (e.g. LIRF_APP), or null when not connected
+        /// to IVAO or when Aurora does not answer. The documentation gives the answer as #CTRL;CALLSIGN, the
+        /// command is usually echoed (#CONN;CALLSIGN): both are accepted; an error line means "not connected".
+        /// </summary>
+        public async Task<string?> GetConnectedCallsign()
+        {
+            string? message = await Request("#CONN", m => StartsWithField(m, "#CONN") || StartsWithField(m, "#CTRL")
+                || m.StartsWith('$') || m.StartsWith("@ERR", StringComparison.OrdinalIgnoreCase));
+            if (message == null || !message.StartsWith('#')) return null;
+            string[] fields = message.Split(';', StringSplitOptions.TrimEntries);
+            return fields.Length >= 2 && fields[1].Length > 0 ? fields[1].ToUpperInvariant() : null;
+        }
+
         public async Task<int> GetQNH(Runway runway)
         {
             string? message = await Request($"#METAR;{runway.ICAO}", m => StartsWithField(m, "#METAR"));
