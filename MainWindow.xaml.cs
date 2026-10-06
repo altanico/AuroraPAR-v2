@@ -649,6 +649,7 @@ namespace AuroraPAR
                 : Theme.Modern(profile.Style);
             viewOptions.RangeMarks = profile.RangeMarks;
             viewOptions.Reminders = settings.RemindersFor;
+            viewOptions.ReminderMarkersBelowText = profile.ReminderMarkersBelowText;
             phosphorGlow.Color = viewOptions.Theme.Glow;
             // The old scopes had no altitude scale.
             viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale && !analog;

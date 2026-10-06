@@ -206,6 +206,8 @@ namespace AuroraPAR
         public string AnalogColor { get; set; } = "#A8FF60";
         /// <summary>Distance reminders for all runways (each runway can have its own too, see AppSettings).</summary>
         public List<DistanceReminder> Reminders { get; set; } = [];
+        /// <summary>Reminder markers below the distance text (the text is then raised) instead of above it.</summary>
+        public bool ReminderMarkersBelowText { get; set; }
         /// <summary>
         /// Default magnetic variation (degrees, East positive) for the final course of runways without their own
         /// value in runways.par (the headings in the file are true).

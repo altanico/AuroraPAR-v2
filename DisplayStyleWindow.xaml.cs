@@ -39,6 +39,10 @@ namespace AuroraPAR
             BuildStyles();
             BuildPhosphor();
             RemindersHost.Content = new ReminderEditor(() => Active.Reminders, commit);
+            MarkersAboveRadio.IsChecked = !Active.ReminderMarkersBelowText;
+            MarkersBelowRadio.IsChecked = Active.ReminderMarkersBelowText;
+            MarkersAboveRadio.Checked += (s, e) => SetMarkersBelow(false);
+            MarkersBelowRadio.Checked += (s, e) => SetMarkersBelow(true);
         }
 
         private static readonly string[] DashNames = ["Solid", "Dashed", "Dash-dot", "Dotted"];
@@ -141,6 +145,14 @@ namespace AuroraPAR
 
 
         private Profile Active => settings.Active;
+
+        /// <summary>Position of the reminder markers (all runways), above or below the distance text.</summary>
+        private void SetMarkersBelow(bool below)
+        {
+            if (Active.ReminderMarkersBelowText == below) return;
+            Active.ReminderMarkersBelowText = below;
+            commit();
+        }
 
         /// <summary>
         /// Table of the range marks: one row per display range, a check box per type of mark and the marks

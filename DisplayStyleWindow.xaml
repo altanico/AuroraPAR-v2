@@ -37,6 +37,11 @@
                 <StackPanel Margin="10">
                     <TextBlock TextWrapping="Wrap" MaxWidth="760" Foreground="Gray"
                                Text="Distance reminders for all runways: a marker above the distance in the elevation view, a coloured line across both views (it replaces the range mark at that distance), or both. Each runway can also have its own reminders, in Runways... . Changes are applied immediately."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <TextBlock Text="Markers:" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <RadioButton Name="MarkersAboveRadio" GroupName="MarkerPosition" Content="above the distance text" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                        <RadioButton Name="MarkersBelowRadio" GroupName="MarkerPosition" Content="below the distance text" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <ContentControl Name="RemindersHost" Margin="0,10,0,0" Focusable="False"/>
                 </StackPanel>
             </TabItem>
