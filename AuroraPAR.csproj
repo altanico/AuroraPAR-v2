@@ -11,6 +11,9 @@
 
   <ItemGroup>
     <Resource Include="AuroraPAR.ico" />
+    <!-- B612, the font of the Airbus cockpit displays (SIL Open Font License, see Fonts/B612-OFL.txt). -->
+    <Resource Include="Fonts\B612-Bold.ttf" />
+    <Resource Include="Fonts\B612-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

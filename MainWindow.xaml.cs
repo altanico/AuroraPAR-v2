@@ -39,7 +39,8 @@ namespace AuroraPAR
         private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = "Antenna elevation tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
         private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = "Antenna azimuth tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
         private readonly Knob dhKnob = new() { Title = "DH", ToolTip = "Decision height, 10 ft per step. Turn with the mouse wheel, drag up/down or click right/left; double click: runway value." };
-        private static readonly Brush AmberBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xB0, 0x30));
+        /// <summary>Analog mode: readouts and lamps next to the scope.</summary>
+        private readonly ConsolePanel consolePanel = new();
         private static readonly Brush PanelTextBrush = CreateFrozenBrush(Color.FromRgb(0xD8, 0xD8, 0xD0));
         private readonly Brush glassBrush = ScopeBezel.CreateGlassBrush();
         private readonly Aurora aurora;
@@ -135,7 +136,8 @@ namespace AuroraPAR
             LabelsButton.Click += (s, e) => ToggleLabels();
             ModeButton.Click += (s, e) => ToggleDisplayMode();
             BuildKnobs();
-            DisplayArea.SizeChanged += (s, e) => LayoutDisplay();
+            ScopeHost.SizeChanged += (s, e) => LayoutDisplay();
+            ConsoleHost.Content = consolePanel;
             PreviewKeyDown += MainWindow_PreviewKeyDown;
             RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
@@ -248,13 +250,9 @@ namespace AuroraPAR
         /// </summary>
         private void ApplyDisplayMode(bool analog)
         {
-            Panel target = analog ? PanelInfoHost : Vertical;
-            if (infoPanel.Parent != target)
-            {
-                (infoPanel.Parent as Panel)?.Children.Remove(infoPanel);
-                target.Children.Add(infoPanel);
-            }
-            infoText.Foreground = analog ? AmberBrush : Brushes.White;
+            // Analog: the information is on the console panel instead of the screen.
+            infoPanel.Visibility = analog ? Visibility.Collapsed : Visibility.Visible;
+            ConsoleHost.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
             foreach (Canvas canvas in new[] { Vertical, Horizontal })
             {
                 // Transparent in the analog mode: the glass is behind, and the glow follows only the drawn lines.
@@ -291,8 +289,8 @@ namespace AuroraPAR
         {
             bool analog = viewOptions.Analog;
             bool right = settings.Active.RunwaySide == RunwaySide.Right;
-            double width = DisplayArea.ActualWidth;
-            double height = DisplayArea.ActualHeight;
+            double width = ScopeHost.ActualWidth;
+            double height = ScopeHost.ActualHeight;
             if (!analog || width <= 0 || height <= 0)
             {
                 ScopeArea.ClearValue(WidthProperty);
@@ -644,12 +642,6 @@ namespace AuroraPAR
             // Leave room for the altitude scale, drawn on the same side.
             double margin = viewOptions.ShowAltitudeScale ? 75 : 4;
             ApplyDisplayMode(analog);
-            if (analog)
-            {
-                // Analog: written on the console panel, in the top left corner.
-                margin = 10;
-                right = false;
-            }
             if (right)
             {
                 infoPanel.ClearValue(Canvas.LeftProperty);
@@ -660,7 +652,7 @@ namespace AuroraPAR
                 infoPanel.ClearValue(Canvas.RightProperty);
                 Canvas.SetLeft(infoPanel, margin);
             }
-            Canvas.SetTop(infoPanel, analog ? 8 : 0);
+            Canvas.SetTop(infoPanel, 0);
             TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
             infoText.TextAlignment = alignment;
             statusText.TextAlignment = alignment;
@@ -807,6 +799,22 @@ namespace AuroraPAR
                 ? $"{heightName} {FormatHeight(runway.MDH)} ft"
                 : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
             infoText.Text = $"RWY {runway.Designator}\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
+            if (viewOptions.Analog)
+            {
+                consolePanel.Update(new ConsoleData(
+                    runway.ICAO,
+                    runway.Designator,
+                    qfe ? "QFE" : "QNH",
+                    pressure,
+                    qfe ? heightName : altitudeName,
+                    FormatHeight(qfe ? runway.MDH : runway.MDH + runway.Elevation),
+                    runway.Distance,
+                    radar.TiltElevation,
+                    radar.TiltAzimuth,
+                    aurora.Connected,
+                    dataInterval,
+                    !double.IsNaN(dataInterval) && dataInterval > MaxGoodDataInterval));
+            }
             // Antenna tilt: shown only when not neutral, so the controller does not forget it.
             if (radar.IsNeutral)
             {

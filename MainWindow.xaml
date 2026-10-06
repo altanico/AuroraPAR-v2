@@ -9,6 +9,13 @@
             <ColumnDefinition Width="100"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0" Name="DisplayArea">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <!-- Analog mode: console panel with the digital readouts and status lamps. -->
+            <ContentControl Grid.Column="0" Name="ConsoleHost" Visibility="Collapsed" Focusable="False"/>
+            <Grid Grid.Column="1" Name="ScopeHost">
             <Grid Name="ScopeArea">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
@@ -17,9 +24,9 @@
                 <Canvas Name="Vertical" Grid.Row="0" Background="Black"/>
                 <Canvas Name="Horizontal" Grid.Row="1" Background="Black"/>
             </Grid>
-            <!-- Analog mode: frame of the round scope and information written on the console panel. -->
+            <!-- Analog mode: frame of the round scope. -->
             <Canvas Name="BezelLayer" IsHitTestVisible="False"/>
-            <Canvas Name="PanelInfoHost" IsHitTestVisible="False"/>
+            </Grid>
         </Grid>
         <Border Grid.Column="1" Name="ControlPanel">
             <StackPanel>
