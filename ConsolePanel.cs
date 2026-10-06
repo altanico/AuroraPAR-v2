@@ -135,19 +135,25 @@ namespace AuroraPAR
             tiltAzimuth.Text = Tilt(data.TiltAzimuth, "R", "L");
             statusLamp.State = data.Connected ? LampState.Green : LampState.Red;
             bool blink = DateTime.Now.Millisecond < 500;
+            string measured;
             if (double.IsNaN(data.DataInterval))
             {
                 refreshLamp.State = LampState.Off;
-                refreshRow.ToolTip = "Antenna refresh rate (traffic refresh rate of Aurora): measured when there is moving traffic.";
+                measured = "Not measured yet: it needs moving traffic (about 10-20 s).";
             }
             else
             {
                 string seconds = data.DataInterval.ToString("0.0", CultureInfo.InvariantCulture);
                 refreshLamp.State = data.DataSlow ? (blink ? LampState.Red : LampState.Off) : LampState.Green;
-                refreshRow.ToolTip = data.DataSlow
-                    ? $"Traffic updated every {seconds} s: set Aurora's traffic refresh to 0.5 s."
-                    : $"Traffic updated every {seconds} s.";
+                measured = $"Measured now: traffic updated every {seconds} s.";
             }
+            string toolTip = "ANT. R/R - antenna refresh rate: how often Aurora updates the traffic positions.\n"
+                + "GREEN: good.\n"
+                + "RED (flashing): too slow, tracks move in jumps. In Aurora set the traffic refresh rate to 0.5 s.\n"
+                + "OFF: not measured yet.\n\n"
+                + measured;
+            // Changed only when different, so an open tooltip is not closed at every refresh.
+            if (!Equals(refreshRow.ToolTip, toolTip)) refreshRow.ToolTip = toolTip;
             tiltLamp.State = data.TiltElevation != 0 || data.TiltAzimuth != 0 ? LampState.Amber : LampState.Off;
         }
 
