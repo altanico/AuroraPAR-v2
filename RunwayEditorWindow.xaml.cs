@@ -67,6 +67,7 @@ namespace AuroraPAR
             new("dh", "Decision height (ft)", "height above the threshold"),
             new("range", "Default range (NM)", "1, 2.5, 5, 10, 15 or 20 (the closest is used)"),
             new("touchdown", "Touchdown from threshold (m)", "optional: empty = automatic"),
+            new("magvar", "Magnetic variation", "optional, e.g. 3E or 2W: empty = default in Settings"),
         ];
 
         private static readonly Brush ErrorBackground = new SolidColorBrush(Color.FromRgb(255, 215, 215));
@@ -286,6 +287,14 @@ namespace AuroraPAR
                         return null;
                     }
                     return CheckNumber(text, 0, 3000);
+                case "magvar":
+                    if (text.Length == 0) return null;
+                    if (!MagneticVariation.TryParse(text, out double variation)) return "e.g. 3E, 2.5W or -2";
+                    if (TryNumber(draft["heading"], out double trueHeading))
+                    {
+                        info = $"final course {MagneticVariation.FinalCourse(trueHeading, variation):000}° magnetic";
+                    }
+                    return null;
                 default:
                     return null;
             }
@@ -328,7 +337,7 @@ namespace AuroraPAR
             {
                 // Show the values exactly as written in the file (e.g. 3.0 stays 3.0, 082.1 stays 082.1).
                 string[] f = runway.SourceText.Split(';', StringSplitOptions.TrimEntries);
-                string[] keys = ["icao", "designator", "heading", "elevation", "latitude", "longitude", "length", "width", "glideslope", "tch", "dh", "range", "touchdown"];
+                string[] keys = ["icao", "designator", "heading", "elevation", "latitude", "longitude", "length", "width", "glideslope", "tch", "dh", "range", "touchdown", "magvar"];
                 for (int i = 0; i < keys.Length; i++)
                 {
                     draft[keys[i]] = i < f.Length ? f[i] : "";
@@ -348,6 +357,7 @@ namespace AuroraPAR
             draft["dh"] = FormatNumber(runway.DefaultMDH);
             draft["range"] = FormatNumber(runway.DefaultDistance);
             draft["touchdown"] = runway.TouchdownOverrideM is double touchdown ? FormatNumber(touchdown) : "";
+            draft["magvar"] = runway.MagneticVariation is double variation ? MagneticVariation.Format(variation) : "";
             return draft;
         }
 
@@ -376,7 +386,8 @@ namespace AuroraPAR
                 DefaultMDH = dh,
                 Distance = range,
                 DefaultDistance = range,
-                TouchdownOverrideM = string.IsNullOrWhiteSpace(draft["touchdown"]) ? null : Number(draft, "touchdown")
+                TouchdownOverrideM = string.IsNullOrWhiteSpace(draft["touchdown"]) ? null : Number(draft, "touchdown"),
+                MagneticVariation = MagneticVariation.TryParse(draft["magvar"], out double variation) ? variation : null
             };
         }
 

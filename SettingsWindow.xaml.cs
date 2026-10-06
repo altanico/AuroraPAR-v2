@@ -71,6 +71,11 @@ namespace AuroraPAR
             HistoryCheck.Checked += (s, e) => SetProfileValue(p => p.HistoryEnabled, p => p.HistoryEnabled = true);
             HistoryCheck.Unchecked += (s, e) => SetProfileValue(p => !p.HistoryEnabled, p => p.HistoryEnabled = false);
             HistoryDotsBox.LostFocus += (s, e) => ApplyHistoryDots();
+            MagVarBox.LostFocus += (s, e) => ApplyMagneticVariation();
+            MagVarBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter) ApplyMagneticVariation();
+            };
             HistoryDotsBox.KeyDown += (s, e) =>
             {
                 if (e.Key == Key.Enter) ApplyHistoryDots();
@@ -134,6 +139,9 @@ namespace AuroraPAR
                 ScanEffectCheck.IsChecked = Active.ScanEffect;
                 ScanEffectSpeedComboBox.SelectedIndex = Array.IndexOf(Enum.GetValues<ScanEffectSpeed>(), Active.ScanEffectSpeed);
                 HistoryDotsBox.Text = Active.HistoryDots.ToString(CultureInfo.InvariantCulture);
+                MagVarBox.Text = MagneticVariation.Format(Active.MagneticVariation);
+                MagVarNote.Text = "e.g. 3E or 2W";
+                MagVarNote.Foreground = Brushes.Gray;
                 foreach (Action refresh in refreshers)
                 {
                     refresh();
@@ -262,6 +270,28 @@ namespace AuroraPAR
             if (refreshing || alreadySet(Active)) return;
             set(Active);
             Commit();
+        }
+
+        private void ApplyMagneticVariation()
+        {
+            if (refreshing) return;
+            string text = MagVarBox.Text.Trim();
+            if (text.Length == 0) text = "0";
+            if (!MagneticVariation.TryParse(text, out double variation))
+            {
+                MagVarNote.Text = "not valid: e.g. 3E, 2.5W or -2";
+                MagVarNote.Foreground = Brushes.DarkRed;
+                return;
+            }
+            if (variation != Active.MagneticVariation)
+            {
+                Active.MagneticVariation = variation;
+                Commit();
+            }
+            else
+            {
+                RefreshControls();
+            }
         }
 
         private void ApplyHistoryDots()

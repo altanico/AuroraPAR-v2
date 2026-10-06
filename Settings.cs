@@ -193,6 +193,11 @@ namespace AuroraPAR
         public bool ScanEffect { get; set; } = true;
         /// <summary>Modern display, or analog scope (round phosphor screen, echoes lit by the beam, no labels, knobs).</summary>
         public DisplayMode DisplayMode { get; set; } = DisplayMode.Modern;
+        /// <summary>
+        /// Default magnetic variation (degrees, East positive) for the final course of runways without their own
+        /// value in runways.par (the headings in the file are true).
+        /// </summary>
+        public double MagneticVariation { get; set; }
         public ScanEffectSpeed ScanEffectSpeed { get; set; } = ScanEffectSpeed.Normal;
 
         public const int MinHistoryDots = 3;
@@ -210,6 +215,7 @@ namespace AuroraPAR
             HistoryDots = Math.Clamp(HistoryDots, MinHistoryDots, MaxHistoryDots);
             if (!Enum.IsDefined(ScanEffectSpeed)) ScanEffectSpeed = ScanEffectSpeed.Normal;
             if (!Enum.IsDefined(DisplayMode)) DisplayMode = DisplayMode.Modern;
+            if (double.IsNaN(MagneticVariation) || Math.Abs(MagneticVariation) > 90) MagneticVariation = 0;
             TrackSymbol = NormalizeSymbol(TrackSymbol, new(SymbolShape.CrossCircle, 12));
             ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));
             TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));

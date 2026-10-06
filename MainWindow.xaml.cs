@@ -806,12 +806,14 @@ namespace AuroraPAR
             string minimum = qfe
                 ? $"{heightName} {FormatHeight(runway.MDH)} ft"
                 : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
-            infoText.Text = $"RWY {runway.Designator}\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
+            string course = runway.FinalCourse(profile.MagneticVariation).ToString("000", System.Globalization.CultureInfo.InvariantCulture);
+            infoText.Text = $"RWY {runway.Designator}\nCRS {course}\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
             if (viewOptions.Analog)
             {
                 consolePanel.Update(new ConsoleData(
                     runway.ICAO,
                     runway.Designator,
+                    course,
                     qfe ? "QFE" : "QNH",
                     pressure,
                     qfe ? heightName : altitudeName,

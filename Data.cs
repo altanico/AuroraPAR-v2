@@ -81,6 +81,19 @@ namespace AuroraPAR
         /// </summary>
         public double? TouchdownOverrideM { get; set; }
         /// <summary>
+        /// Magnetic variation of this runway (degrees, East positive), when given in the runway file.
+        /// When null the default of the profile is used (see <see cref="Profile.MagneticVariation"/>).
+        /// </summary>
+        public double? MagneticVariation { get; set; }
+
+        /// <summary>
+        /// Magnetic final course: true heading corrected with the variation of the runway, or the given default.
+        /// </summary>
+        public int FinalCourse(double defaultVariation)
+        {
+            return AuroraPAR.MagneticVariation.FinalCourse(Heading, MagneticVariation ?? defaultVariation);
+        }
+        /// <summary>
         /// Line number in the runway file this runway was read from (null for a new runway).
         /// </summary>
         public int? SourceLine { get; set; }
@@ -243,7 +256,7 @@ namespace AuroraPAR
     internal class DataFile
     {
         //Format: ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH IN METERS;WIDTH IN METERS;GLIDE SLOPE;TCH;MDH;DEFAULT DISTANCE[;TOUCHDOWN DISTANCE FROM THRESHOLD IN METERS (optional)]
-        public const string FormatComment = "# ICAO;DESIGNATOR;HEADING(deg true);THRESHOLD ELEVATION(ft);THRESHOLD LATITUDE;THRESHOLD LONGITUDE;LENGTH(m);WIDTH(m);GLIDE SLOPE(deg);TCH(ft);DH(ft);DEFAULT RANGE(NM)[;TOUCHDOWN FROM THRESHOLD(m)]";
+        public const string FormatComment = "# ICAO;DESIGNATOR;HEADING(deg true);THRESHOLD ELEVATION(ft);THRESHOLD LATITUDE;THRESHOLD LONGITUDE;LENGTH(m);WIDTH(m);GLIDE SLOPE(deg);TCH(ft);DH(ft);DEFAULT RANGE(NM)[;TOUCHDOWN FROM THRESHOLD(m)][;MAGNETIC VARIATION e.g. 3E or 2W]";
 
         public static async Task<Runway[]> GetRunways(string path)
         {
@@ -313,6 +326,11 @@ namespace AuroraPAR
                 {
                     runway.TouchdownOverrideM = touchdown;
                 }
+                // Optional 14th field: magnetic variation (e.g. 3E, 2W). The 13th can then be empty.
+                if (linedata.Length >= 14 && AuroraPAR.MagneticVariation.TryParse(linedata[13], out double variation))
+                {
+                    runway.MagneticVariation = variation;
+                }
                 return true;
             }
             return false;
@@ -377,9 +395,13 @@ namespace AuroraPAR
                 CoordinateParser.Format(r.Latitude), CoordinateParser.Format(r.Longitude),
                 Format(r.LengthM), Format(r.WidthM), Format(r.GlideSlope), Format(r.TCH),
                 Format(r.DefaultMDH), Format(r.DefaultDistance));
-            if (r.TouchdownOverrideM is double touchdown)
+            if (r.TouchdownOverrideM != null || r.MagneticVariation != null)
             {
-                line += ";" + Format(touchdown);
+                line += ";" + (r.TouchdownOverrideM is double touchdown ? Format(touchdown) : "");
+            }
+            if (r.MagneticVariation is double variation)
+            {
+                line += ";" + AuroraPAR.MagneticVariation.Format(variation);
             }
             return line;
         }

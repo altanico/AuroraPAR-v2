@@ -12,6 +12,7 @@ namespace AuroraPAR
     internal record ConsoleData(
         string Icao,
         string Runway,
+        string FinalCourse,
         string PressureName,
         string PressureText,
         string MinimumName,
@@ -41,6 +42,7 @@ namespace AuroraPAR
         private readonly SegmentDisplay runway = new(Cells);
         private readonly SegmentDisplay pressure = new(Cells);
         private readonly SegmentDisplay minimum = new(Cells);
+        private readonly SegmentDisplay finalCourse = new(Cells);
         private readonly SegmentDisplay glideSlope = new(Cells);
         private readonly SegmentDisplay range = new(Cells);
         private readonly SegmentDisplay tiltElevation = new(Cells);
@@ -70,6 +72,7 @@ namespace AuroraPAR
             });
             stack.Children.Add(Row(Label("APT"), icao, "Airport (ICAO)."));
             stack.Children.Add(Row(Label("RWY"), runway, "Runway (designator in runways.par)."));
+            stack.Children.Add(Row(Label("CRS"), finalCourse, "Final course, magnetic: runway true heading corrected with the magnetic variation (of the runway in runways.par, or the default in Settings)."));
             stack.Children.Add(Row(Label("GP DEG"), glideSlope, "Glide path angle of the runway, in degrees."));
             stack.Children.Add(Row(pressureLabel, pressure, "Pressure setting: QNH, or QFE computed for the threshold elevation."));
             stack.Children.Add(Row(minimumLabel, minimum, "Minimum: altitude with QNH, height with QFE (set with the DH knob)."));
@@ -136,6 +139,7 @@ namespace AuroraPAR
             pressure.Text = data.PressureText;
             minimumLabel.Text = $"{data.MinimumName} FT";
             minimum.Text = data.MinimumText;
+            finalCourse.Text = data.FinalCourse;
             glideSlope.Text = data.GlideSlope.ToString("0.0#", CultureInfo.InvariantCulture);
             range.Text = data.Range.ToString("0.#", CultureInfo.InvariantCulture);
             tiltElevation.Text = Tilt(data.TiltElevation, "U", "D");
