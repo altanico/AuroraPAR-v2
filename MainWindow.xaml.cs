@@ -816,6 +816,7 @@ namespace AuroraPAR
                     pressure,
                     qfe ? heightName : altitudeName,
                     FormatHeight(qfe ? runway.MDH : runway.MDH + runway.Elevation),
+                    runway.GlideSlope,
                     runway.Distance,
                     radar.TiltElevation,
                     radar.TiltAzimuth,

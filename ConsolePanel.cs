@@ -16,6 +16,7 @@ namespace AuroraPAR
         string PressureText,
         string MinimumName,
         string MinimumText,
+        double GlideSlope,
         double Range,
         double TiltElevation,
         double TiltAzimuth,
@@ -37,6 +38,7 @@ namespace AuroraPAR
         private readonly SegmentDisplay runway = new(6);
         private readonly SegmentDisplay pressure = new(5);
         private readonly SegmentDisplay minimum = new(5);
+        private readonly SegmentDisplay glideSlope = new(4);
         private readonly SegmentDisplay range = new(4);
         private readonly SegmentDisplay tiltElevation = new(4);
         private readonly SegmentDisplay tiltAzimuth = new(4);
@@ -65,6 +67,7 @@ namespace AuroraPAR
             });
             stack.Children.Add(Row(Label("APT"), icao, "Airport (ICAO)."));
             stack.Children.Add(Row(Label("RWY"), runway, "Runway (designator in runways.par)."));
+            stack.Children.Add(Row(Label("GP DEG"), glideSlope, "Glide path angle of the runway, in degrees."));
             stack.Children.Add(Row(pressureLabel, pressure, "Pressure setting: QNH, or QFE computed for the threshold elevation."));
             stack.Children.Add(Row(minimumLabel, minimum, "Minimum: altitude with QNH, height with QFE (set with the DH knob)."));
             stack.Children.Add(Row(Label("RANGE NM"), range, "Displayed range."));
@@ -130,6 +133,7 @@ namespace AuroraPAR
             pressure.Text = data.PressureText;
             minimumLabel.Text = $"{data.MinimumName} FT";
             minimum.Text = data.MinimumText;
+            glideSlope.Text = data.GlideSlope.ToString("0.0#", CultureInfo.InvariantCulture);
             range.Text = data.Range.ToString("0.#", CultureInfo.InvariantCulture);
             tiltElevation.Text = Tilt(data.TiltElevation, "U", "D");
             tiltAzimuth.Text = Tilt(data.TiltAzimuth, "R", "L");
