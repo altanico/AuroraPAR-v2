@@ -767,10 +767,22 @@ namespace AuroraPAR
                 Stroke = ReminderBrush(reminder),
                 StrokeThickness = reminder.Width,
                 StrokeDashArray = Theme.DashArray(reminder.Dash),
+                IsHitTestVisible = false
+            };
+            AddStatic(line);
+            // Invisible wider line on top: the tooltip shows anywhere near the line, not only on its few pixels.
+            Line hitArea = new()
+            {
+                X1 = line.X1,
+                Y1 = line.Y1,
+                X2 = line.X2,
+                Y2 = line.Y2,
+                Stroke = Brushes.Transparent,
+                StrokeThickness = Math.Max(12, reminder.Width + 8),
                 ToolTip = reminder.ToolTip()
             };
-            ToolTips.KeepOpen(line);
-            AddStatic(line);
+            ToolTips.KeepOpen(hitArea);
+            AddStatic(hitArea);
         }
 
         /// <summary>Marker of a reminder centred on a logical point, with its note as tooltip.</summary>
@@ -782,14 +794,25 @@ namespace AuroraPAR
                 Data = Symbols.Create(reminder.Symbol, reminder.Size),
                 Stroke = brush,
                 StrokeThickness = 2,
-                // Filled with a transparent brush at least, so the whole symbol shows the tooltip.
-                Fill = Symbols.IsFilled(reminder.Symbol) ? brush : Brushes.Transparent,
-                ToolTip = reminder.ToolTip()
+                Fill = Symbols.IsFilled(reminder.Symbol) ? brush : null,
+                IsHitTestVisible = false
             };
-            ToolTips.KeepOpen(path);
             Canvas.SetLeft(path, ToScreenX(x));
             Canvas.SetTop(path, ToScreenY(y));
             AddStatic(path);
+            // Invisible square around the symbol: the tooltip shows on the whole symbol and a little around it.
+            double side = Math.Max(20, reminder.Size + 10);
+            Border hitArea = new()
+            {
+                Width = side,
+                Height = side,
+                Background = Brushes.Transparent,
+                ToolTip = reminder.ToolTip()
+            };
+            ToolTips.KeepOpen(hitArea);
+            Canvas.SetLeft(hitArea, ToScreenX(x) - side / 2);
+            Canvas.SetTop(hitArea, ToScreenY(y) - side / 2);
+            AddStatic(hitArea);
         }
 
         protected void AddLine(double x1, double y1, double x2, double y2, Brush stroke, double thickness, bool dashed = false)
