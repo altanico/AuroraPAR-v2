@@ -132,8 +132,13 @@ namespace AuroraPAR
     /// </summary>
     internal sealed class CoordinationLink : IDisposable
     {
-        private const string Broker = "broker.emqx.io";
+        /// <summary>
+        /// Public relays, tried in this order (encrypted connection, port 8883). Both panels use the first one
+        /// that works, so normally the same one.
+        /// </summary>
+        private static readonly string[] Brokers = ["broker.emqx.io", "broker.hivemq.com"];
         private const int Port = 8883;
+        private int brokerIndex;
         private static readonly JsonSerializerOptions Json = new() { Converters = { new JsonStringEnumConverter() } };
 
         private readonly string clientId = "aurorapar-" + Guid.NewGuid().ToString("N")[..12];
@@ -175,6 +180,7 @@ namespace AuroraPAR
                 Airport = airport;
                 role = newRole;
                 channel = airport == null ? null : ChannelOf(airport);
+                brokerIndex = 0;
                 PartnerChanged?.Invoke(false);
                 if (channel != null) await ConnectInternal();
             }
@@ -211,7 +217,7 @@ namespace AuroraPAR
                 client = factory.CreateMqttClient();
                 client.ApplicationMessageReceivedAsync += OnMessage;
                 MqttClientOptions options = new MqttClientOptionsBuilder()
-                    .WithTcpServer(Broker, Port)
+                    .WithTcpServer(Brokers[brokerIndex], Port)
                     .WithTlsOptions(o => o.UseTls())
                     .WithClientId(clientId)
                     .WithCleanSession()
@@ -233,7 +239,8 @@ namespace AuroraPAR
             }
             catch (Exception)
             {
-                // No network or relay not reachable: KeepAlive tries again.
+                // No network or relay not reachable: KeepAlive tries again, with the next relay.
+                brokerIndex = (brokerIndex + 1) % Brokers.Length;
             }
         }
 

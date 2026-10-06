@@ -19,6 +19,7 @@ This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https
 7. [Antenna tilt](#7-antenna-tilt)
 8. [Decision height](#8-decision-height)
 9. [Analog mode](#9-analog-mode)
+   - [9b. Coordination panel](#9b-coordination-panel)
 10. [Settings and profiles](#10-settings-and-profiles)
 11. [Display style: range marks, colours, reminders](#11-display-style-range-marks-colours-reminders)
 12. [Runways and the runway editor](#12-runways-and-the-runway-editor)
@@ -256,6 +257,36 @@ Status lamps:
 - **double click**: tilt back to neutral, DH back to the runway value.
 
 The knobs always follow the real state, also when it is changed with the keyboard.
+
+---
+
+## 9b. Coordination panel
+
+The **Coordination** button opens a small panel for **voiceless coordination** between the radar (PAR / approach) and the tower, as on the light panels of real PAR rooms. The tower controller runs AuroraPAR too and opens only this panel.
+
+| | |
+|---|---|
+| Lights 1–5 | Coloured lights (default white, blue, yellow, red, green). No text: each unit gives them its own meaning, e.g. *12 NM*, *8 NM*, *landing clearance requested / given*, *not authorised*. |
+| Light 6 | **Reset** (default black): switches all the lights off on both panels. |
+
+**How it works — the same rule for every light:**
+
+1. The first side that presses a light makes it **flash** on both panels; the other side hears an **alert**.
+2. When the other side presses the **same light**, it becomes **steady** on both panels: received.
+3. Pressing again a light you called yourself, while it still flashes, cancels the call.
+4. The lights stay on until one of the two presses **Reset** (usually at the end of the approach).
+
+Example: at 12 NM the radar presses white (flashing, alert in the tower), the tower presses white (steady). At 3 NM the radar presses yellow to request the landing clearance; the tower presses yellow to give it, or red to refuse it.
+
+**Linking the two panels — automatic:** AuroraPAR asks Aurora which callsign you are connected with. Panels of the same airport are linked: `XXXX_TWR` is the tower, any other callsign of the airport (`_APP`, `_F_APP`, `_DEP`…) the radar. The status line shows the airport, your side and whether the other side is online (green dot).
+
+**As observer** (`_OBS`), or to override: open **Options**, type the **airport** (ICAO) and choose the **role**.
+
+**Options:** airport, role, colours of the six lights (*Default colours* restores white-blue-yellow-red-green-black), always on top.
+
+**Connection:** the panels talk through a free public relay on the internet (MQTT, encrypted connection), so there is nothing to install and no port to open. Only the state of the lights is sent: no names, no IVAO data. Being a public service it is best-effort; if the status line keeps saying *connecting...*, check that your network allows outgoing connections on port 8883.
+
+> A **shout line** (always-open intercom) may be added in a future version.
 
 ---
 
