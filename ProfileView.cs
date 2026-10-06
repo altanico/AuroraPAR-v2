@@ -10,7 +10,12 @@ namespace AuroraPAR
     /// </summary>
     internal class ProfileView(Canvas canvas, Runway runway, Radar radar, ViewOptions options) : RadarView(canvas, runway, radar, options)
     {
-        private double H => Canvas.ActualHeight;
+        /// <summary>
+        /// Horizon (ground) line: above the bottom of the view by <see cref="bottomBand"/>, the room for the distance
+        /// text or the reminder markers below it.
+        /// </summary>
+        private double H => Canvas.ActualHeight - bottomBand;
+        private double bottomBand = 24;
 
         /// <summary>
         /// Distance of the antenna from the far end of the runway, in NM.
@@ -23,7 +28,10 @@ namespace AuroraPAR
             // Fixed vertical scale, depending only on the range: the default upper scan limit (8°) reaches the top at
             // the end of the range. Other scan limits or a tilt move the lines (beyond the view if needed), as on a real PAR.
             double top = Radar.ScanHeight(Runway.Distance + Runway.LengthNM - AntennaNM, Radar.ReferenceScanUp);
-            yscale = (Canvas.ActualHeight - 50) / top;
+            // Room below the horizon for the distance text or the reminder markers (the larger of the two).
+            double markers = VisibleReminders().Where(r => r.HasMarker).Select(r => r.Size + 8).DefaultIfEmpty(0).Max();
+            bottomBand = Math.Max(22, markers);
+            yscale = (H - 30) / top;
         }
 
         /// <summary>
@@ -113,9 +121,8 @@ namespace AuroraPAR
             }
             // Range marks, measured from the touchdown point, between the scan limits.
             List<DistanceReminder> reminders = VisibleReminders();
-            // Markers below the distance text: all the texts are raised by the height of the largest marker.
-            double markerBand = reminders.Where(r => r.HasMarker).Select(r => r.Size + 6).DefaultIfEmpty(0).Max();
-            double textBottom = Options.ReminderMarkersBelowText ? H - markerBand : H;
+            // The horizon line is the base: distance text above it and reminder markers below, or the opposite.
+            bool textBelow = Options.RangeTextBelowHorizon;
             foreach ((double distance, StyleElement element, bool text) in Options.RangeMarks.Marks(range))
             {
                 double markNM = length - Runway.TouchdownNM + distance;
@@ -128,10 +135,10 @@ namespace AuroraPAR
                 }
                 if (text)
                 {
-                    AddText(RangeMarkSettings.Label(distance), markNM * xscale, textBottom, -10, Brush(StyleElement.RangeText), aboveAnchor: true);
+                    AddText(RangeMarkSettings.Label(distance), markNM * xscale, textBelow ? H + 2 : H - 1, -10, Brush(StyleElement.RangeText), aboveAnchor: !textBelow);
                 }
             }
-            // Distance reminders: line between the scan limits and/or marker above the distance text.
+            // Distance reminders: line between the scan limits and/or marker on the other side of the horizon from the text.
             foreach (DistanceReminder reminder in reminders)
             {
                 double markNM = length - Runway.TouchdownNM + reminder.Distance;
@@ -143,9 +150,9 @@ namespace AuroraPAR
                 }
                 if (reminder.HasMarker)
                 {
-                    double y = Options.ReminderMarkersBelowText
-                        ? H - markerBand / 2
-                        : textBottom - 20 - reminder.Size / 2;
+                    double y = textBelow
+                        ? H - 3 - reminder.Size / 2
+                        : H + 3 + reminder.Size / 2;
                     AddReminderMarker(reminder, markNM * xscale, y);
                 }
             }

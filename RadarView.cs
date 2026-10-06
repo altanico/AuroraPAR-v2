@@ -39,8 +39,8 @@ namespace AuroraPAR
         public RangeMarkSettings RangeMarks { get; set; } = RangeMarkSettings.Default();
         /// <summary>Distance reminders of a runway (those of the profile and those of the runway).</summary>
         public Func<Runway, IEnumerable<DistanceReminder>> Reminders { get; set; } = _ => [];
-        /// <summary>Reminder markers below the distance text instead of above it.</summary>
-        public bool ReminderMarkersBelowText { get; set; }
+        /// <summary>Distance text below the horizon line and reminder markers above it (otherwise the opposite).</summary>
+        public bool RangeTextBelowHorizon { get; set; }
     }
 
     /// <summary>
