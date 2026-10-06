@@ -34,14 +34,17 @@ namespace AuroraPAR
         private static readonly Brush LabelBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xD8, 0xD8, 0xD0)));
         private static readonly Brush EngravingBrush = Frozen(new SolidColorBrush(Color.FromRgb(0x8C, 0x8E, 0x88)));
 
-        private readonly SegmentDisplay icao = new(4);
-        private readonly SegmentDisplay runway = new(6);
-        private readonly SegmentDisplay pressure = new(5);
-        private readonly SegmentDisplay minimum = new(5);
-        private readonly SegmentDisplay glideSlope = new(4);
-        private readonly SegmentDisplay range = new(4);
-        private readonly SegmentDisplay tiltElevation = new(4);
-        private readonly SegmentDisplay tiltAzimuth = new(4);
+        /// <summary>Characters of every readout: the same for all, so the windows line up.</summary>
+        private const int Cells = 5;
+
+        private readonly SegmentDisplay icao = new(Cells);
+        private readonly SegmentDisplay runway = new(Cells);
+        private readonly SegmentDisplay pressure = new(Cells);
+        private readonly SegmentDisplay minimum = new(Cells);
+        private readonly SegmentDisplay glideSlope = new(Cells);
+        private readonly SegmentDisplay range = new(Cells);
+        private readonly SegmentDisplay tiltElevation = new(Cells);
+        private readonly SegmentDisplay tiltAzimuth = new(Cells);
         private readonly TextBlock pressureLabel = Label("QNH");
         private readonly TextBlock minimumLabel = Label("DA FT");
         private readonly Lamp statusLamp = new();
@@ -332,7 +335,7 @@ namespace AuroraPAR
             Height = CharHeight + 2 * Pad;
         }
 
-        /// <summary>Text shown, right aligned; characters beyond the window are cut on the left.</summary>
+        /// <summary>Text shown, right aligned; characters beyond the window are cut on the right.</summary>
         public string Text
         {
             get => text;
@@ -358,7 +361,7 @@ namespace AuroraPAR
                 }
                 list.Add((raw == '.' || raw == ',' ? ' ' : raw, raw == '.' || raw == ','));
             }
-            if (list.Count > cells) list.RemoveRange(0, list.Count - cells);
+            if (list.Count > cells) list.RemoveRange(cells, list.Count - cells);
             while (list.Count < cells) list.Insert(0, (' ', false));
             return list;
         }
