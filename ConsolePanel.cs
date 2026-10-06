@@ -72,7 +72,7 @@ namespace AuroraPAR
             });
             stack.Children.Add(Row(Label("APT"), icao, "Airport (ICAO)."));
             stack.Children.Add(Row(Label("RWY"), runway, "Runway (designator in runways.par)."));
-            stack.Children.Add(Row(Label("CRS"), finalCourse, "Final course, magnetic: runway true heading corrected with the magnetic variation (of the runway in runways.par, or the default in Settings)."));
+            stack.Children.Add(Row(Label("CRS"), finalCourse, "Final course (magnetic). Calculated, not the published value: runway true heading from runways.par corrected with the magnetic variation (of the runway, or the default in Settings), rounded to the degree. Check it against the approach chart."));
             stack.Children.Add(Row(Label("GP DEG"), glideSlope, "Glide path angle of the runway, in degrees."));
             stack.Children.Add(Row(pressureLabel, pressure, "Pressure setting: QNH, or QFE computed for the threshold elevation."));
             stack.Children.Add(Row(minimumLabel, minimum, "Minimum: altitude with QNH, height with QFE (set with the DH knob)."));

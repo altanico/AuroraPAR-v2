@@ -65,6 +65,15 @@ namespace AuroraPAR
         /// </summary>
         private readonly StackPanel infoPanel = new();
         private readonly TextBlock infoText = new() { FontSize = 14, Foreground = Brushes.White };
+        /// <summary>Final course, on its own line for its tooltip.</summary>
+        private readonly TextBlock courseText = new()
+        {
+            FontSize = 14,
+            Foreground = Brushes.White,
+            Background = Brushes.Transparent,
+            ToolTip = "Final course (magnetic). Calculated, not the published value: runway true heading from runways.par corrected with the magnetic variation (of the runway, or the default in Settings), rounded to the degree. Check it against the approach chart."
+        };
+        private readonly TextBlock infoText2 = new() { FontSize = 14, Foreground = Brushes.White };
         /// <summary>
         /// Antenna tilt reminder, shown only when the antenna is not in neutral position.
         /// </summary>
@@ -110,6 +119,8 @@ namespace AuroraPAR
             profileView = new(Vertical, runway, radar, viewOptions);
             horizontalView = new(Horizontal, runway, radar, viewOptions);
             infoPanel.Children.Add(infoText);
+            infoPanel.Children.Add(courseText);
+            infoPanel.Children.Add(infoText2);
             infoPanel.Children.Add(tiltText);
             infoPanel.Children.Add(statusText);
             infoPanel.Children.Add(dataText);
@@ -664,6 +675,8 @@ namespace AuroraPAR
             Canvas.SetTop(infoPanel, 0);
             TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
             infoText.TextAlignment = alignment;
+            courseText.TextAlignment = alignment;
+            infoText2.TextAlignment = alignment;
             statusText.TextAlignment = alignment;
             dataText.TextAlignment = alignment;
             tiltText.TextAlignment = alignment;
@@ -809,7 +822,9 @@ namespace AuroraPAR
                 : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
             string course = runway.FinalCourse(profile.MagneticVariation).ToString("000", System.Globalization.CultureInfo.InvariantCulture);
             string glidePath = runway.GlideSlope.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture);
-            infoText.Text = $"RWY {runway.Designator}\nCRS {course}\nGP {glidePath}°\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
+            infoText.Text = $"RWY {runway.Designator}";
+            courseText.Text = $"CRS {course}";
+            infoText2.Text = $"GP {glidePath}°\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}";
             if (viewOptions.Analog)
             {
                 consolePanel.Update(new ConsoleData(
