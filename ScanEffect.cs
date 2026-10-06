@@ -17,8 +17,11 @@ namespace AuroraPAR
     /// </summary>
     internal static class ScanEffect
     {
-        /// <summary>Number of lines drawn for the beam and its glow (the first is the beam).</summary>
-        public const int Lines = 24;
+        /// <summary>
+        /// Number of lines drawn for the beam and its glow (the first is the beam). Only the beam: a glow made of
+        /// several lines looked like a grid and was too strong (the echoes still fade, see SinceLastPass).
+        /// </summary>
+        public const int Lines = 1;
         /// <summary>Time between two lines of the glow, in seconds (the glow lasts Lines × this).</summary>
         private const double GlowStep = 0.02;
 
