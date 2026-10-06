@@ -19,7 +19,7 @@ namespace AuroraPAR
 
         protected override void CalculateScale()
         {
-            xscale = (Canvas.ActualWidth - 50) / (Runway.Distance + Runway.LengthNM);
+            CalculateHorizontalScale();
             // Fixed vertical scale, depending only on the range: the default upper scan limit (8°) reaches the top at
             // the end of the range. Other scan limits or a tilt move the lines (beyond the view if needed), as on a real PAR.
             double top = Radar.ScanHeight(Runway.Distance + Runway.LengthNM - AntennaNM, Radar.ReferenceScanUp);
@@ -151,7 +151,8 @@ namespace AuroraPAR
             {
                 double y = Y((value - baseValue) * unitToFeet);
                 if (y < 10 || y > H - 22) continue;
-                AddLine(0, y, 8, y, Options.Palette.ScaleText, 1);
+                // At the edge of the view (logical x minus the shift, see XShift).
+                AddLine(-XShift, y, 8 - XShift, y, Options.Palette.ScaleText, 1);
                 AddSideText($"{value:0} {unit}", y, Options.Palette.ScaleText);
             }
         }

@@ -23,7 +23,7 @@ namespace AuroraPAR
 
         protected override void CalculateScale()
         {
-            xscale = (Canvas.ActualWidth - 50) / (Runway.Distance + Runway.LengthNM);
+            CalculateHorizontalScale();
             // Fixed lateral scale, depending only on the range: the default scan limits (±10°) fill the view at the end
             // of the range. Other scan limits or a tilt move the lines (beyond the view if needed), as on a real PAR.
             double half = Radar.ScanOffset(Runway.Distance + Runway.LengthNM - AntennaNM, Radar.ReferenceScanHalfWidth);

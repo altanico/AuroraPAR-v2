@@ -104,8 +104,9 @@ namespace AuroraPAR
             public readonly List<Path> Dots = [];
             public int DotsVersion = -1;
             /// <summary>Previous positions, in world coordinates (see <see cref="ToWorld"/>), oldest first.</summary>
-            public readonly List<(double Along, double Value)> History = [];
-            public (double Along, double Value) LastWorld;
+            /// <summary>Inside: the aircraft was inside the scan limits there (only those dots are drawn).</summary>
+            public readonly List<(double Along, double Value, bool Inside)> History = [];
+            public (double Along, double Value, bool Inside) LastWorld;
             public double LastLatitude = double.NaN;
             public double LastLongitude = double.NaN;
             public double LastAltitude = double.NaN;
@@ -368,10 +369,11 @@ namespace AuroraPAR
                 track.LastLongitude = aircraft.Longitude;
                 track.LastAltitude = aircraft.Altitude;
             }
-            track.LastWorld = (along, value);
+            bool inside = Radar.IsInsideScan(aircraft, Runway);
+            track.LastWorld = (along, value, inside);
 
             Point logical = WorldToLogical(along, value);
-            if (!Radar.IsInsideScan(aircraft, Runway) || !IsDrawable(logical))
+            if (!inside || !IsDrawable(logical))
             {
                 SetTrackVisible(track, false);
                 return;
@@ -437,7 +439,7 @@ namespace AuroraPAR
             int first = track.History.Count - count;
             for (int i = 0; i < count; i++)
             {
-                (double along, double value) = track.History[first + i];
+                (double along, double value, bool wasInside) = track.History[first + i];
                 Point logical = WorldToLogical(along, value);
                 Path dot = track.Dots[i];
                 dot.Stroke = track.Color;
@@ -446,7 +448,8 @@ namespace AuroraPAR
                 dot.Opacity = Options.Analog ? 0.08 + 0.42 * (i + 1) / count : 1;
                 Canvas.SetLeft(dot, ToScreenX(logical.X));
                 Canvas.SetTop(dot, ToScreenY(logical.Y));
-                dot.Visibility = Visibility.Visible;
+                // A radar shows only what its antenna saw: no dots where the aircraft was outside the scan limits.
+                dot.Visibility = wasInside && IsDrawable(logical) ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -663,8 +666,30 @@ namespace AuroraPAR
             }
         }
 
+        /// <summary>
+        /// Shift of the logical x on the screen: the antenna is kept at <see cref="LeftMargin"/> from the edge
+        /// whatever the range (the part of the runway behind the antenna, outside the scan, is then off the view).
+        /// </summary>
+        protected double XShift;
+
+        /// <summary>Distance of the antenna from the edge of the view (room for the altitude scale when shown).</summary>
+        protected double LeftMargin => Options.ShowAltitudeScale ? 70 : 24;
+
+        /// <summary>
+        /// Horizontal scale and shift: the antenna at <see cref="LeftMargin"/>, the end of the range 50 px from the
+        /// other edge.
+        /// </summary>
+        protected void CalculateHorizontalScale()
+        {
+            double antenna = Radar.AntennaFromRunwayEnd(Runway);
+            double span = Math.Max(0.1, Runway.Distance + Runway.LengthNM - antenna);
+            xscale = Math.Max(1e-6, Canvas.ActualWidth - 50 - LeftMargin) / span;
+            XShift = LeftMargin - antenna * xscale;
+        }
+
         protected double ToScreenX(double x)
         {
+            x += XShift;
             return RunwayOnRight ? Canvas.ActualWidth - x : x;
         }
 
