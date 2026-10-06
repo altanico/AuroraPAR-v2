@@ -521,7 +521,11 @@ namespace AuroraPAR
 
         private async void RunwaysButton_Click(object sender, RoutedEventArgs e)
         {
-            RunwayEditorWindow window = new(dataPath, runways, (RunwayComboBox.SelectedItem as Runway)?.ToString())
+            RunwayEditorWindow window = new(dataPath, runways, (RunwayComboBox.SelectedItem as Runway)?.ToString(), settings, () =>
+            {
+                SettingsStore.Save(settings);
+                InvalidateViews();
+            })
             {
                 Owner = this
             };
@@ -643,6 +647,7 @@ namespace AuroraPAR
                 ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor))
                 : Theme.Modern(profile.Style);
             viewOptions.RangeMarks = profile.RangeMarks;
+            viewOptions.Reminders = settings.RemindersFor;
             phosphorGlow.Color = viewOptions.Theme.Glow;
             // The old scopes had no altitude scale.
             viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale && !analog;

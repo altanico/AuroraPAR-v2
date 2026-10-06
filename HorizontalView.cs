@@ -100,10 +100,18 @@ namespace AuroraPAR
                 AddLine(interceptNM * xscale, ScanY(interceptNM, left), interceptNM * xscale, ScanY(interceptNM, right), StyleElement.DecisionHeight);
             }
             // Range marks, measured from the touchdown point, between the scan limits.
+            List<DistanceReminder> reminders = VisibleReminders();
             foreach ((double distance, StyleElement element, bool _) in Options.RangeMarks.Marks(range))
             {
+                if (HasReminderLine(reminders, distance)) continue;
                 double markNM = distance - Runway.TouchdownNM + length;
                 AddLine(markNM * xscale, ScanY(markNM, left), markNM * xscale, ScanY(markNM, right), element);
+            }
+            // Distance reminders: only the line in this view (the markers are in the elevation view).
+            foreach (DistanceReminder reminder in reminders.Where(r => r.HasLine))
+            {
+                double markNM = reminder.Distance - Runway.TouchdownNM + length;
+                AddReminderLine(reminder, markNM * xscale, ScanY(markNM, left), markNM * xscale, ScanY(markNM, right));
             }
         }
 

@@ -204,6 +204,8 @@ namespace AuroraPAR
         public DisplayStyleSettings Style { get; set; } = DisplayStyleSettings.CreateDefault();
         /// <summary>Phosphor colour of the analog scope (#RRGGBB).</summary>
         public string AnalogColor { get; set; } = "#A8FF60";
+        /// <summary>Distance reminders for all runways (each runway can have its own too, see AppSettings).</summary>
+        public List<DistanceReminder> Reminders { get; set; } = [];
         /// <summary>
         /// Default magnetic variation (degrees, East positive) for the final course of runways without their own
         /// value in runways.par (the headings in the file are true).
@@ -234,6 +236,8 @@ namespace AuroraPAR
             Style ??= DisplayStyleSettings.CreateDefault();
             Style.Normalize();
             if (!ColorText.TryParse(AnalogColor, out _)) AnalogColor = "#A8FF60";
+            Reminders ??= [];
+            DistanceReminder.Normalize(Reminders);
             if (double.IsNaN(MagneticVariation) || Math.Abs(MagneticVariation) > 90) MagneticVariation = 0;
             TrackSymbol = NormalizeSymbol(TrackSymbol, new(SymbolShape.CrossCircle, 12));
             ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));
@@ -291,6 +295,28 @@ namespace AuroraPAR
         /// Size and position of the main window when the program was closed, restored at start.
         /// </summary>
         public WindowPlacement? Window { get; set; }
+        /// <summary>
+        /// Distance reminders of single runways, by "ICAO DESIGNATOR" (in addition to those of the profile).
+        /// </summary>
+        public Dictionary<string, List<DistanceReminder>> RunwayReminders { get; set; } = [];
+
+        /// <summary>Reminders of a runway (created empty if needed).</summary>
+        public List<DistanceReminder> RemindersOf(string runway)
+        {
+            if (!RunwayReminders.TryGetValue(runway, out List<DistanceReminder>? list) || list == null)
+            {
+                list = [];
+                RunwayReminders[runway] = list;
+            }
+            return list;
+        }
+
+        /// <summary>Reminders drawn for a runway: those of the active profile, then those of the runway.</summary>
+        public IEnumerable<DistanceReminder> RemindersFor(Runway runway)
+        {
+            IEnumerable<DistanceReminder> own = RunwayReminders.TryGetValue(runway.ToString(), out List<DistanceReminder>? list) && list != null ? list : [];
+            return Active.Reminders.Concat(own);
+        }
 
         [JsonIgnore]
         public Profile Active => Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles[0];
@@ -302,6 +328,12 @@ namespace AuroraPAR
         public void Normalize()
         {
             Profiles ??= [];
+            RunwayReminders ??= [];
+            foreach (string key in RunwayReminders.Keys.ToList())
+            {
+                if (RunwayReminders[key] == null || RunwayReminders[key].Count == 0) RunwayReminders.Remove(key);
+                else DistanceReminder.Normalize(RunwayReminders[key]);
+            }
             List<Profile> valid = Profiles.Where(p => p != null).ToList();
             Profiles = [];
             foreach (Profile p in valid)

@@ -33,6 +33,13 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
+            <TabItem Header="Reminders">
+                <StackPanel Margin="10">
+                    <TextBlock TextWrapping="Wrap" MaxWidth="760" Foreground="Gray"
+                               Text="Distance reminders for all runways: a marker above the distance in the elevation view, a coloured line across both views (it replaces the range mark at that distance), or both. Each runway can also have its own reminders, in Runways... . Changes are applied immediately."/>
+                    <ContentControl Name="RemindersHost" Margin="0,10,0,0" Focusable="False"/>
+                </StackPanel>
+            </TabItem>
         </TabControl>
         <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
     </StackPanel>

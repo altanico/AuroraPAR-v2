@@ -91,10 +91,16 @@ namespace AuroraPAR
         /// </summary>
         internal bool Saved { get; private set; }
 
-        internal RunwayEditorWindow(string path, IEnumerable<Runway> runways, string? selectedName)
+        private readonly ReminderEditor reminderEditor;
+
+        /// <param name="settings">Settings holding the reminders of each runway.</param>
+        /// <param name="settingsChanged">Saves the settings and redraws (reminders are saved at once, not with Save).</param>
+        internal RunwayEditorWindow(string path, IEnumerable<Runway> runways, string? selectedName, AppSettings settings, Action settingsChanged)
         {
             InitializeComponent();
             this.path = path;
+            reminderEditor = new ReminderEditor(() => settings.RemindersOf(ReminderKey(shown)), settingsChanged);
+            RemindersHost.Content = reminderEditor;
             BuildForm();
             foreach (Runway runway in runways)
             {
@@ -180,11 +186,33 @@ namespace AuroraPAR
             DuplicateButton.IsEnabled = draft != null;
             DeleteButton.IsEnabled = draft != null;
             UpdateNotes();
+            UpdateReminders();
+        }
+
+        /// <summary>Reminders are kept by "ICAO DESIGNATOR", like the runway list.</summary>
+        private static string ReminderKey(Draft? draft)
+        {
+            return draft == null ? "" : $"{draft["icao"].Trim().ToUpperInvariant()} {draft["designator"].Trim()}";
+        }
+
+        private void UpdateReminders()
+        {
+            RemindersGroup.IsEnabled = shown != null;
+            RemindersInfo.Text = shown == null
+                ? ""
+                : $"Reminders of {ReminderKey(shown)} only, drawn in addition to those for all runways (Settings → Display style → Reminders). "
+                  + "They are kept with the airport and runway name and saved at once (not with Save).";
+            reminderEditor.Rebuild();
         }
 
         private void FieldChanged(string key)
         {
             if (loading || shown is not Draft draft) return;
+            if (key == "icao" || key == "designator")
+            {
+                // The reminders belong to the airport and runway name.
+                Dispatcher.BeginInvoke(new Action(UpdateReminders));
+            }
             string text = boxes[key].Text;
             bool isCoordinate = key == "latitude" || key == "longitude";
             // A latitude and longitude pasted together in one field are split into both fields.

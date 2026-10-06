@@ -37,6 +37,8 @@ namespace AuroraPAR
         public Theme Theme { get; set; } = Theme.Modern(DisplayStyleSettings.CreateDefault());
         /// <summary>Range marks drawn at each range.</summary>
         public RangeMarkSettings RangeMarks { get; set; } = RangeMarkSettings.Default();
+        /// <summary>Distance reminders of a runway (those of the profile and those of the runway).</summary>
+        public Func<Runway, IEnumerable<DistanceReminder>> Reminders { get; set; } = _ => [];
     }
 
     /// <summary>
@@ -730,6 +732,62 @@ namespace AuroraPAR
         }
 
         protected Brush Brush(StyleElement element) => Options.Theme.Brush(element);
+
+        /// <summary>Reminders of the runway within the displayed range.</summary>
+        protected List<DistanceReminder> VisibleReminders()
+        {
+            return Options.Reminders(Runway).Where(r => r.Distance > 0 && r.Distance <= Runway.Distance + 1e-6).ToList();
+        }
+
+        /// <summary>True if a reminder line replaces the range mark at this distance.</summary>
+        protected static bool HasReminderLine(List<DistanceReminder> reminders, double distance)
+        {
+            return reminders.Any(r => r.HasLine && Math.Abs(r.Distance - distance) < 0.005);
+        }
+
+        /// <summary>Colour of a reminder: its own, or the phosphor on the analog scope.</summary>
+        private Brush ReminderBrush(DistanceReminder reminder)
+        {
+            if (Options.Theme.IsAnalog) return Options.Theme.Brush(StyleElement.TrackInside);
+            SolidColorBrush brush = new(ColorText.Parse(reminder.Color, System.Windows.Media.Colors.Orange));
+            brush.Freeze();
+            return brush;
+        }
+
+        /// <summary>Line of a reminder (logical coordinates), with its note as tooltip.</summary>
+        protected void AddReminderLine(DistanceReminder reminder, double x1, double y1, double x2, double y2)
+        {
+            Line line = new()
+            {
+                X1 = ToScreenX(x1),
+                Y1 = ToScreenY(y1),
+                X2 = ToScreenX(x2),
+                Y2 = ToScreenY(y2),
+                Stroke = ReminderBrush(reminder),
+                StrokeThickness = reminder.Width,
+                StrokeDashArray = Theme.DashArray(reminder.Dash),
+                ToolTip = reminder.ToolTip()
+            };
+            AddStatic(line);
+        }
+
+        /// <summary>Marker of a reminder centred on a logical point, with its note as tooltip.</summary>
+        protected void AddReminderMarker(DistanceReminder reminder, double x, double y)
+        {
+            Brush brush = ReminderBrush(reminder);
+            Path path = new()
+            {
+                Data = Symbols.Create(reminder.Symbol, reminder.Size),
+                Stroke = brush,
+                StrokeThickness = 2,
+                // Filled with a transparent brush at least, so the whole symbol shows the tooltip.
+                Fill = Symbols.IsFilled(reminder.Symbol) ? brush : Brushes.Transparent,
+                ToolTip = reminder.ToolTip()
+            };
+            Canvas.SetLeft(path, ToScreenX(x));
+            Canvas.SetTop(path, ToScreenY(y));
+            AddStatic(path);
+        }
 
         protected void AddLine(double x1, double y1, double x2, double y2, Brush stroke, double thickness, bool dashed = false)
         {

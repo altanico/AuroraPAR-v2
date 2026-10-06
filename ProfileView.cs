@@ -112,18 +112,35 @@ namespace AuroraPAR
                 AddSymbol(Options.TouchdownSymbol, X(0), H - Options.TouchdownSymbol.Size / 2, Brush(StyleElement.Touchdown));
             }
             // Range marks, measured from the touchdown point, between the scan limits.
+            List<DistanceReminder> reminders = VisibleReminders();
             foreach ((double distance, StyleElement element, bool text) in Options.RangeMarks.Marks(range))
             {
                 double markNM = length - Runway.TouchdownNM + distance;
                 double top = ScanY(markNM, upper);
                 double bottom = lower > 0 ? ScanY(markNM, lower) : H;
-                if (top < bottom)
+                // A reminder line at the same distance replaces the range mark (the text stays).
+                if (top < bottom && !HasReminderLine(reminders, distance))
                 {
                     AddLine(markNM * xscale, bottom, markNM * xscale, top, element);
                 }
                 if (text)
                 {
                     AddText(RangeMarkSettings.Label(distance), markNM * xscale, H, -10, Brush(StyleElement.RangeText), aboveAnchor: true);
+                }
+            }
+            // Distance reminders: line between the scan limits and/or marker above the distance text.
+            foreach (DistanceReminder reminder in reminders)
+            {
+                double markNM = length - Runway.TouchdownNM + reminder.Distance;
+                double top = ScanY(markNM, upper);
+                double bottom = lower > 0 ? ScanY(markNM, lower) : H;
+                if (reminder.HasLine && top < bottom)
+                {
+                    AddReminderLine(reminder, markNM * xscale, bottom, markNM * xscale, top);
+                }
+                if (reminder.HasMarker)
+                {
+                    AddReminderMarker(reminder, markNM * xscale, H - 20 - reminder.Size / 2);
                 }
             }
             if (Options.ShowAltitudeScale)
