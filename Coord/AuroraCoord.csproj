@@ -19,6 +19,9 @@
     <Compile Include="..\ColorPicker.cs" Link="ColorPicker.cs" />
     <Compile Include="..\ColorText.cs" Link="ColorText.cs" />
     <Resource Include="..\AuroraPAR.ico" Link="AuroraPAR.ico" />
+    <!-- B612 cockpit font for the engraved texts (SIL Open Font License, see Fonts/B612-OFL.txt). -->
+    <Resource Include="..\Fonts\B612-Bold.ttf" Link="Fonts\B612-Bold.ttf" />
+    <Resource Include="..\Fonts\B612-Regular.ttf" Link="Fonts\B612-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

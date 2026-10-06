@@ -12,7 +12,9 @@ namespace AuroraPAR
     internal enum CoordinationRole
     {
         Radar,
-        Tower
+        Tower,
+        /// <summary>Instructor: sees the lights and who is online, cannot press anything.</summary>
+        Monitor
     }
 
     internal enum LightState
@@ -36,12 +38,22 @@ namespace AuroraPAR
         public CoordinationRole? Role { get; set; }
         /// <summary>Colours of the five lights and of the reset button.</summary>
         public string[] Colors { get; set; } = (string[])DefaultColors.Clone();
+        public static readonly string[] DefaultLabels = ["", "", "", "", "", "RESET"];
+        public const int MaxLabelLength = 10;
+        /// <summary>Text engraved under each button (empty: none). Only on this panel.</summary>
+        public string[] Labels { get; set; } = (string[])DefaultLabels.Clone();
         /// <summary>Panel always on top of the other windows.</summary>
         public bool Topmost { get; set; } = true;
 
         public void Normalize()
         {
             if (Colors == null || Colors.Length != DefaultColors.Length) Colors = (string[])DefaultColors.Clone();
+            if (Labels == null || Labels.Length != DefaultLabels.Length) Labels = (string[])DefaultLabels.Clone();
+            for (int i = 0; i < Labels.Length; i++)
+            {
+                string label = (Labels[i] ?? "").Trim().ToUpperInvariant();
+                Labels[i] = label.Length > MaxLabelLength ? label[..MaxLabelLength] : label;
+            }
             for (int i = 0; i < Colors.Length; i++)
             {
                 if (!ColorText.TryParse(Colors[i], out _)) Colors[i] = DefaultColors[i];
@@ -152,7 +164,7 @@ namespace AuroraPAR
         /// <summary>New state received from the other panel (raised on a background thread).</summary>
         public event Action<CoordinationState>? StateReceived;
         /// <summary>The other side went online or offline (raised on a background thread).</summary>
-        public event Action<bool>? PartnerChanged;
+        public event Action<CoordinationRole, bool>? PresenceChanged;
 
         public bool Connected => client?.IsConnected == true;
         public string? Airport { get; private set; }
@@ -163,8 +175,6 @@ namespace AuroraPAR
             byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes("AuroraPAR coordination panel " + airport));
             return $"aurorapar/coord/v1/{airport}-{Convert.ToHexString(hash)[..16].ToLowerInvariant()}";
         }
-
-        private static CoordinationRole Other(CoordinationRole r) => r == CoordinationRole.Radar ? CoordinationRole.Tower : CoordinationRole.Radar;
 
         /// <summary>
         /// Joins the channel of an airport with a role (or leaves when <paramref name="airport"/> is null).
@@ -181,7 +191,8 @@ namespace AuroraPAR
                 role = newRole;
                 channel = airport == null ? null : ChannelOf(airport);
                 brokerIndex = 0;
-                PartnerChanged?.Invoke(false);
+                PresenceChanged?.Invoke(CoordinationRole.Radar, false);
+                PresenceChanged?.Invoke(CoordinationRole.Tower, false);
                 if (channel != null) await ConnectInternal();
             }
             finally
@@ -216,26 +227,36 @@ namespace AuroraPAR
                 client?.Dispose();
                 client = factory.CreateMqttClient();
                 client.ApplicationMessageReceivedAsync += OnMessage;
-                MqttClientOptions options = new MqttClientOptionsBuilder()
+                MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
                     .WithTcpServer(Brokers[brokerIndex], Port)
                     .WithTlsOptions(o => o.UseTls())
                     .WithClientId(clientId)
                     .WithCleanSession()
-                    .WithKeepAlivePeriod(TimeSpan.FromSeconds(20))
-                    .WithWillTopic(PresenceTopic(role))
-                    .WithWillPayload("offline")
-                    .WithWillRetain()
-                    .WithWillQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-                    .Build();
+                    .WithKeepAlivePeriod(TimeSpan.FromSeconds(20));
+                if (role != CoordinationRole.Monitor)
+                {
+                    // If the connection is lost, the relay tells the others that this side went offline.
+                    builder = builder
+                        .WithWillTopic(PresenceTopic(role))
+                        .WithWillPayload("offline")
+                        .WithWillRetain()
+                        .WithWillQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce);
+                }
+                MqttClientOptions options = builder.Build();
                 using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
                 timeout.CancelAfter(TimeSpan.FromSeconds(10));
                 await client.ConnectAsync(options, timeout.Token);
+                // Everybody follows the lights and both sides' presence (the monitor shows both).
                 MqttClientSubscribeOptions subscribe = factory.CreateSubscribeOptionsBuilder()
                     .WithTopicFilter(f => f.WithTopic(StateTopic).WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce))
-                    .WithTopicFilter(f => f.WithTopic(PresenceTopic(Other(role))).WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce))
+                    .WithTopicFilter(f => f.WithTopic(PresenceTopic(CoordinationRole.Radar)).WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce))
+                    .WithTopicFilter(f => f.WithTopic(PresenceTopic(CoordinationRole.Tower)).WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce))
                     .Build();
                 await client.SubscribeAsync(subscribe, timeout.Token);
-                await Publish(PresenceTopic(role), "online");
+                if (role != CoordinationRole.Monitor)
+                {
+                    await Publish(PresenceTopic(role), "online");
+                }
             }
             catch (Exception)
             {
@@ -251,7 +272,7 @@ namespace AuroraPAR
             {
                 if (client.IsConnected)
                 {
-                    await Publish(PresenceTopic(role), "offline");
+                    if (role != CoordinationRole.Monitor) await Publish(PresenceTopic(role), "offline");
                     await client.DisconnectAsync();
                 }
             }
@@ -278,7 +299,8 @@ namespace AuroraPAR
         /// <summary>Sends the new state of the lights to the other panel.</summary>
         public async Task Send(CoordinationState state)
         {
-            if (channel == null) return;
+            // The monitor only watches.
+            if (channel == null || role == CoordinationRole.Monitor) return;
             state.Sender = clientId;
             state.Time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             try
@@ -304,9 +326,13 @@ namespace AuroraPAR
                         StateReceived?.Invoke(state);
                     }
                 }
-                else if (topic == PresenceTopic(Other(role)))
+                else if (topic == PresenceTopic(CoordinationRole.Radar))
                 {
-                    PartnerChanged?.Invoke(payload == "online");
+                    PresenceChanged?.Invoke(CoordinationRole.Radar, payload == "online");
+                }
+                else if (topic == PresenceTopic(CoordinationRole.Tower))
+                {
+                    PresenceChanged?.Invoke(CoordinationRole.Tower, payload == "online");
                 }
             }
             catch (Exception)

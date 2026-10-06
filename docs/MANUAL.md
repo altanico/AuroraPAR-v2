@@ -268,8 +268,8 @@ The **Coordination** button opens a small panel for **voiceless coordination** b
 
 | | |
 |---|---|
-| Lights 1–5 | Coloured lights (default white, blue, yellow, red, green). No text: each unit gives them its own meaning, e.g. *12 NM*, *8 NM*, *landing clearance requested / given*, *not authorised*. |
-| Light 6 | **Reset** (default black): switches all the lights off on both panels. |
+| Lights 1–5 | Square lit buttons (default white, blue, yellow, red, green). No text on the lights: each unit gives them its own meaning, e.g. *12 NM*, *8 NM*, *landing clearance requested / given*, *not authorised*. |
+| Light 6 | **Reset** (default black, set apart from the others): switches all the lights off on both panels. |
 
 **How it works — the same rule for every light:**
 
@@ -284,7 +284,9 @@ Example: at 12 NM the radar presses white (flashing, alert in the tower), the to
 
 **As observer** (`_OBS`), or to override: open **Options**, type the **airport** (ICAO) and choose the **role**.
 
-**Options:** airport, role, colours of the six lights (*Default colours* restores white-blue-yellow-red-green-black), always on top.
+**Monitor (instructor):** an instructor connected as observer chooses the airport and the role **Monitor** in *Options*. The monitor panel shows the same lights in real time and whether the radar and the tower are online, but it is **read-only**: it cannot press the lights or reset them, and it does not sound.
+
+**Options:** airport, role (from callsign, Radar, Tower, Monitor), **colour** and **engraved text** of each button (optional, up to 10 characters, shown under the button as on a radio panel; only on your panel; default: *RESET* under the reset button, nothing elsewhere), *Default colours and texts*, always on top.
 
 **Connection:** the panels talk through a free public relay on the internet (MQTT, encrypted connection), so there is nothing to install and no port to open. Only the state of the lights is sent: no names, no IVAO data. Being a public service it is best-effort; if the status line keeps saying *connecting...*, check that your network allows outgoing connections on port 8883.
 
