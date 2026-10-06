@@ -55,6 +55,15 @@ namespace AuroraPAR
                 Commit();
             };
             CloseButton.Click += (s, e) => Close();
+            ScanEffectCheck.Checked += (s, e) => SetProfileValue(p => p.ScanEffect, p => p.ScanEffect = true);
+            ScanEffectCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ScanEffect, p => p.ScanEffect = false);
+            ScanEffectSpeedComboBox.ItemsSource = Enum.GetValues<ScanEffectSpeed>().Select(ScanEffect.DisplayName).ToList();
+            ScanEffectSpeedComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || ScanEffectSpeedComboBox.SelectedIndex < 0) return;
+                ScanEffectSpeed speed = Enum.GetValues<ScanEffectSpeed>()[ScanEffectSpeedComboBox.SelectedIndex];
+                SetProfileValue(p => p.ScanEffectSpeed == speed, p => p.ScanEffectSpeed = speed);
+            };
             BuildRadarFields();
             BuildSymbolRows();
             HistoryCheck.Checked += (s, e) => SetProfileValue(p => p.HistoryEnabled, p => p.HistoryEnabled = true);
@@ -118,6 +127,8 @@ namespace AuroraPAR
                 ScaleFeetRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Feet;
                 ScaleMetresRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Metres;
                 HistoryCheck.IsChecked = Active.HistoryEnabled;
+                ScanEffectCheck.IsChecked = Active.ScanEffect;
+                ScanEffectSpeedComboBox.SelectedIndex = Array.IndexOf(Enum.GetValues<ScanEffectSpeed>(), Active.ScanEffectSpeed);
                 HistoryDotsBox.Text = Active.HistoryDots.ToString(CultureInfo.InvariantCulture);
                 foreach (Action refresh in refreshers)
                 {

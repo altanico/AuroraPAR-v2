@@ -169,5 +169,16 @@ namespace AuroraPAR
         }
 
         protected override LabelLayout Layout => Options.ElevationLabel;
+
+        protected override bool IsElevation => true;
+
+        protected override Point SweepOrigin() => new(AntennaNM * xscale, H);
+
+        protected override Point SweepEnd(double position)
+        {
+            double end = Runway.LengthNM + Runway.Distance;
+            double angle = Radar.ElevationLower + position * (Radar.ElevationUpper - Radar.ElevationLower);
+            return new Point(end * xscale, ScanY(end, angle));
+        }
     }
 }

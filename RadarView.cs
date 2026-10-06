@@ -49,6 +49,7 @@ namespace AuroraPAR
     internal abstract class RadarView
     {
         private const int StaticZIndex = 0;
+        private const int SweepZIndex = 5;
         private const int HistoryZIndex = 9;
         private const int TrackZIndex = 11;
         private const int LabelZIndex = 12;
@@ -75,6 +76,9 @@ namespace AuroraPAR
         private Geometry historyGeometry = Geometry.Empty;
         private int historyGeometryVersion = -1;
         private Point dragStart;
+        /// <summary>Lines of the antenna scan effect (beam and glow), created when first needed.</summary>
+        private readonly List<Line> sweepLines = [];
+        private static readonly Brush SweepBrush = CreateFrozenBrush(Color.FromRgb(0x70, 0xF0, 0xE0));
         private Vector dragStartOffset;
 
         /// <summary>
@@ -148,6 +152,15 @@ namespace AuroraPAR
         protected abstract Brush TrackColor(Aircraft aircraft);
         /// <summary>Label layout of this view.</summary>
         protected abstract LabelLayout Layout { get; }
+        /// <summary>True for the elevation view (for the antenna scan effect).</summary>
+        protected abstract bool IsElevation { get; }
+        /// <summary>Logical position of the antenna, origin of the scan effect beam.</summary>
+        protected abstract Point SweepOrigin();
+        /// <summary>
+        /// Logical end of the scan effect beam at the end of the display: <paramref name="position"/> 0 on the
+        /// lower/left scan limit, 1 on the upper/right one (tilt included).
+        /// </summary>
+        protected abstract Point SweepEnd(double position);
         /// <summary>False when the track is outside the drawable area (it is then hidden).</summary>
         protected virtual bool IsDrawable(Point logical) => true;
 
@@ -237,6 +250,57 @@ namespace AuroraPAR
                 RemoveTrack(tracks[callsign]);
                 tracks.Remove(callsign);
             }
+        }
+
+        /// <summary>
+        /// Draws the antenna scan effect at time <paramref name="t"/> (seconds), or hides it when
+        /// <paramref name="enabled"/> is false. Graphic only: the tracks are not affected.
+        /// </summary>
+        public void RenderSweep(bool enabled, double t, ScanEffectSpeed speed)
+        {
+            if (!enabled || !staticValid || Canvas.ActualWidth <= 0 || Canvas.ActualHeight <= 0)
+            {
+                foreach (Line line in sweepLines) line.Visibility = Visibility.Collapsed;
+                return;
+            }
+            var beams = new (double? Position, double Opacity)[ScanEffect.Lines];
+            ScanEffect.Compute(t, speed, IsElevation, beams);
+            while (sweepLines.Count < beams.Length)
+            {
+                Line line = new()
+                {
+                    Stroke = SweepBrush,
+                    StrokeThickness = sweepLines.Count == 0 ? 2 : 3,
+                    IsHitTestVisible = false
+                };
+                Panel.SetZIndex(line, SweepZIndex);
+                Canvas.Children.Add(line);
+                sweepLines.Add(line);
+            }
+            Point origin = SweepOrigin();
+            for (int i = 0; i < beams.Length; i++)
+            {
+                Line line = sweepLines[i];
+                if (beams[i].Position is not double position)
+                {
+                    line.Visibility = Visibility.Collapsed;
+                    continue;
+                }
+                Point end = SweepEnd(position);
+                line.X1 = ToScreenX(origin.X);
+                line.Y1 = ToScreenY(origin.Y);
+                line.X2 = ToScreenX(end.X);
+                line.Y2 = ToScreenY(end.Y);
+                line.Opacity = beams[i].Opacity;
+                line.Visibility = Visibility.Visible;
+            }
+        }
+
+        private static Brush CreateFrozenBrush(Color color)
+        {
+            SolidColorBrush brush = new(color);
+            brush.Freeze();
+            return brush;
         }
 
         private void UpdateTrack(Track track, Aircraft aircraft)

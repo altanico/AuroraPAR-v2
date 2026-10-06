@@ -32,6 +32,8 @@ namespace AuroraPAR
         private readonly System.Timers.Timer timer;
         private readonly ProfileView profileView;
         private readonly HorizontalView horizontalView;
+        /// <summary>Clock of the antenna scan effect.</summary>
+        private readonly System.Diagnostics.Stopwatch sweepClock = System.Diagnostics.Stopwatch.StartNew();
         private readonly Aurora aurora;
         private readonly Distance[] distances = Ranges.Values.Select(v => (Distance)v).ToArray();
         /// <summary>
@@ -134,6 +136,16 @@ namespace AuroraPAR
             DhTextBox.LostFocus += (s, e) => ApplyDecisionHeightText();
             DhTextBox.Text = FormatHeight(runway.MDH);
             ApplyProfile();
+            // Antenna scan effect: redrawn at every frame of the screen (graphic only, independent of the traffic refresh).
+            CompositionTarget.Rendering += (s, e) => RenderSweep();
+        }
+
+        private void RenderSweep()
+        {
+            Profile profile = settings.Active;
+            double t = sweepClock.Elapsed.TotalSeconds;
+            profileView.RenderSweep(profile.ScanEffect, t, profile.ScanEffectSpeed);
+            horizontalView.RenderSweep(profile.ScanEffect, t, profile.ScanEffectSpeed);
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)

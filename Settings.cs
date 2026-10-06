@@ -189,6 +189,10 @@ namespace AuroraPAR
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
 
+        /// <summary>Antenna scan effect: a sweeping beam drawn over the views, graphic only (no effect on the data).</summary>
+        public bool ScanEffect { get; set; } = true;
+        public ScanEffectSpeed ScanEffectSpeed { get; set; } = ScanEffectSpeed.Normal;
+
         public const int MinHistoryDots = 3;
         public const int MaxHistoryDots = 100;
 
@@ -202,6 +206,7 @@ namespace AuroraPAR
             ElevationLabel.Normalize();
             AzimuthLabel.Normalize();
             HistoryDots = Math.Clamp(HistoryDots, MinHistoryDots, MaxHistoryDots);
+            if (!Enum.IsDefined(ScanEffectSpeed)) ScanEffectSpeed = ScanEffectSpeed.Normal;
             TrackSymbol = NormalizeSymbol(TrackSymbol, new(SymbolShape.CrossCircle, 12));
             ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));
             TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));

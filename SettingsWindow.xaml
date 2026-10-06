@@ -52,6 +52,11 @@
                     <RadioButton Name="ChangeRangeFixedRadio" GroupName="ChangeRange" Content="Preferred"/>
                 </StackPanel>
                 <TextBlock Text="Runway default = the range set for the runway in runways.par." Foreground="Gray" FontSize="11" Margin="0,4,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <CheckBox Name="ScanEffectCheck" Content="Antenna scan effect, speed:" VerticalAlignment="Center"/>
+                    <ComboBox Name="ScanEffectSpeedComboBox" Width="80" Margin="8,0,0,0"/>
+                </StackPanel>
+                <TextBlock Text="Sweeping beam as on the old PAR screens: graphic only, tracks are not affected." Foreground="Gray" FontSize="11" Margin="0,4,0,0"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Tracks and labels" Padding="8" Margin="0,10,0,0">

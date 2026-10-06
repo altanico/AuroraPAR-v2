@@ -19,6 +19,8 @@ Range marks and the distance shown next to each aircraft are measured **from the
 
 **Tracks and labels:** each aircraft is shown with a track symbol (default: circle with cross), green inside the approach limits and red outside, followed by its **history tail** (previous positions, default 50 dots, 3 to 100). The **label** is configurable separately for the two views with *Settings → Edit labels...*: rows and columns, and in each cell one of callsign, distance from touchdown, altitude (`A`, QNH) or height (`H`, QFE), ground speed, vertical speed, deviation from the glide path (`U`/`D`) or from the centreline (`L`/`R`, as seen by the pilot); a label with no values shows only the symbol. Labels appear 45° up-right of the track and can be **dragged** with the mouse (a leader line then joins them to the track); **double click** puts a label back, **right click** on a label hides it; right click near a track hides/shows its label, and where several tracks are close (formation) or some labels are hidden a menu lists them by callsign (with *Show all hidden labels*); the **Hide labels** button or the **L** key hides/shows all labels (showing them again also brings back the ones hidden one by one).
 
+**Antenna scan effect:** as on the old PAR screens, a beam sweeps the elevation view (up and down) and the azimuth view (left and right) in turn, leaving a fading glow behind it. It is only a graphic effect drawn over the display: tracks are updated as usual, whatever the position of the beam. It can be switched off, or made slower/faster, in *Settings → Display*.
+
 **Traffic refresh check:** AuroraPAR measures how often the positions received from Aurora really change and shows it below the connection status (`DATA 0.5s` in green). If Aurora's traffic refresh rate is left at the normal 3 s, tracks move in jumps and a red warning appears (`DATA 3.0s - SET AURORA TRAFFIC REFRESH TO 0.5s`); it disappears by itself once the setting is changed. Only moving aircraft (above 50 kt) are measured, and about 10–20 seconds of traffic are needed.
 
 ## Download
@@ -67,6 +69,7 @@ Invalid or incomplete lines are ignored.
 
 ## Changes from the original
 
+- Antenna scan effect (graphic only, can be switched off).
 - Configurable, draggable labels with leader lines; history tails; symbol library; labels on/off.
 - Approach limits set separately for each side; scan limits from the antenna at half the runway, adjustable; antenna tilt from buttons or keyboard with on-screen reminder.
 - QNH/QFE, hPa/inHg, DA/DH, OCA/OCH or MDA/MDH; altitude scale in feet or metres.

@@ -129,5 +129,16 @@ namespace AuroraPAR
         }
 
         protected override LabelLayout Layout => Options.AzimuthLabel;
+
+        protected override bool IsElevation => false;
+
+        protected override Point SweepOrigin() => new(AntennaNM * xscale, CenterY);
+
+        protected override Point SweepEnd(double position)
+        {
+            double end = Runway.LengthNM + Runway.Distance;
+            double angle = Radar.AzimuthLeftEdge + position * (Radar.AzimuthRightEdge - Radar.AzimuthLeftEdge);
+            return new Point(end * xscale, ScanY(end, angle));
+        }
     }
 }
