@@ -135,7 +135,7 @@ namespace AuroraPAR
                 }
                 if (text)
                 {
-                    AddText(RangeMarkSettings.Label(distance), markNM * xscale, textBelow ? H + 2 : H - 1, -10, Brush(StyleElement.RangeText), aboveAnchor: !textBelow);
+                    AddText(Options.RangeMarks.Label(distance), markNM * xscale, textBelow ? H + 2 : H - 1, -10, Brush(StyleElement.RangeText), aboveAnchor: !textBelow);
                 }
             }
             // Distance reminders: line between the scan limits and/or marker on the other side of the horizon from the text.

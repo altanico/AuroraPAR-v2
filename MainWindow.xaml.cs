@@ -38,6 +38,7 @@ namespace AuroraPAR
         private readonly Knob rangeKnob = new() { Title = "RANGE NM", ToolTip = "Range. Turn with the mouse wheel, drag up/down or click right/left." };
         private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = "Antenna elevation tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
         private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = "Antenna azimuth tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
+        private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = 10, ToolTip = "Brightness of the scope. Turn with the mouse wheel, drag up/down or click right/left; double click: full brightness." };
         private readonly Knob dhKnob = new() { Title = "DH", ToolTip = "Decision height, 10 ft per step. Turn with the mouse wheel, drag up/down or click right/left; double click: runway value." };
         /// <summary>Analog mode: readouts and lamps next to the scope.</summary>
         private readonly ConsolePanel consolePanel = new();
@@ -120,7 +121,15 @@ namespace AuroraPAR
             horizontalView = new(Horizontal, runway, radar, viewOptions);
             infoPanel.Children.Add(infoText);
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob }) ToolTips.KeepOpen(knob);
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob }) ToolTips.KeepOpen(knob);
+            BrightnessDownButton.Click += (s, e) => ChangeBrightness(-1);
+            BrightnessUpButton.Click += (s, e) => ChangeBrightness(1);
+            BrightnessPanel.MouseWheel += (s, e) =>
+            {
+                // Handled here, so the wheel over the control does not also change the range.
+                ChangeBrightness(e.Delta > 0 ? 1 : -1);
+                e.Handled = true;
+            };
             infoPanel.Children.Add(infoText2);
             infoPanel.Children.Add(tiltText);
             infoPanel.Children.Add(statusText);
@@ -233,7 +242,10 @@ namespace AuroraPAR
             };
             dhKnob.Turned += steps => SetDecisionHeight(runway.MDH + steps * DecisionHeightStep);
             dhKnob.Reset += () => SetDecisionHeight(runway.DefaultMDH);
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob })
+            brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 9 ? "MAX" : null;
+            brightnessKnob.Turned += steps => ChangeBrightness(steps);
+            brightnessKnob.Reset += () => ChangeBrightness(100);
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob })
             {
                 KnobPanel.Children.Add(knob);
             }
@@ -260,6 +272,37 @@ namespace AuroraPAR
                 knob.Index = steps + (radar.TiltStep > 0 ? (int)Math.Round(tilt / radar.TiltStep) : 0);
             }
             rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
+        }
+
+        /// <summary>
+        /// Brightness of the radar picture by steps of 10% (from 10% to 100%), separate for the modern display and
+        /// the analog scope, saved in the profile.
+        /// </summary>
+        private void ChangeBrightness(int steps)
+        {
+            Profile profile = settings.Active;
+            bool analog = profile.DisplayMode == DisplayMode.Analog;
+            int current = analog ? profile.BrightnessAnalog : profile.BrightnessModern;
+            int value = Math.Clamp(current + steps * Profile.BrightnessStep, Profile.MinBrightness, 100);
+            if (value == current) return;
+            if (analog) profile.BrightnessAnalog = value; else profile.BrightnessModern = value;
+            SettingsStore.Save(settings);
+            ApplyBrightness();
+        }
+
+        /// <summary>
+        /// Dims what is drawn on the radar views (lines, tracks, labels, texts). The modern display dims all of it,
+        /// the analog scope only the phosphor: frame, glass and console panel stay as they are.
+        /// </summary>
+        private void ApplyBrightness()
+        {
+            Profile profile = settings.Active;
+            bool analog = profile.DisplayMode == DisplayMode.Analog;
+            int percent = analog ? profile.BrightnessAnalog : profile.BrightnessModern;
+            Vertical.Opacity = percent / 100.0;
+            Horizontal.Opacity = percent / 100.0;
+            BrightnessText.Text = $"{percent}%";
+            brightnessKnob.Index = Math.Clamp(percent / Profile.BrightnessStep - 1, 0, 9);
         }
 
         /// <summary>
@@ -309,6 +352,7 @@ namespace AuroraPAR
             Visibility modern = analog ? Visibility.Collapsed : Visibility.Visible;
             DistanceComboBox.Visibility = modern;
             TiltPanel.Visibility = modern;
+            BrightnessPanel.Visibility = modern;
             DhDownButton.Visibility = modern;
             DhUpButton.Visibility = modern;
             LabelsButton.Visibility = modern;
@@ -316,6 +360,7 @@ namespace AuroraPAR
             ModeButton.Content = analog ? "Modern (A)" : "Analog (A)";
             LayoutDisplay();
             UpdateKnobs();
+            ApplyBrightness();
         }
 
         /// <summary>

@@ -71,6 +71,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
+| | **BRT** with **−** / **+** | Brightness of the radar picture, 10–100% (also with the mouse wheel over it); saved in the profile. |
 | **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
 | **10** | **Hide labels (L)** | Hides / shows all labels. |
 | **11** | **Analog (A)** | Switches to the analog scope ([section 9](#9-analog-mode)). |
@@ -251,10 +252,10 @@ Status lamps:
 
 ### 9.3 Knobs (right)
 
-**RANGE NM**, **EL TILT**, **AZ TILT** and **DH**:
+**RANGE NM**, **EL TILT**, **AZ TILT**, **DH** and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–100%, saved in the profile, separately from the modern display):
 
 - turn with the **mouse wheel** over the knob, by **dragging** up/down, or by **clicking** on the right half (clockwise) / left half (counter-clockwise);
-- **double click**: tilt back to neutral, DH back to the runway value.
+- **double click**: tilt back to neutral, DH back to the runway value, BRT back to full brightness.
 
 The knobs always follow the real state, also when it is changed with the keyboard.
 
@@ -359,7 +360,9 @@ A table with one row per display range. For each range choose:
 - which marks are drawn: every **5, 2, 1, ½ or ¼ NM** (marks longer than the range are disabled);
 - on which marks the **distance is written** (or none).
 
-Defaults: every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; 1 NM, ½ and ¼ NM at 2.5 and 1 NM, distance written every ¼ NM. Each ticked box draws those lines with their own style (*Colours & lines*); where ticked boxes overlap (1 NM is also a ½ and a ¼ mile) the largest one wins. Example: to see the 5 NM lines in their own colour at 15 NM, tick *5 NM* in the 15 NM row. **Default** restores these values.
+Defaults: every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; 1 NM, ½ and ¼ NM at 2.5 and 1 NM, distance written every ¼ NM. Each ticked box draws those lines with their own style (*Colours & lines*); where ticked boxes overlap (1 NM is also a ½ and a ¼ mile) the largest one wins. Example: to see the 5 NM lines in their own colour at 15 NM, tick *5 NM* in the 15 NM row.
+
+**Distance text**: *Decimal* (`1.25NM`, `2.5NM`) or *Fractions* (`1¼NM`, `2½NM`, `¾NM`). **Default** restores these values.
 
 ### 11.2 Colours & lines
 

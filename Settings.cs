@@ -204,6 +204,11 @@ namespace AuroraPAR
         public DisplayStyleSettings Style { get; set; } = DisplayStyleSettings.CreateDefault();
         /// <summary>Phosphor colour of the analog scope (#RRGGBB).</summary>
         public string AnalogColor { get; set; } = "#A8FF60";
+        /// <summary>Brightness of the radar picture, percent (100 = normal), modern display and analog scope.</summary>
+        public int BrightnessModern { get; set; } = 100;
+        public int BrightnessAnalog { get; set; } = 100;
+        public const int MinBrightness = 10;
+        public const int BrightnessStep = 10;
         /// <summary>Distance reminders for all runways (each runway can have its own too, see AppSettings).</summary>
         public List<DistanceReminder> Reminders { get; set; } = [];
         /// <summary>
@@ -240,6 +245,8 @@ namespace AuroraPAR
             Style ??= DisplayStyleSettings.CreateDefault();
             Style.Normalize();
             if (!ColorText.TryParse(AnalogColor, out _)) AnalogColor = "#A8FF60";
+            BrightnessModern = Math.Clamp(BrightnessModern, MinBrightness, 100);
+            BrightnessAnalog = Math.Clamp(BrightnessAnalog, MinBrightness, 100);
             Reminders ??= [];
             DistanceReminder.Normalize(Reminders);
             if (double.IsNaN(MagneticVariation) || Math.Abs(MagneticVariation) > 90) MagneticVariation = 0;

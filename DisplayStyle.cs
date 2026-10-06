@@ -60,9 +60,19 @@ namespace AuroraPAR
     /// <summary>
     /// Range marks for every display range (see <see cref="Ranges.Values"/>).
     /// </summary>
+    /// <summary>How the distance is written under the range marks.</summary>
+    internal enum DistanceTextFormat
+    {
+        /// <summary>1.25NM</summary>
+        Decimal,
+        /// <summary>1¼NM</summary>
+        Fractions
+    }
+
     internal class RangeMarkSettings
     {
         public List<RangeMarkRow> Rows { get; set; } = [];
+        public DistanceTextFormat TextFormat { get; set; } = DistanceTextFormat.Decimal;
 
         /// <summary>Default marks: every 2 NM at 20 NM, every NM at 15 and 10, NM and half miles at 5, quarter miles at 2.5 and 1.</summary>
         public static RangeMarkSettings Default()
@@ -96,6 +106,7 @@ namespace AuroraPAR
         public void Normalize()
         {
             Rows ??= [];
+            if (!Enum.IsDefined(TextFormat)) TextFormat = DistanceTextFormat.Decimal;
             List<RangeMarkRow> rows = [];
             foreach (double range in Ranges.Values)
             {
@@ -143,8 +154,26 @@ namespace AuroraPAR
             return Math.Abs(q - Math.Round(q)) < 1e-6;
         }
 
-        public static string Label(double distance)
+        /// <summary>Distance written under a range mark, in the chosen format (1.25NM or 1¼NM).</summary>
+        public string Label(double distance)
         {
+            if (TextFormat == DistanceTextFormat.Fractions)
+            {
+                double whole = Math.Floor(distance + 1e-6);
+                string fraction = Math.Round((distance - whole) * 4) switch
+                {
+                    1 => "¼",
+                    2 => "½",
+                    3 => "¾",
+                    _ => ""
+                };
+                // Quarters only: any other value (not possible with the marks offered) is written as a decimal.
+                if (Math.Abs(distance * 4 - Math.Round(distance * 4)) < 1e-6)
+                {
+                    string number = whole > 0 || fraction.Length == 0 ? whole.ToString("0", CultureInfo.InvariantCulture) : "";
+                    return number + fraction + "NM";
+                }
+            }
             return distance.ToString("0.##", CultureInfo.InvariantCulture) + "NM";
         }
     }

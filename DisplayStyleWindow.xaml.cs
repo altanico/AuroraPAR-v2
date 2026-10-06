@@ -25,11 +25,18 @@ namespace AuroraPAR
             CloseButton.Click += (s, e) => Close();
             RangeMarksDefaultButton.Click += (s, e) =>
             {
+                DistanceTextFormat format = Active.RangeMarks.TextFormat;
                 Active.RangeMarks = RangeMarkSettings.Default();
+                // The text format is a separate choice: Default resets only the table.
+                Active.RangeMarks.TextFormat = format;
                 commit();
                 BuildRangeMarks();
             };
             BuildRangeMarks();
+            DecimalRadio.IsChecked = Active.RangeMarks.TextFormat == DistanceTextFormat.Decimal;
+            FractionsRadio.IsChecked = Active.RangeMarks.TextFormat == DistanceTextFormat.Fractions;
+            DecimalRadio.Checked += (s, e) => SetTextFormat(DistanceTextFormat.Decimal);
+            FractionsRadio.Checked += (s, e) => SetTextFormat(DistanceTextFormat.Fractions);
             StyleDefaultButton.Click += (s, e) =>
             {
                 Active.Style = DisplayStyleSettings.CreateDefault();
@@ -145,6 +152,13 @@ namespace AuroraPAR
 
 
         private Profile Active => settings.Active;
+
+        private void SetTextFormat(DistanceTextFormat format)
+        {
+            if (Active.RangeMarks.TextFormat == format) return;
+            Active.RangeMarks.TextFormat = format;
+            commit();
+        }
 
         /// <summary>Distance text below the horizon line (markers above) or above it (markers below).</summary>
         private void SetTextBelowHorizon(bool below)
