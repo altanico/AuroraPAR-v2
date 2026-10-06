@@ -22,7 +22,14 @@
 
 - Shout line (always-open intercom) in the coordination panel.
 - Event log for the instructor (monitor), with saving to a file.
-- Joystick and USB knob (when a device is available).
+- **External controls — FROZEN until the keypad arrives** (mini keypad, 9 keys + 3 knobs, programmable with its own software, onboard memory). Agreed plan:
+  - Large knob = RANGE (press: back to a chosen start range); small knob 1 = EL TILT, small knob 2 = AZ TILT (press: tilt back to zero).
+  - 6 keys = coordination lights incl. RESET (AuroraCoord or the panel in AuroraPAR, whichever is open).
+  - 3 spare keys = function chosen from a list in the settings (Modern/Analog, next traffic, open panel, BRT −/+, reminders on/off…).
+  - DH and BRT stay on screen only.
+  - Global hotkeys (work without focus). Defaults: knobs F13–F21, lights F22–F24 + Shift+F13–F15, spare Shift+F16–F18; reassignable with "press the key to assign".
+  - Manual: table key → combination to set in the keypad software.
+  - First check what the keypad software allows (F13–F24? Shift combinations?). Joystick input could be added later on the same mapping page.
 - Range marks in km, tablet view, Mac/Linux version (Avalonia).
 - Coordination panel: button gently pulsing when the selected traffic reaches a reminder distance.
 - Translations of the user manual.
