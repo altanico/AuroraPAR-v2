@@ -24,10 +24,13 @@ jobs:
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish
 
+      - name: Add the user manual
+        run: Copy-Item docs/MANUAL.md publish/MANUAL.md
+
       - uses: actions/upload-artifact@v4
         with:
           name: AuroraPAR-win-x64
           path: |
             publish/AuroraPAR.exe
             publish/runways.par
-            docs/MANUAL.md
+            publish/MANUAL.md
