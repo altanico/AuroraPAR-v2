@@ -2,6 +2,8 @@
 
 AuroraPAR is a **Precision Approach Radar (PAR)** display for the IVAO **Aurora** ATC client. It reads the traffic from Aurora and shows, for the selected runway, the two classic PAR views: **elevation** (glide path) above and **azimuth** (centreline) below. It is meant for controllers giving PAR / talk-down approaches on IVAO.
 
+*The pictures are illustrations of the program, not screenshots.*
+
 This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https://github.com/bornac1/AuroraPAR) by bornac1.
 
 ---
@@ -51,32 +53,26 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 
 ## 3. The main window
 
-```
-┌──────────────────────────────────────────────┬────────────┐
-│ Information area                              │ Runway     │
-│                                               │ Range      │
-│            ELEVATION (glide path) view        │ Settings…  │
-│                                               │ Runways…   │
-├──────────────────────────────────────────────┤ DH − / +   │
-│                                               │ Antenna    │
-│            AZIMUTH (centreline) view          │ tilt       │
-│                                               │ Labels     │
-│                                               │ Analog (A) │
-└──────────────────────────────────────────────┴────────────┘
-```
+![Main window](images/main-window.svg)
 
-**Right column, from the top:**
-
-| Control | Use |
+| | |
 |---|---|
-| Runway list | Selects the runway (from `runways.par`). |
-| Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
-| **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
-| **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
-| **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
-| **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
-| **Hide labels (L)** | Hides / shows all labels. |
-| **Analog (A)** | Switches to the analog scope ([section 9](#9-analog-mode)). |
+| **1** | Information area ([4.4](#44-information-area)) |
+| **2** | Elevation view ([4.2](#42-elevation-view-top)) |
+| **3** | Azimuth view ([4.3](#43-azimuth-view-bottom)) |
+
+**Right column, from the top (4–11):**
+
+| | Control | Use |
+|---|---|---|
+| **4** | Runway list | Selects the runway (from `runways.par`). |
+| **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
+| **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
+| **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
+| **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
+| **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
+| **10** | **Hide labels (L)** | Hides / shows all labels. |
+| **11** | **Analog (A)** | Switches to the analog scope ([section 9](#9-analog-mode)). |
 
 The window remembers its size and position, the runway and the range for the next start. If the column is too short for all the controls (small window), it shrinks to fit.
 
@@ -98,12 +94,30 @@ The antenna always stays at the same place: zooming in enlarges the approach, it
 
 ### 4.2 Elevation view (top)
 
+![Elevation view](images/elevation-view.svg)
+
+| | | | |
+|---|---|---|---|
+| **1** Antenna | **4** Approach limits | **7** Label | **10** Range marks |
+| **2** Upper scan limit | **5** Track (red: outside the limits) | **8** Decision height | **11** Touchdown point |
+| **3** Glide path | **6** Plots (history) | **9** DH meets the glide path | **12** Threshold / runway |
+
+
 - **Horizon line** (ground at the threshold elevation) and the runway.
 - **Glide path** (yellow) from the touchdown point at the runway's glide slope angle, with its **approach limits** above and below (default ±0.5°).
 - **Decision height**: a red horizontal line at the DH from the touchdown point to 3 NM, and a dashed vertical line where it meets the glide path.
 - **Altitude scale** (optional) on the runway side: altitudes with QNH, heights with QFE, in feet or metres.
 
 ### 4.3 Azimuth view (bottom)
+
+![Azimuth view](images/azimuth-view.svg)
+
+| | | |
+|---|---|---|
+| **1** Antenna | **4** Approach limits | **7** Touchdown point |
+| **2** Scan limits | **5** Track (green: inside the limits) | |
+| **3** Extended centreline | **6** Distance of the decision height | |
+
 
 - **Extended centreline** (yellow) with its **approach limits** left and right (default ±1.5°).
 - A red vertical line at the distance where the glide path reaches the DH.
@@ -198,6 +212,9 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 ---
 
 ## 9. Analog mode
+
+![Analog console](images/analog-console.svg)
+
 
 **Analog (A)** turns the window into an old PAR console. Press it again (**Modern (A)**) to go back. The choice is saved in the profile.
 
@@ -338,6 +355,9 @@ Elements: each type of range mark, range text, glide path, centreline, approach 
 - The **marker** is drawn in the elevation view, at the horizon line.
 - The **line** is drawn across both views and **replaces** the range mark at that distance.
 - **Horizon line**: choose *distance text above, markers below* or *distance text below, markers above*.
+
+  ![Horizon line options](images/horizon-options.svg)
+
 - Reminders in this tab apply to **all runways**. Each runway can also have **its own** reminders, in the runway editor ([section 12.2](#122-runway-reminders)).
 
 ---
