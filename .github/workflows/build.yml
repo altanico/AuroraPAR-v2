@@ -30,3 +30,4 @@ jobs:
           path: |
             publish/AuroraPAR.exe
             publish/runways.par
+            docs/MANUAL.md

@@ -4,6 +4,8 @@ Unofficial version of [AuroraPAR](https://github.com/bornac1/AuroraPAR) by borna
 
 This is a test version with bug fixes. It is not an official release of the original project. All credit for the original program goes to bornac1; it is distributed under the same MIT license (see `LICENSE`).
 
+📖 **[User manual](docs/MANUAL.md)** — how to use every feature.
+
 ## What it does
 
 AuroraPAR connects to Aurora's local interface (port 1130) and shows a PAR display for the selected runway:
@@ -29,7 +31,7 @@ Range marks (by default every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM 
 
 ## Download
 
-Go to the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section. Unzip it and run `AuroraPAR.exe` (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
+Go to the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section. Unzip it (it also contains the user manual, `MANUAL.md`) and run `AuroraPAR.exe` (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
 
 ## Settings and profiles
 
