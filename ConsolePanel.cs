@@ -52,8 +52,6 @@ namespace AuroraPAR
             Width = 196;
             Padding = new Thickness(10, 10, 12, 10);
             Background = new SolidColorBrush(ScopeBezel.PanelColor);
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x1B, 0x18));
-            BorderThickness = new Thickness(0, 0, 1, 0);
             StackPanel stack = new();
             stack.Children.Add(new TextBlock
             {

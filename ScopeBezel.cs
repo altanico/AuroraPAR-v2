@@ -46,7 +46,7 @@ namespace AuroraPAR
                 Fill = new LinearGradientBrush(Color.FromRgb(0x3A, 0x3C, 0x37), Color.FromRgb(0x24, 0x26, 0x22), 90)
             });
             // Shadow of the ring on the panel.
-            Add(layer, new Ellipse { Stroke = new SolidColorBrush(Color.FromArgb(0x90, 0, 0, 0)), StrokeThickness = 4 }, center, outer + 3);
+            Add(layer, new Ellipse { Stroke = new SolidColorBrush(Color.FromArgb(0x90, 0, 0, 0)), StrokeThickness = 3 }, center, outer + 2);
             // Metal ring.
             Add(layer, new Ellipse
             {
@@ -67,7 +67,7 @@ namespace AuroraPAR
             // Inner edge of the ring.
             Add(layer, new Ellipse { Stroke = new SolidColorBrush(Color.FromRgb(0x0A, 0x0A, 0x09)), StrokeThickness = 2 }, center, radius + 1);
             // Screws on the ring.
-            double screw = Math.Max(2.5, ring * 0.2);
+            double screw = Math.Max(1.6, ring * 0.27);
             for (int i = 0; i < 8; i++)
             {
                 double angle = (22.5 + 45 * i) * Math.PI / 180;
@@ -92,8 +92,8 @@ namespace AuroraPAR
             // Two tabs holding the glass, at the top and at the bottom.
             foreach (double sign in new[] { -1.0, 1.0 })
             {
-                double width = Math.Max(6, ring * 0.6);
-                double height = Math.Max(5, ring * 0.55);
+                double width = Math.Max(5, ring * 1.1);
+                double height = Math.Max(3, ring * 0.7);
                 Rectangle tab = new()
                 {
                     Width = width,

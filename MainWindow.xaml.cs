@@ -137,7 +137,9 @@ namespace AuroraPAR
             ModeButton.Click += (s, e) => ToggleDisplayMode();
             BuildKnobs();
             ScopeHost.SizeChanged += (s, e) => LayoutDisplay();
-            ConsoleHost.Content = consolePanel;
+            // Console panel at most about a quarter of the display (it is scaled to fit, see the XAML).
+            DisplayArea.SizeChanged += (s, e) => ConsoleHost.MaxWidth = Math.Max(90, Math.Min(DisplayArea.ActualWidth * 0.26, 300));
+            ConsoleViewbox.Child = consolePanel;
             PreviewKeyDown += MainWindow_PreviewKeyDown;
             RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
@@ -305,20 +307,26 @@ namespace AuroraPAR
                 DisplayArea.Background = Brushes.Black;
                 return;
             }
-            double size = Math.Min(width, height);
-            double ring = Math.Max(10, size * 0.045);
-            double radius = Math.Max(60, size / 2 - ring - 8);
+            double ring = Math.Max(5, Math.Min(width, height) * 0.018);
+            // The screen is as wide as the window allows; in a low window its top and bottom (only frame and
+            // glass) are cut by the window edges, up to MinVisibleFraction of the diameter, so the views stay large.
+            const double MinVisibleFraction = 0.75;
+            double radius = Math.Min(width / 2 - ring - 4, height / (2 * MinVisibleFraction));
+            radius = Math.Max(60, Math.Min(radius, Math.Max(width, height)));
             double diameter = 2 * radius;
+            double visible = Math.Min(diameter, height);
+            double cut = (diameter - visible) / 2;
             ScopeArea.Width = diameter;
-            ScopeArea.Height = diameter;
+            ScopeArea.Height = visible;
             ScopeArea.HorizontalAlignment = HorizontalAlignment.Center;
             ScopeArea.VerticalAlignment = VerticalAlignment.Center;
-            ScopeArea.Clip = new EllipseGeometry(new Point(radius, radius), radius, radius);
+            ScopeArea.Clip = new EllipseGeometry(new Point(radius, visible / 2), radius, radius);
             ScopeArea.Background = glassBrush;
-            // The antenna side is moved in, so the origin of both views is inside the circle.
+            // The antenna side is moved in, so the origin of both views is inside the circle; the top and bottom
+            // margins shrink as the circle is cut by the window.
             double inner = diameter * 0.12;
             double outer = diameter * 0.04;
-            double edge = diameter * 0.07;
+            double edge = Math.Max(0, diameter * 0.07 - cut);
             Vertical.Margin = right ? new Thickness(outer, edge, inner, 0) : new Thickness(inner, edge, outer, 0);
             Horizontal.Margin = right ? new Thickness(outer, 0, inner, edge) : new Thickness(inner, 0, outer, edge);
             DisplayArea.Background = new SolidColorBrush(ScopeBezel.PanelColor);

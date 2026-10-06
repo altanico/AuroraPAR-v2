@@ -14,7 +14,10 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <!-- Analog mode: console panel with the digital readouts and status lamps. -->
-            <ContentControl Grid.Column="0" Name="ConsoleHost" Visibility="Collapsed" Focusable="False"/>
+            <!-- Scaled with the window: smaller in a small window, never wider than about a quarter of the display. -->
+            <Border Grid.Column="0" Name="ConsoleHost" Visibility="Collapsed" Background="#2E302C" BorderBrush="#1A1B18" BorderThickness="0,0,1,0">
+                <Viewbox Name="ConsoleViewbox" Stretch="Uniform" VerticalAlignment="Top"/>
+            </Border>
             <Grid Grid.Column="1" Name="ScopeHost">
             <Grid Name="ScopeArea">
                 <Grid.RowDefinitions>
@@ -25,11 +28,13 @@
                 <Canvas Name="Horizontal" Grid.Row="1" Background="Black"/>
             </Grid>
             <!-- Analog mode: frame of the round scope. -->
-            <Canvas Name="BezelLayer" IsHitTestVisible="False"/>
+            <Canvas Name="BezelLayer" IsHitTestVisible="False" ClipToBounds="True"/>
             </Grid>
         </Grid>
         <Border Grid.Column="1" Name="ControlPanel">
-            <StackPanel>
+            <!-- Shrinks (never grows) when the window is too low for all the controls. -->
+            <Viewbox Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Top">
+            <StackPanel Width="100">
                 <ComboBox Name="RunwayComboBox" Height="30"/>
                 <ComboBox Name="DistanceComboBox" Height="30"/>
                 <Button Name="SettingsButton" Content="Settings..." Height="30" Margin="0,4,0,0"/>
@@ -63,6 +68,7 @@
                 <Button Name="ModeButton" Content="Analog (A)" Height="26" Margin="0,12,0,0"
                         ToolTip="Switch between the modern display and the analog scope (key A)."/>
             </StackPanel>
+            </Viewbox>
         </Border>
     </Grid>
 </Window>
