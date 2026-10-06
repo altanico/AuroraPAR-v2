@@ -171,16 +171,24 @@ namespace AuroraPAR
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
             }
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            // Two header rows: "Marks every" over the five columns, then the interval of each column.
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            AddCell(grid, Header("Range"), 0, 0);
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            TextBlock marksEvery = Header("Marks every");
+            Grid.SetColumnSpan(marksEvery, MarkIntervals.All.Length);
+            AddCell(grid, marksEvery, 0, 1);
+            AddCell(grid, Header("Range"), 1, 0);
             for (int c = 0; c < MarkIntervals.All.Length; c++)
             {
-                AddCell(grid, Header("every " + MarkIntervals.Name(MarkIntervals.All[c])), 0, c + 1);
+                AddCell(grid, Header(MarkIntervals.Name(MarkIntervals.All[c])), 1, c + 1);
             }
-            AddCell(grid, Header("Distance written on"), 0, MarkIntervals.All.Length + 1);
+            TextBlock written = Header("Distance written on");
+            written.TextAlignment = TextAlignment.Left;
+            written.Margin = new Thickness(8, 0, 0, 4);
+            AddCell(grid, written, 1, MarkIntervals.All.Length + 1);
 
             List<string> textChoices = ["none", .. MarkIntervals.All.Select(i => "every " + MarkIntervals.Name(i))];
-            int r = 1;
+            int r = 2;
             foreach (RangeMarkRow row in Active.RangeMarks.Rows.OrderByDescending(x => x.Range))
             {
                 grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(28) });
