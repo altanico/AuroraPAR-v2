@@ -2,7 +2,7 @@
 
 ## Next update
 
-(nothing planned)
+- **Elevation centre in neutral: manual or automatic.** Settings → Radar → Antenna beam: a choice *Manual* (degrees, as now) or *Automatic: as the glide path in use*: the neutral elevation centre of the beam is the GP angle of the approach selected (published or free), so the beam is centred on the glide path by itself, also when the runway or the approach changes. Default for existing profiles: Manual (same picture). Note for the plan: the glide path starts at the touchdown point, the beam at the antenna (half the runway length back), so seen from the antenna the glide path is not exactly at the GP angle; the GP angle is a good centre (decide whether to correct it).
 
 ## Done, to be tested
 
