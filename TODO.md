@@ -36,6 +36,15 @@
 - Coordination panel: button gently pulsing when the selected traffic reaches a reminder distance.
 - Translations of the user manual.
 
+## Security of the coordination panel — DECIDE WHEN THE PROJECT IS FINISHED (not now, to keep the tests simple)
+
+Review done: no open ports, only the state of the lights travels (no personal data), received messages are only read, the phone page is isolated in the browser; GitHub account has 2FA. Weak points and agreed ideas:
+
+- **Channel can be computed** (airport + public formula): anyone reading the code can join LIRF and press lights / reset. Idea: optional **panel code** (shared secret) in the channel name; empty = as now. Same field on AuroraPAR, AuroraCoord and the phone page; saved until changed (fixed for the group; a "Generate code" button for a new one per session); the QR code / link already includes it; a small 🔒 in the status line when set. Optional: **encrypt the content** with the same code, so the relay sees nothing.
+- **Phone page loads the MQTT library from a public CDN** (jsDelivr, unpkg) with no fixed version: pin the exact version with an integrity check (SRI), or include the file in the repository.
+- Public relays (emqx, hivemq): free, best-effort, they see the IP address; a private relay is not worth it for this use.
+- Hosting address of the phone page: now `altanico.github.io/AuroraPAR-v2/coord/` (appears in `Coordination.cs` `PhonePanelUrl`, manual, README). Options if it must not be on the personal GitHub: a neutral GitHub organization, Cloudflare Pages / Netlify, or an own domain. Undecided.
+
 ## Maintenance
 
 - GitHub Actions: update the actions (Node 20 is deprecated).
