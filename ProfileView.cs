@@ -30,7 +30,7 @@ namespace AuroraPAR
             double top = Radar.ScanHeight(Runway.Distance + Runway.LengthNM - AntennaNM, Radar.ReferenceScanUp);
             // Room below the horizon for the distance text or the reminder markers (the larger of the two).
             double markers = VisibleReminders().Where(r => r.HasMarker).Select(r => r.Size + 8).DefaultIfEmpty(0).Max();
-            bottomBand = Math.Max(22, markers);
+            bottomBand = Math.Max(Options.RangeMarks.TextSize + 10, markers);
             yscale = (H - 30) / top;
         }
 

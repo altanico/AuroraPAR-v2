@@ -26,9 +26,11 @@ namespace AuroraPAR
             RangeMarksDefaultButton.Click += (s, e) =>
             {
                 DistanceTextFormat format = Active.RangeMarks.TextFormat;
+                double size = Active.RangeMarks.TextSize;
                 Active.RangeMarks = RangeMarkSettings.Default();
-                // The text format is a separate choice: Default resets only the table.
+                // The text format and size are separate choices: Default resets only the table.
                 Active.RangeMarks.TextFormat = format;
+                Active.RangeMarks.TextSize = size;
                 commit();
                 BuildRangeMarks();
             };
@@ -37,6 +39,15 @@ namespace AuroraPAR
             FractionsRadio.IsChecked = Active.RangeMarks.TextFormat == DistanceTextFormat.Fractions;
             DecimalRadio.Checked += (s, e) => SetTextFormat(DistanceTextFormat.Decimal);
             FractionsRadio.Checked += (s, e) => SetTextFormat(DistanceTextFormat.Fractions);
+            List<int> sizes = Enumerable.Range(RangeMarkSettings.MinTextSize, RangeMarkSettings.MaxTextSize - RangeMarkSettings.MinTextSize + 1).ToList();
+            TextSizeComboBox.ItemsSource = sizes.Select(px => $"{px} px").ToList();
+            TextSizeComboBox.SelectedIndex = Math.Max(0, sizes.IndexOf((int)Math.Round(Active.RangeMarks.TextSize)));
+            TextSizeComboBox.SelectionChanged += (s, e) =>
+            {
+                if (TextSizeComboBox.SelectedIndex < 0) return;
+                Active.RangeMarks.TextSize = sizes[TextSizeComboBox.SelectedIndex];
+                commit();
+            };
             StyleDefaultButton.Click += (s, e) =>
             {
                 Active.Style = DisplayStyleSettings.CreateDefault();

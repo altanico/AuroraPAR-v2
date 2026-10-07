@@ -49,7 +49,7 @@
                     </DockPanel>
                 </StackPanel>
                 <StackPanel Name="BrightnessPanel" Margin="0,10,0,0"
-                            ToolTip="Brightness of the radar picture (also with the mouse wheel over it).">
+                            ToolTip="Brightness of the radar picture, 10% to 150% (above 100% the colours are boosted, for dim monitors). Also with the mouse wheel over it.">
                     <TextBlock Text="BRT" Margin="2,0,0,2"/>
                     <DockPanel Height="26">
                         <Button Name="BrightnessDownButton" Content="−" Width="26" DockPanel.Dock="Left"/>

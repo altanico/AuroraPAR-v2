@@ -71,7 +71,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
-| | **BRT** with **−** / **+** | Brightness of the radar picture, 10–100% (also with the mouse wheel over it); saved in the profile. |
+| | **BRT** with **−** / **+** | Brightness of the radar picture, 10–150% (also with the mouse wheel over it); saved in the profile. Up to 100% the picture is dimmed; above 100% the colours are made brighter and lighter, for dim monitors. |
 | **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
 | **10** | **Hide labels (L)** | Hides / shows all labels. |
 | **11** | **Analog (A)** | Switches to the analog scope ([section 9](#9-analog-mode)). |
@@ -252,10 +252,10 @@ Status lamps:
 
 ### 9.3 Knobs (right)
 
-**RANGE NM**, **EL TILT**, **AZ TILT**, **DH** and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–100%, saved in the profile, separately from the modern display):
+**RANGE NM**, **EL TILT**, **AZ TILT**, **DH** and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–150%, saved in the profile, separately from the modern display; above 100% the faint elements — range marks, limits, DH — get closer to full intensity and the phosphor gets lighter, for dim monitors):
 
 - turn with the **mouse wheel** over the knob, by **dragging** up/down, or by **clicking** on the right half (clockwise) / left half (counter-clockwise);
-- **double click**: tilt back to neutral, DH back to the runway value, BRT back to full brightness.
+- **double click**: tilt back to neutral, DH back to the runway value, BRT back to 100%.
 
 The knobs always follow the real state, also when it is changed with the keyboard.
 
@@ -362,13 +362,13 @@ A table with one row per display range. For each range choose:
 
 Defaults: every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; 1 NM, ½ and ¼ NM at 2.5 and 1 NM, distance written every ¼ NM. Each ticked box draws those lines with their own style (*Colours & lines*); where ticked boxes overlap (1 NM is also a ½ and a ¼ mile) the largest one wins. Example: to see the 5 NM lines in their own colour at 15 NM, tick *5 NM* in the 15 NM row.
 
-**Distance text**: *Decimal* (`1.25NM`, `2.5NM`) or *Fractions* (`1¼NM`, `2½NM`, `¾NM`). **Default** restores these values.
+**Distance text**: *Decimal* (`1.25NM`, `2.5NM`) or *Fractions* (`1 1/4NM`, `2 1/2NM`, `3/4NM`), and its **text size** (10–18 px, default 12). **Default** restores the table above; the text format and size stay as chosen.
 
 ### 11.2 Colours & lines
 
 For every element of the **Modern** display:
 
-- **colour** (list with swatches, or any colour typed as `#RRGGBB`);
+- **colour**: list with swatches, any colour typed as `#RRGGBB`, or the swatch button for the **visual picker** — a colour square (hue across, saturation down), a brightness bar, the new and old colour, the code and the colours used recently. The radar shows the colour while you choose it; **OK** keeps it, **Cancel** puts the old one back. The same picker is used for the phosphor, the reminders and the coordination panel buttons;
 - **line style**: solid, dashed, dash-dot, dotted;
 - **width**: 1–6 px;
 - a **preview**.

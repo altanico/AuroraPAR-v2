@@ -38,7 +38,7 @@ namespace AuroraPAR
         private readonly Knob rangeKnob = new() { Title = "RANGE NM", ToolTip = "Range. Turn with the mouse wheel, drag up/down or click right/left." };
         private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = "Antenna elevation tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
         private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = "Antenna azimuth tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
-        private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = 10, ToolTip = "Brightness of the scope. Turn with the mouse wheel, drag up/down or click right/left; double click: full brightness." };
+        private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = Profile.MaxBrightness / Profile.BrightnessStep, ToolTip = "Brightness of the scope, 10% to 150% (above 100% for dim monitors). Turn with the mouse wheel, drag up/down or click right/left; double click: 100%." };
         private readonly Knob dhKnob = new() { Title = "DH", ToolTip = "Decision height, 10 ft per step. Turn with the mouse wheel, drag up/down or click right/left; double click: runway value." };
         /// <summary>Analog mode: readouts and lamps next to the scope.</summary>
         private readonly ConsolePanel consolePanel = new();
@@ -242,9 +242,9 @@ namespace AuroraPAR
             };
             dhKnob.Turned += steps => SetDecisionHeight(runway.MDH + steps * DecisionHeightStep);
             dhKnob.Reset += () => SetDecisionHeight(runway.DefaultMDH);
-            brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 9 ? "MAX" : null;
+            brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 100 / Profile.BrightnessStep - 1 ? "100" : i == Profile.MaxBrightness / Profile.BrightnessStep - 1 ? "MAX" : null;
             brightnessKnob.Turned += steps => ChangeBrightness(steps);
-            brightnessKnob.Reset += () => ChangeBrightness(100);
+            brightnessKnob.Reset += () => SetBrightness(100);
             foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob })
             {
                 KnobPanel.Children.Add(knob);
@@ -275,7 +275,7 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// Brightness of the radar picture by steps of 10% (from 10% to 100%), separate for the modern display and
+        /// Brightness of the radar picture by steps of 10% (from 10% to 150%), separate for the modern display and
         /// the analog scope, saved in the profile.
         /// </summary>
         private void ChangeBrightness(int steps)
@@ -283,11 +283,27 @@ namespace AuroraPAR
             Profile profile = settings.Active;
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             int current = analog ? profile.BrightnessAnalog : profile.BrightnessModern;
-            int value = Math.Clamp(current + steps * Profile.BrightnessStep, Profile.MinBrightness, 100);
+            SetBrightness(current + steps * Profile.BrightnessStep);
+        }
+
+        private void SetBrightness(int percent)
+        {
+            Profile profile = settings.Active;
+            bool analog = profile.DisplayMode == DisplayMode.Analog;
+            int current = analog ? profile.BrightnessAnalog : profile.BrightnessModern;
+            int value = Math.Clamp(percent, Profile.MinBrightness, Profile.MaxBrightness);
             if (value == current) return;
             if (analog) profile.BrightnessAnalog = value; else profile.BrightnessModern = value;
             SettingsStore.Save(settings);
-            ApplyBrightness();
+            // Above 100% the colours change: the views are drawn again with the boosted theme.
+            if (current > 100 || value > 100) ApplyProfile(); else ApplyBrightness();
+        }
+
+        /// <summary>Boost of the colours above 100% brightness: 0 (up to 100%) to 1 (at the maximum).</summary>
+        private double BrightnessBoost(Profile profile)
+        {
+            int percent = profile.DisplayMode == DisplayMode.Analog ? profile.BrightnessAnalog : profile.BrightnessModern;
+            return Math.Clamp((percent - 100) / (double)(Profile.MaxBrightness - 100), 0, 1);
         }
 
         /// <summary>
@@ -299,10 +315,11 @@ namespace AuroraPAR
             Profile profile = settings.Active;
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             int percent = analog ? profile.BrightnessAnalog : profile.BrightnessModern;
-            Vertical.Opacity = percent / 100.0;
-            Horizontal.Opacity = percent / 100.0;
+            // Up to 100% the picture is dimmed; above it the colours of the theme are boosted instead.
+            Vertical.Opacity = Math.Min(percent, 100) / 100.0;
+            Horizontal.Opacity = Math.Min(percent, 100) / 100.0;
             BrightnessText.Text = $"{percent}%";
-            brightnessKnob.Index = Math.Clamp(percent / Profile.BrightnessStep - 1, 0, 9);
+            brightnessKnob.Index = Math.Clamp(percent / Profile.BrightnessStep - 1, 0, brightnessKnob.Positions - 1);
         }
 
         /// <summary>
@@ -714,8 +731,8 @@ namespace AuroraPAR
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             viewOptions.Analog = analog;
             viewOptions.Theme = analog
-                ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor))
-                : Theme.Modern(profile.Style);
+                ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor), BrightnessBoost(profile))
+                : Theme.Modern(profile.Style, BrightnessBoost(profile));
             viewOptions.RangeMarks = profile.RangeMarks;
             viewOptions.Reminders = settings.RemindersFor;
             viewOptions.RangeTextBelowHorizon = profile.RangeTextBelowHorizon;

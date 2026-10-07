@@ -65,7 +65,7 @@ namespace AuroraPAR
     {
         /// <summary>1.25NM</summary>
         Decimal,
-        /// <summary>1¼NM</summary>
+        /// <summary>1 1/4NM</summary>
         Fractions
     }
 
@@ -73,6 +73,12 @@ namespace AuroraPAR
     {
         public List<RangeMarkRow> Rows { get; set; } = [];
         public DistanceTextFormat TextFormat { get; set; } = DistanceTextFormat.Decimal;
+
+        /// <summary>Size of the distance text, in pixels.</summary>
+        public double TextSize { get; set; } = DefaultTextSize;
+        public const double DefaultTextSize = 12;
+        public const int MinTextSize = 10;
+        public const int MaxTextSize = 18;
 
         /// <summary>Default marks: every 2 NM at 20 NM, every NM at 15 and 10, NM and half miles at 5, quarter miles at 2.5 and 1.</summary>
         public static RangeMarkSettings Default()
@@ -107,6 +113,7 @@ namespace AuroraPAR
         {
             Rows ??= [];
             if (!Enum.IsDefined(TextFormat)) TextFormat = DistanceTextFormat.Decimal;
+            TextSize = TextSize <= 0 ? DefaultTextSize : Math.Clamp(Math.Round(TextSize), MinTextSize, MaxTextSize);
             List<RangeMarkRow> rows = [];
             foreach (double range in Ranges.Values)
             {
@@ -154,25 +161,24 @@ namespace AuroraPAR
             return Math.Abs(q - Math.Round(q)) < 1e-6;
         }
 
-        /// <summary>Distance written under a range mark, in the chosen format (1.25NM or 1¼NM).</summary>
+        /// <summary>Distance written under a range mark, in the chosen format (1.25NM or 1 1/4NM).</summary>
         public string Label(double distance)
         {
-            if (TextFormat == DistanceTextFormat.Fractions)
+            // Quarters only: any other value (not possible with the marks offered) is written as a decimal.
+            if (TextFormat == DistanceTextFormat.Fractions && Math.Abs(distance * 4 - Math.Round(distance * 4)) < 1e-6)
             {
                 double whole = Math.Floor(distance + 1e-6);
+                // Normal digits (1/4, 1/2, 3/4): the ¼ ½ ¾ characters are too small to read on the scope.
                 string fraction = Math.Round((distance - whole) * 4) switch
                 {
-                    1 => "¼",
-                    2 => "½",
-                    3 => "¾",
+                    1 => "1/4",
+                    2 => "1/2",
+                    3 => "3/4",
                     _ => ""
                 };
-                // Quarters only: any other value (not possible with the marks offered) is written as a decimal.
-                if (Math.Abs(distance * 4 - Math.Round(distance * 4)) < 1e-6)
-                {
-                    string number = whole > 0 || fraction.Length == 0 ? whole.ToString("0", CultureInfo.InvariantCulture) : "";
-                    return number + fraction + "NM";
-                }
+                string number = whole.ToString("0", CultureInfo.InvariantCulture);
+                string text = fraction.Length == 0 ? number : whole > 0 ? number + " " + fraction : fraction;
+                return text + "NM";
             }
             return distance.ToString("0.##", CultureInfo.InvariantCulture) + "NM";
         }

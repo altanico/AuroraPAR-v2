@@ -2,11 +2,7 @@
 
 ## Next update
 
-- **Distance text with fractions is hard to read** (*Display style → Range marks → Fractions*): the ¼ ½ ¾ characters are too small on the radar. Proposal: fractions with normal digits (`1 1/4NM`, `3/4NM`) and an adjustable size of the distance text (e.g. 10–16 px).
-
-- **Brightness above 100% (up to 150%)** for dim or old secondary monitors: above 100% the faint elements (in Analog the range marks, altitude scale, limits, DH at 30–60%) move towards full intensity and the colours lighten a little towards white. Same BRT knob/buttons, saved in the profile as now.
-
-- **Visual colour picker** (choice B): a swatch button next to the #RRGGBB box opens a small window with a hue/saturation square, a brightness bar, before/after preview and recently used colours; live preview on the radar while dragging. The list of standard colours and the hex box stay. One shared picker → works everywhere (display style, phosphor, reminders, coordination panel colours).
+- (nothing pending)
 
 ## To verify with live traffic
 
@@ -14,6 +10,7 @@
 - Antenna tilt on both sides, runway on the left and on the right.
 - QFE and final course (CRS) against the published values.
 - Analog mode: echoes lit by the beam, console panel, knobs, BRT.
+- Fractions `1 1/4NM` and text size; BRT 110–150% (Modern and Analog); visual colour picker (live preview, Cancel, recent colours, also in AuroraCoord).
 - Range marks and reminders at each range.
 - Coordination panel (AuroraPAR + AuroraCoord, radar / tower / monitor): automatic pairing from the callsign (`#CONN` answer), relay reachable (port 8883), alert sound.
 

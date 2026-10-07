@@ -31,20 +31,27 @@ namespace AuroraPAR
         public double Width(StyleElement element) => elements[element].Width;
         public LineDash Dash(StyleElement element) => elements[element].Dash;
 
-        public static Theme Modern(DisplayStyleSettings settings)
+        /// <summary>
+        /// <paramref name="boost"/> (0 to 1) is the brightness above 100%: the colours are made brighter and
+        /// lighter, for dim monitors.
+        /// </summary>
+        public static Theme Modern(DisplayStyleSettings settings, double boost = 0)
         {
             Theme theme = new() { Sweep = Frozen(Color.FromRgb(0x70, 0xF0, 0xE0)) };
             foreach (StyleElement element in Enum.GetValues<StyleElement>())
             {
                 LineStyle style = settings.Get(element);
                 Color color = ColorText.Parse(style.Color, ColorText.Parse(DisplayStyleSettings.Default(element).Color, System.Windows.Media.Colors.White));
+                // The background stays as chosen: only what is drawn on it gets brighter.
+                if (element != StyleElement.Background) color = Boost(color, boost);
                 theme.elements[element] = (Frozen(color), style.Width, style.Dash);
             }
             return theme;
         }
 
-        public static Theme Analog(Color phosphor)
+        public static Theme Analog(Color phosphor, double boost = 0)
         {
+            boost = Math.Clamp(boost, 0, 1);
             Theme theme = new()
             {
                 IsAnalog = true,
@@ -56,10 +63,40 @@ namespace AuroraPAR
                 LineStyle defaults = DisplayStyleSettings.Default(element);
                 Brush brush = element == StyleElement.Background
                     ? Brushes.Transparent
-                    : Frozen(Color.FromArgb((byte)Math.Round(255 * Brightness(element)), phosphor.R, phosphor.G, phosphor.B));
+                    : Frozen(Phosphor(phosphor, Brightness(element), boost));
                 theme.elements[element] = (brush, defaults.Width, defaults.Dash);
             }
             return theme;
+        }
+
+        /// <summary>
+        /// Phosphor colour of an element: its brightness is the opacity. The boost brings the faint elements
+        /// towards full intensity (keeping a little of the difference) and lightens the colour.
+        /// </summary>
+        private static Color Phosphor(Color phosphor, double brightness, double boost)
+        {
+            double alpha = brightness + (1 - brightness) * 0.8 * boost;
+            Color color = Boost(phosphor, boost);
+            return Color.FromArgb((byte)Math.Round(255 * alpha), color.R, color.G, color.B);
+        }
+
+        /// <summary>
+        /// Brighter colour for a boost from 0 (unchanged) to 1: its strongest channel raised to full, then mixed
+        /// with a quarter of white.
+        /// </summary>
+        public static Color Boost(Color color, double boost)
+        {
+            boost = Math.Clamp(boost, 0, 1);
+            if (boost <= 0) return color;
+            int strongest = Math.Max(color.R, Math.Max(color.G, color.B));
+            double scale = strongest == 0 ? 1 : 1 + (255.0 / strongest - 1) * boost;
+            Color scaled = Color.FromArgb(color.A,
+                (byte)Math.Min(255, Math.Round(color.R * scale)),
+                (byte)Math.Min(255, Math.Round(color.G * scale)),
+                (byte)Math.Min(255, Math.Round(color.B * scale)));
+            // Black stays black (a colour chosen to hide an element), the others get lighter.
+            Color mixed = strongest == 0 ? scaled : Mix(scaled, System.Windows.Media.Colors.White, 0.25 * boost);
+            return Color.FromArgb(color.A, mixed.R, mixed.G, mixed.B);
         }
 
         /// <summary>Brightness of each element on the analog scope.</summary>

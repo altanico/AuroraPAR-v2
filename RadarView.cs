@@ -844,7 +844,7 @@ namespace AuroraPAR
             TextBlock textBlock = new()
             {
                 Text = text,
-                FontSize = 12,
+                FontSize = Options.RangeMarks.TextSize,
                 Foreground = foreground
             };
             double top = ToScreenY(y);
