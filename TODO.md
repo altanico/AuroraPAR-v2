@@ -13,6 +13,7 @@
 - Fractions `1 1/4NM` and text size; BRT 110–150% (Modern and Analog); visual colour picker (live preview, Cancel, recent colours, also in AuroraCoord).
 - Range marks and reminders at each range.
 - Coordination panel (AuroraPAR + AuroraCoord, radar / tower / monitor): automatic pairing from the callsign (`#CONN` answer), relay reachable (port 8883), alert sound.
+- Phone / tablet panel (docs/coord, GitHub Pages): QR code from the PC, link with the PC panel, portrait / landscape, alert sound, vibration, screen kept on, reconnection after the lock screen, home screen (Android / iPhone), presence when phone and PC have the same role.
 
 ## Decisions pending
 

@@ -291,6 +291,16 @@ Example: at 12 NM the radar presses white (flashing, alert in the tower), the to
 
 **Connection:** the panels talk through a free public relay on the internet (MQTT, encrypted connection), so there is nothing to install and no port to open. Only the state of the lights is sent: no names, no IVAO data. Being a public service it is best-effort; if the status line keeps saying *connecting...*, check that your network allows outgoing connections on port 8883.
 
+**On a phone or tablet:** the same panel also runs in the browser of a phone or tablet, with nothing to install: <https://altanico.github.io/AuroraPAR-v2/coord/>. Use it instead of the window on the PC, or as an **extra panel** next to it (same role as the PC: pressing on the phone or on the PC is the same).
+
+- **Quickest:** in the panel on the PC, *Options* → **Open on phone / tablet...** shows a **QR code**. Scan it with the phone camera: the phone panel opens already set with the airport, the role, the colours and the texts of the PC panel. *Copy link* gives the same link, to send it by message.
+- **By hand:** open the address above; the first time it asks for the airport and the role (Radar, Tower, Monitor). The **⚙** button in the top right corner changes them, with the colour and the engraved text of each button.
+- The buttons **fill the screen**: two columns with reset below in portrait, one row in landscape; it follows the rotation.
+- Tap **Tap to start** when it opens: it allows the **alert sound** and keeps the **screen on** while the panel is open. On Android the phone also **vibrates** at an alert (iPhones do not allow it from a web page). *Test sound* in ⚙ plays the alert.
+- Add it to the **home screen** (browser menu → *Add to Home screen*) to open it full screen like an app. On iPhone the home screen copy keeps its own settings: open it once from the QR code link, or set it with ⚙.
+- If the phone locks or you switch app, the panel reconnects when you come back and shows the current lights at once.
+- The phone needs an internet connection (Wi-Fi or mobile data). It uses the same public relays as the PC, through their secure web port.
+
 > A **shout line** (always-open intercom) may be added in a future version.
 
 ---

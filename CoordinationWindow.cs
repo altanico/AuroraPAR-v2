@@ -302,6 +302,14 @@ namespace AuroraPAR
                 ApplyLabels();
             };
             options.Children.Add(defaults);
+            Button phone = new() { Content = "Open on phone / tablet...", Width = 170, Height = 24, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 0) };
+            phone.ToolTip = "QR code of the panel for phones and tablets, already set with this airport, role, colours and texts";
+            phone.Click += (s, e) =>
+            {
+                (string? airport, CoordinationRole? role) = Effective();
+                new PhoneLinkWindow(Options.PhoneLink(airport, role), airport, role) { Owner = this }.ShowDialog();
+            };
+            options.Children.Add(phone);
             CheckBox topmost = new()
             {
                 Content = "Always on top",
@@ -610,6 +618,81 @@ namespace AuroraPAR
             foreach (short s in samples) w.Write(s);
             w.Flush();
             return stream.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// QR code and link of the panel for phones and tablets (a web page), already set with the airport, the role,
+    /// the colours and the texts of this panel.
+    /// </summary>
+    internal sealed class PhoneLinkWindow : Window
+    {
+        public PhoneLinkWindow(string link, string? airport, CoordinationRole? role)
+        {
+            Title = "Coordination panel on a phone or tablet";
+            SizeToContent = SizeToContent.WidthAndHeight;
+            ResizeMode = ResizeMode.NoResize;
+            WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            ShowInTaskbar = false;
+            StackPanel root = new() { Margin = new Thickness(16), MaxWidth = 420 };
+            root.Children.Add(new TextBlock
+            {
+                Text = "Scan the code with the camera of the phone or tablet (or send it the link).",
+                TextWrapping = TextWrapping.Wrap,
+                FontWeight = FontWeights.SemiBold
+            });
+            Image image = new() { Width = 260, Height = 260, Margin = new Thickness(0, 12, 0, 12) };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
+            try
+            {
+                using QRCoder.QRCodeGenerator generator = new();
+                using QRCoder.QRCodeData data = generator.CreateQrCode(link, QRCoder.QRCodeGenerator.ECCLevel.M);
+                byte[] png = new QRCoder.PngByteQRCode(data).GetGraphic(8);
+                System.Windows.Media.Imaging.BitmapImage bitmap = new();
+                bitmap.BeginInit();
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = new MemoryStream(png);
+                bitmap.EndInit();
+                bitmap.Freeze();
+                image.Source = bitmap;
+            }
+            catch (Exception)
+            {
+                image.Height = 0;
+            }
+            root.Children.Add(image);
+            string who = airport == null || role == null
+                ? "The airport or the role is not known yet: the phone will ask for them."
+                : $"The phone joins {airport} as {role.Value.ToString().ToUpperInvariant()}, with the colours and texts of this panel. " +
+                  "As an extra panel next to this one, keep the same role; for the other side, change it on the phone (⚙).";
+            root.Children.Add(new TextBlock { Text = who, TextWrapping = TextWrapping.Wrap });
+            root.Children.Add(new TextBlock
+            {
+                Text = "Tip: on the phone, add the page to the home screen to open it full screen like an app.",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Brushes.Gray,
+                Margin = new Thickness(0, 6, 0, 10)
+            });
+            TextBox linkBox = new() { Text = link, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 60 };
+            root.Children.Add(linkBox);
+            StackPanel buttons = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 10, 0, 0) };
+            Button copy = new() { Content = "Copy link", Width = 90, Height = 26 };
+            copy.Click += (s, e) =>
+            {
+                try
+                {
+                    Clipboard.SetText(link);
+                    copy.Content = "Copied";
+                }
+                catch (Exception)
+                {
+                }
+            };
+            Button close = new() { Content = "Close", Width = 90, Height = 26, Margin = new Thickness(8, 0, 0, 0), IsCancel = true, IsDefault = true };
+            buttons.Children.Add(copy);
+            buttons.Children.Add(close);
+            root.Children.Add(buttons);
+            Content = root;
         }
     }
 }

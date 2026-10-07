@@ -45,6 +45,22 @@ namespace AuroraPAR
         /// <summary>Panel always on top of the other windows.</summary>
         public bool Topmost { get; set; } = true;
 
+        /// <summary>The panel for phones and tablets (a web page, see docs/coord).</summary>
+        public const string PhonePanelUrl = "https://altanico.github.io/AuroraPAR-v2/coord/";
+
+        /// <summary>
+        /// Link that opens the phone panel already set: airport, role, colours and engraved texts.
+        /// </summary>
+        public string PhoneLink(string? airport, CoordinationRole? role)
+        {
+            List<string> query = [];
+            if (airport != null) query.Add("apt=" + Uri.EscapeDataString(airport));
+            if (role != null) query.Add("role=" + role.Value.ToString().ToLowerInvariant());
+            query.Add("c=" + string.Join(",", Colors.Select(c => ColorText.ToHex(ColorText.Parse(c, System.Windows.Media.Colors.White)).TrimStart('#'))));
+            query.Add("l=" + string.Join(",", Labels.Select(Uri.EscapeDataString)));
+            return PhonePanelUrl + "?" + string.Join("&", query);
+        }
+
         public void Normalize()
         {
             if (Colors == null || Colors.Length != DefaultColors.Length) Colors = (string[])DefaultColors.Clone();
@@ -160,6 +176,8 @@ namespace AuroraPAR
         private CoordinationRole role;
         private readonly CancellationTokenSource stop = new();
         private readonly SemaphoreSlim gate = new(1, 1);
+        /// <summary>Leaving the channel: our own "offline" must not be answered.</summary>
+        private volatile bool leaving;
 
         /// <summary>New state received from the other panel (raised on a background thread).</summary>
         public event Action<CoordinationState>? StateReceived;
@@ -268,6 +286,7 @@ namespace AuroraPAR
         private async Task DisconnectInternal()
         {
             if (client == null) return;
+            leaving = true;
             try
             {
                 if (client.IsConnected)
@@ -278,6 +297,10 @@ namespace AuroraPAR
             }
             catch (Exception)
             {
+            }
+            finally
+            {
+                leaving = false;
             }
             client.ApplicationMessageReceivedAsync -= OnMessage;
             client.Dispose();
@@ -326,13 +349,26 @@ namespace AuroraPAR
                         StateReceived?.Invoke(state);
                     }
                 }
-                else if (topic == PresenceTopic(CoordinationRole.Radar))
+                else if (topic == PresenceTopic(CoordinationRole.Radar) || topic == PresenceTopic(CoordinationRole.Tower))
                 {
-                    PresenceChanged?.Invoke(CoordinationRole.Radar, payload == "online");
-                }
-                else if (topic == PresenceTopic(CoordinationRole.Tower))
-                {
-                    PresenceChanged?.Invoke(CoordinationRole.Tower, payload == "online");
+                    CoordinationRole side = topic == PresenceTopic(CoordinationRole.Radar) ? CoordinationRole.Radar : CoordinationRole.Tower;
+                    bool online = payload == "online";
+                    // Another panel of our side (e.g. the phone panel) went offline: we are still here.
+                    if (!online && side == role && !leaving && !stop.IsCancellationRequested && Connected)
+                    {
+                        online = true;
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await Publish(PresenceTopic(side), "online");
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        });
+                    }
+                    PresenceChanged?.Invoke(side, online);
                 }
             }
             catch (Exception)
