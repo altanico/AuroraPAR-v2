@@ -352,7 +352,8 @@ namespace AuroraPAR
 
         private static Geometry CreateEchoGeometry()
         {
-            EllipseGeometry geometry = new(new Point(0, 0), 5, 2.2);
+            // Elongated vertically (turned 90 degrees from the first version).
+            EllipseGeometry geometry = new(new Point(0, 0), 2.2, 5);
             geometry.Freeze();
             return geometry;
         }
