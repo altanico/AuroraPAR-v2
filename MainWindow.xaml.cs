@@ -145,6 +145,8 @@ namespace AuroraPAR
             profileView = new(Vertical, runway, radar, viewOptions);
             horizontalView = new(Horizontal, runway, radar, viewOptions);
             infoPanel.Children.Add(infoText);
+            // One entry per runway: "LIPC 11" for the lines "LIPC 11 2.8" and "LIPC 11 2.5".
+            RunwayComboBox.DisplayMemberPath = nameof(Runway.DisplayName);
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
             infoPanel.Children.Add(glidePathText);
             infoPanel.Children.Add(ToolTips.KeepOpen(missedApproachText));
@@ -615,7 +617,10 @@ namespace AuroraPAR
             }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
             // Restore the runway used last time.
-            Runway? last = runwayList.FirstOrDefault(r => r.ToString() == settings.LastRunway);
+            // The last runway is saved with the name of its line ("LIPC 11 2.8"): its runway in the list, and its angle.
+            Runway? lastLine = runways.FirstOrDefault(r => r.ToString() == settings.LastRunway);
+            Runway? last = lastLine == null ? null : runwayList.FirstOrDefault(r => r.RunwayKey == lastLine.RunwayKey);
+            restoreGlideSlope = settings.LastGlideSlope ?? lastLine?.GlideSlope;
             if (last != null)
             {
                 restoringSession = true;
@@ -643,7 +648,7 @@ namespace AuroraPAR
                 approaches = ApproachesOf(first);
                 // Approach: the one of the last session or the one in use before reloading the file (same angle),
                 // otherwise the first line of the file for this runway.
-                double? wantedGlideSlope = restoringSession ? settings.LastGlideSlope
+                double? wantedGlideSlope = restoringSession ? restoreGlideSlope
                     : reloadingRunways ? (selectedApproach?.GlideSlope) : null;
                 Runway r = (wantedGlideSlope is double gp ? approaches.FirstOrDefault(a => Math.Abs(a.GlideSlope - gp) < 0.005) : null) ?? first;
                 selectedApproach = r;
@@ -674,17 +679,20 @@ namespace AuroraPAR
             }
         }
 
-        /// <summary>One entry per runway (airport and designator), the first line of the file for each.</summary>
+        /// <summary>Glide path of the approach to restore at start.</summary>
+        private double? restoreGlideSlope;
+
+        /// <summary>One entry per runway (airport and designator without the angle), the first line of the file for each.</summary>
         private static Runway[] GroupRunways(Runway[] lines)
         {
-            return lines.GroupBy(r => r.ToString()).Select(g => g.First()).ToArray();
+            return lines.GroupBy(r => r.RunwayKey).Select(g => g.First()).ToArray();
         }
 
         /// <summary>Published approaches of a runway: the lines of the file with the same airport and designator, by angle.</summary>
         private Runway[] ApproachesOf(Runway first)
         {
-            string key = first.ToString();
-            return runways.Where(r => r.ToString() == key)
+            string key = first.RunwayKey;
+            return runways.Where(r => r.RunwayKey == key)
                 .GroupBy(r => Math.Round(r.GlideSlope, 3))
                 .Select(g => g.First())
                 .OrderBy(r => r.GlideSlope)
@@ -836,7 +844,7 @@ namespace AuroraPAR
 
         private async void RunwaysButton_Click(object sender, RoutedEventArgs e)
         {
-            RunwayEditorWindow window = new(dataPath, runways, (RunwayComboBox.SelectedItem as Runway)?.ToString(), settings, () =>
+            RunwayEditorWindow window = new(dataPath, runways, (selectedApproach ?? RunwayComboBox.SelectedItem as Runway)?.ToString(), settings, () =>
             {
                 SettingsStore.Save(settings);
                 InvalidateViews();
@@ -856,7 +864,7 @@ namespace AuroraPAR
         /// </summary>
         private async Task ReloadRunways()
         {
-            string? currentName = (RunwayComboBox.SelectedItem as Runway)?.ToString();
+            string? currentName = (RunwayComboBox.SelectedItem as Runway)?.RunwayKey;
             double? unpublished = runway.IsUnpublished ? runway.GlideSlope : null;
             try
             {
@@ -872,7 +880,7 @@ namespace AuroraPAR
             try
             {
                 RunwayComboBox.ItemsSource = runwayList;
-                Runway? same = runwayList.FirstOrDefault(r => r.ToString() == currentName);
+                Runway? same = runwayList.FirstOrDefault(r => r.RunwayKey == currentName);
                 if (same != null)
                 {
                     RunwayComboBox.SelectedItem = same;
@@ -970,7 +978,8 @@ namespace AuroraPAR
                 ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor), BrightnessBoost(profile))
                 : Theme.Modern(profile.Style, BrightnessBoost(profile));
             viewOptions.RangeMarks = profile.RangeMarks;
-            viewOptions.Reminders = settings.RemindersFor;
+            // Reminders of all the lines (approaches) of the runway.
+            viewOptions.Reminders = r => settings.RemindersFor(runways.Where(x => x.RunwayKey == r.RunwayKey).Select(x => x.ToString()).Append(r.ToString()));
             viewOptions.RangeTextBelowHorizon = profile.RangeTextBelowHorizon;
             phosphorGlow.Color = viewOptions.Theme.Glow;
             // The old scopes had no altitude scale.
@@ -1177,7 +1186,7 @@ namespace AuroraPAR
             string glidePath = Runway.FormatGlideSlope(runway.GlideSlope);
             string missedApproach = runway.MissedApproachPointText();
             // Texts changed only when different, so an open tooltip is not disturbed by the refresh.
-            SetText(infoText, $"RWY {runway.Designator}");
+            SetText(infoText, $"RWY {runway.BaseDesignator}");
             SetText(courseText, $"CRS {course}");
             bool unpublished = runway.IsUnpublished;
             SetText(glidePathText, unpublished ? $"GP {glidePath}° UNPUBLISHED APPROACH" : $"GP {glidePath}°");
@@ -1194,7 +1203,7 @@ namespace AuroraPAR
             {
                 consolePanel.Update(new ConsoleData(
                     runway.ICAO,
-                    runway.Designator,
+                    runway.BaseDesignator,
                     course,
                     qfe ? "QFE" : "QNH",
                     pressure,

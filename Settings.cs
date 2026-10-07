@@ -346,6 +346,17 @@ namespace AuroraPAR
             return Active.Reminders.Concat(own);
         }
 
+        /// <summary>
+        /// Reminders drawn for a runway with several approaches (lines of the file with different names, e.g.
+        /// "LIPC 11 2.8" and "LIPC 11 2.5"): those of the profile, then those saved for any of its lines.
+        /// </summary>
+        public IEnumerable<DistanceReminder> RemindersFor(IEnumerable<string> runwayNames)
+        {
+            IEnumerable<DistanceReminder> own = runwayNames.Distinct()
+                .SelectMany(name => RunwayReminders.TryGetValue(name, out List<DistanceReminder>? list) && list != null ? list : []);
+            return Active.Reminders.Concat(own);
+        }
+
         [JsonIgnore]
         public Profile Active => Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles[0];
 

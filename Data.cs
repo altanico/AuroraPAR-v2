@@ -157,6 +157,7 @@ namespace AuroraPAR
         /// </summary>
         public Runway WithGlideSlope(double glideSlope)
         {
+            _ = BaseDesignator; // computed with the published angle, kept by the copy
             Runway copy = (Runway)MemberwiseClone();
             copy.GlideSlope = glideSlope;
             copy.IsUnpublished = true;
@@ -178,6 +179,34 @@ namespace AuroraPAR
             double nm = MissedApproachPointNM;
             if (!(nm > 0) || double.IsInfinity(nm)) return "----";
             return nm.ToString(nm < 10 ? "0.00" : "0.0", CultureInfo.InvariantCulture);
+        }
+
+        private string? baseDesignator;
+        /// <summary>
+        /// Designator of the runway without the glide path angle, when the file writes it in the designator
+        /// (e.g. "11 2.8" with a 2.8° glide path gives "11"). Otherwise the designator as it is.
+        /// </summary>
+        public string BaseDesignator => baseDesignator ??= StripAngle(Designator, GlideSlope);
+
+        /// <summary>
+        /// Airport and runway: the lines of the file with the same key are the approaches of one runway
+        /// (e.g. "LIPC;11 2.8;..." and "LIPC;11 2.5;..." are both "LIPC 11").
+        /// </summary>
+        public string RunwayKey => $"{ICAO} {BaseDesignator}";
+
+        /// <summary>Name in the runway list: one entry per runway.</summary>
+        public string DisplayName => RunwayKey;
+
+        private static string StripAngle(string designator, double glideSlope)
+        {
+            string[] parts = designator.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length >= 2
+                && double.TryParse(parts[^1].TrimEnd('°'), NumberStyles.Float, CultureInfo.InvariantCulture, out double angle)
+                && Math.Abs(angle - glideSlope) < 0.051)
+            {
+                return string.Join(" ", parts[..^1]);
+            }
+            return designator;
         }
 
         public override string ToString()

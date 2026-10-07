@@ -219,7 +219,7 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 
 ## 8b. Glide path: several approaches and unpublished angle
 
-Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). AuroraPAR groups them: the runway appears **once** in the list, and the **GP (°)** box lists the published angles. Choosing one changes only the approach: range, antenna tilt and traffic history stay.
+Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). The designator may also end with the angle, e.g. `LIPC;11 2.8;…` and `LIPC;11 2.5;…`: both are runway `LIPC 11`. AuroraPAR groups them: the runway appears **once** in the list, and the **GP (°)** box lists the published angles. Choosing one changes only the approach: range, antenna tilt and traffic history stay.
 
 - **Modern display:** besides the published angles, any angle from 1.0° to 7.0° can be **typed** in the GP box and confirmed with **Enter** (Esc: back). It is an **unpublished approach**: the angle and `UNPUBLISHED APPROACH` are shown in orange. The **DH does not change** (it comes from the obstacles); the **missed approach point** moves with the angle, and the new **MAPt DIST** is shown in orange next to the warning. Not saved: selecting the runway again goes back to the file.
 - **Analog mode:** only the published approaches, with the **GP DEG** knob (shown when the runway has more than one).
