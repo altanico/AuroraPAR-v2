@@ -228,6 +228,10 @@ namespace AuroraPAR
         /// </summary>
         public double? VerticalSpeedFpm { get; set; }
         /// <summary>
+        /// SSR (transponder) code, four octal digits, or null when Aurora gives none (or 0000).
+        /// </summary>
+        public string? Squawk { get; set; }
+        /// <summary>
         /// Distance to runway.
         /// </summary>
         /// <param name="runway">Runway.</param>

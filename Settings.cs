@@ -188,6 +188,8 @@ namespace AuroraPAR
         // Tracks and labels.
         public LabelLayout ElevationLabel { get; set; } = LabelLayout.DefaultElevation();
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
+        /// <summary>Track ID label field: a random two-digit ID for each new track (an assigned ID is shown anyway).</summary>
+        public bool RandomTrackIds { get; set; } = true;
         /// <summary>History tails: previous positions of each track.</summary>
         public bool HistoryEnabled { get; set; } = true;
         public int HistoryDots { get; set; } = 50;

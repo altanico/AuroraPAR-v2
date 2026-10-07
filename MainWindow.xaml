@@ -6,7 +6,7 @@
     <Window.Resources>
         <!-- Analog mode: controls styled as the parts of an old equipment (applied from the code, see ApplyDisplayMode). -->
         <Style x:Key="ConsoleButton" TargetType="Button">
-            <Setter Property="FontFamily" Value="./Fonts/#B612"/>
+            <Setter Property="FontFamily" Value="./Fonts/#Barlow Condensed"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="9"/>
             <Setter Property="Foreground" Value="#D8D8D0"/>

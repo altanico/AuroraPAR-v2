@@ -169,13 +169,17 @@ Each track has a **label** in each view. Its content is configurable (*Settings 
 | Vertical speed | `-750 ft/min` |
 | Deviation from glide path | `U 85 ft` (up) / `D 40 ft` (down) |
 | Deviation from centreline | `L 35 ft` / `R 35 ft` (pilot's left/right) |
+| SSR code | `A2201` — the transponder code given by Aurora (PAR+SSR radars); nothing when there is no valid code (or 0000) |
+| Track ID (fictitious) | `42` — for radars that receive neither the callsign nor the code (see below) |
 
 A label with no fields shows only the track symbol.
+
+**Track ID.** With the option *give each new track a random two-digit ID* (in *Edit labels...*, on by default), a track gets a random number from 01 to 99 when it enters the scan. It keeps it while it is seen; a number is never given twice in the same session, and a track out of the scan for more than 10 seconds loses its ID (it gets a new one when it comes back). To give a track an ID of your own (up to 7 characters, e.g. `X1`): **right click on its label → Set ID...**, type it and press **Enter** (Esc cancels; an empty ID goes back to the random one; *Clear ID* too). Your IDs are kept for the session, not saved. When the label has a Track ID field, the right click on the label opens this small menu (with *Hide label*) instead of hiding it at once.
 
 **Moving and hiding labels:**
 
 - **Drag** a label with the mouse: a leader line joins it to its track. **Double click** puts it back.
-- **Right click on a label** hides it.
+- **Right click on a label** hides it (with a Track ID field: a menu with *Hide label* and *Set ID...*).
 - **Right click near a track** hides/shows its label. Where several tracks are close (formation), or labels are hidden elsewhere, a menu lists them by callsign, with *Show all hidden labels*.
 - **L** or **Hide labels** hides/shows all labels; showing them again also brings back the ones hidden one by one.
 

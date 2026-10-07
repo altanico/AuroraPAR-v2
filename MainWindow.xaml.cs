@@ -420,8 +420,29 @@ namespace AuroraPAR
             key.Width = 45;
             key.Height = 48;
             key.Margin = new Thickness(2, 0, 2, 2);
-            key.FontSize = text.Length <= 2 ? 20 : text.Length == 3 ? 16 : text.Length <= 5 ? 12 : 11;
+            key.FontSize = KeyFontSize(text);
             key.Tag = "Unlit";
+        }
+
+        /// <summary>Widest text on a key (the key is 45 wide, with its border and a little margin).</summary>
+        private const double KeyTextWidth = 36;
+        private const double KeyMaxFontSize = 22;
+        private static readonly Typeface KeyTypeface = new(
+            new FontFamily(new Uri("pack://application:,,,/"), "./Fonts/#Barlow Condensed"),
+            FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+
+        /// <summary>Largest font size (up to 22) at which the text fits on a key.</summary>
+        private double KeyFontSize(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return KeyMaxFontSize;
+            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            for (double size = KeyMaxFontSize; size > 8; size -= 0.5)
+            {
+                FormattedText formatted = new(text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                    KeyTypeface, size, Brushes.Black, pixelsPerDip);
+                if (formatted.WidthIncludingTrailingWhitespace <= KeyTextWidth) return size;
+            }
+            return 8;
         }
 
         /// <summary>Selects a runway of the list (also when the ICAO filter would hide it).</summary>
@@ -1228,6 +1249,7 @@ namespace AuroraPAR
             viewOptions.AntennaSymbol = profile.AntennaSymbol;
             viewOptions.HistorySymbol = profile.HistorySymbol;
             viewOptions.ElevationLabel = profile.ElevationLabel;
+            viewOptions.Identities.RandomEnabled = profile.RandomTrackIds;
             viewOptions.AzimuthLabel = profile.AzimuthLabel;
             viewOptions.Version++;
             DhLabel.Text = $"{Pressure.Names(profile.MinimaLabel).Height} (ft)";
@@ -1401,6 +1423,8 @@ namespace AuroraPAR
         {
             if (!Open) return;
             List<Aircraft> aircrafts = lastAircrafts;
+            // Fictitious IDs: given to the tracks inside the scan.
+            viewOptions.Identities.Update(aircrafts.Where(a => radar.IsInsideScan(a, runway)).Select(a => a.Callsign), DateTime.UtcNow);
             UpdateInfo();
             profileView.Render(aircrafts);
             horizontalView.Render(aircrafts);

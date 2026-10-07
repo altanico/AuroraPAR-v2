@@ -12,6 +12,9 @@
         <GroupBox Header="Azimuth label" Padding="8" Margin="0,10,0,0">
             <StackPanel Name="AzimuthPanel"/>
         </GroupBox>
+        <CheckBox Name="RandomIdCheck" Margin="0,10,0,0"
+                  Content="Track ID field: give each new track a random two-digit ID (01-99, never repeated in the session)"
+                  ToolTip="For radars that receive neither the callsign nor the SSR code. An ID of your own: right click on the label, Set ID... (kept for the session; empty goes back to the random one)."/>
         <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
     </StackPanel>
 </Window>

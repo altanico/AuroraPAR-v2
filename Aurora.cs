@@ -128,6 +128,17 @@ namespace AuroraPAR
         }
 
         /// <summary>
+        /// SSR code in a field of an answer: four octal digits (0000 means no code), otherwise null.
+        /// </summary>
+        private static string? ParseSquawk(string[] data, int index)
+        {
+            if (index >= data.Length) return null;
+            string code = data[index].Trim();
+            if (code.Length != 4 || code == "0000" || code.Any(c => c < '0' || c > '7')) return null;
+            return code;
+        }
+
+        /// <summary>
         /// True when <paramref name="message"/> starts with <paramref name="prefix"/> followed by ';' or the end of the line.
         /// </summary>
         private static bool StartsWithField(string message, string prefix)
@@ -169,6 +180,9 @@ namespace AuroraPAR
                         Speed = speed,
                         Latitude = latitude,
                         Longitude = longitude,
+                        // Field 7 of the position record is the code set on the transponder, field 8 the code of
+                        // the Aurora label: the first valid one.
+                        Squawk = ParseSquawk(data, 8) ?? ParseSquawk(data, 9),
                     };
                 }
             }

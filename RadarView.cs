@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -22,6 +23,8 @@ namespace AuroraPAR
         public bool ScaleInMetres { get; set; }
         /// <summary>Labels shown (switch of the session, not saved).</summary>
         public bool ShowLabels { get; set; } = true;
+        /// <summary>Fictitious track IDs of the session, shared by the two views.</summary>
+        public TrackIdentities Identities { get; } = new();
         public bool HistoryEnabled { get; set; } = true;
         public int HistoryDots { get; set; } = 50;
         /// <summary>Seconds between two history dots.</summary>
@@ -652,7 +655,7 @@ namespace AuroraPAR
             track.Leader.IsHitTestVisible = false;
             track.Label.Cursor = Cursors.SizeAll;
             ToolTips.KeepOpen(track.Label);
-            track.Label.ToolTip = "Drag to move · double click: back to its place · right click: hide (right click near the track or key L twice to show it again)";
+            track.Label.ToolTip = "Drag to move · double click: back to its place · right click: hide (right click near the track or key L twice to show it again); with a Track ID field, right click gives a menu to hide the label or set an ID";
             Canvas.Children.Add(track.Symbol);
             for (int k = 0; k < track.Ghosts.Length; k++)
             {
@@ -693,12 +696,84 @@ namespace AuroraPAR
             };
             track.Label.MouseRightButtonUp += (s, e) =>
             {
-                track.LabelHidden = true;
-                track.Label.Visibility = Visibility.Collapsed;
-                track.Leader.Visibility = Visibility.Collapsed;
                 e.Handled = true;
+                // With a Track ID field, a menu: hide the label or give an ID of one's own.
+                if (Layout.Cells.Contains(LabelField.TrackId))
+                {
+                    ContextMenu menu = new() { PlacementTarget = track.Label };
+                    AddMenuItem(menu, "Hide label", () => HideLabel(track));
+                    AddMenuItem(menu, "Set ID...", () => EditTrackId(track));
+                    if (Options.Identities.Assigned(track.Callsign) != null)
+                    {
+                        AddMenuItem(menu, "Clear ID (back to the random one)", () => Options.Identities.Assign(track.Callsign, null));
+                    }
+                    menu.IsOpen = true;
+                    return;
+                }
+                HideLabel(track);
             };
             return track;
+        }
+
+        private static void HideLabel(Track track)
+        {
+            track.LabelHidden = true;
+            track.Label.Visibility = Visibility.Collapsed;
+            track.Leader.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Small entry under the label to give the track an ID of one's own (Enter confirms, Esc cancels, empty
+        /// goes back to the random one). Kept for the session.
+        /// </summary>
+        private void EditTrackId(Track track)
+        {
+            TextBox box = new()
+            {
+                Width = 80,
+                MaxLength = TrackIdentities.MaxLength,
+                CharacterCasing = CharacterCasing.Upper,
+                Text = Options.Identities.Assigned(track.Callsign) ?? ""
+            };
+            StackPanel content = new();
+            content.Children.Add(new TextBlock { Text = $"ID of {track.Callsign}", Foreground = Brushes.LightGray, Margin = new Thickness(0, 0, 0, 3) });
+            content.Children.Add(box);
+            Popup popup = new()
+            {
+                PlacementTarget = track.Label,
+                Placement = PlacementMode.Bottom,
+                StaysOpen = false,
+                AllowsTransparency = false,
+                Child = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(0x20, 0x20, 0x20)),
+                    BorderBrush = Brushes.Gray,
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(6),
+                    Child = content
+                }
+            };
+            box.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter || e.Key == Key.Return)
+                {
+                    Options.Identities.Assign(track.Callsign, box.Text);
+                    popup.IsOpen = false;
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    popup.IsOpen = false;
+                    e.Handled = true;
+                }
+            };
+            popup.Opened += (s, e) =>
+            {
+                box.Focus();
+                Keyboard.Focus(box);
+                box.SelectAll();
+            };
+            popup.IsOpen = true;
         }
 
         /// <summary>Maximum distance in pixels between a right click and a track for the click to apply to it.</summary>

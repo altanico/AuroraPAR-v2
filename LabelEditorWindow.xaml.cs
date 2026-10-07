@@ -24,6 +24,8 @@ namespace AuroraPAR
             LabelField.VerticalSpeed => "-750 ft/min",
             LabelField.GlidePathDeviation => "U 85 ft",
             LabelField.CenterlineDeviation => "R 35 ft",
+            LabelField.SsrCode => "A2201",
+            LabelField.TrackId => "42",
             _ => ""
         };
 
@@ -33,6 +35,9 @@ namespace AuroraPAR
             this.settings = settings;
             this.commit = commit;
             CloseButton.Click += (s, e) => Close();
+            RandomIdCheck.IsChecked = Active.RandomTrackIds;
+            RandomIdCheck.Checked += (s, e) => { Active.RandomTrackIds = true; commit(); };
+            RandomIdCheck.Unchecked += (s, e) => { Active.RandomTrackIds = false; commit(); };
             BuildSection(ElevationPanel, p => p.ElevationLabel, (p, l) => p.ElevationLabel = l, LabelLayout.DefaultElevation);
             BuildSection(AzimuthPanel, p => p.AzimuthLabel, (p, l) => p.AzimuthLabel = l, LabelLayout.DefaultAzimuth);
         }

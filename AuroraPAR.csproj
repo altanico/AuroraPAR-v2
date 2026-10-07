@@ -14,6 +14,8 @@
     <!-- B612, the font of the Airbus cockpit displays (SIL Open Font License, see Fonts/B612-OFL.txt). -->
     <Resource Include="Fonts\B612-Bold.ttf" />
     <Resource Include="Fonts\B612-Regular.ttf" />
+    <!-- Barlow Condensed Bold, narrow lettering of the analog console keys (SIL Open Font License, see Fonts/BarlowCondensed-OFL.txt). -->
+    <Resource Include="Fonts\BarlowCondensed-Bold.ttf" />
   </ItemGroup>
 
   <!-- The standalone coordination panel (Coord folder) is a separate program. -->

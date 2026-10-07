@@ -17,7 +17,11 @@ namespace AuroraPAR
         /// <summary>Above (U) or below (D) the ideal glide path.</summary>
         GlidePathDeviation,
         /// <summary>Left (L) or right (R) of the extended centreline, as seen by the pilot.</summary>
-        CenterlineDeviation
+        CenterlineDeviation,
+        /// <summary>SSR (transponder) code, as A1234 (PAR+SSR radars).</summary>
+        SsrCode,
+        /// <summary>Identity given by the radar when callsign and code are unknown: see <see cref="TrackIdentities"/>.</summary>
+        TrackId
     }
 
     /// <summary>
@@ -123,6 +127,8 @@ namespace AuroraPAR
             LabelField.VerticalSpeed => "Vertical speed",
             LabelField.GlidePathDeviation => "Deviation from glide path",
             LabelField.CenterlineDeviation => "Deviation from centreline",
+            LabelField.SsrCode => "SSR code (A1234)",
+            LabelField.TrackId => "Track ID (fictitious)",
             _ => field.ToString()
         };
 
@@ -163,9 +169,83 @@ namespace AuroraPAR
                         double feet = aircraft.LateralOffset(runway) * Runway.FeetPerNM;
                         return $"{(feet >= 0 ? "R" : "L")} {Length(Math.Abs(feet), options.ScaleInMetres)}";
                     }
+                case LabelField.SsrCode:
+                    return aircraft.Squawk is string code ? "A" + code : "";
+                case LabelField.TrackId:
+                    return options.Identities.Get(aircraft.Callsign);
                 default:
                     return "";
             }
+        }
+    }
+
+    /// <summary>
+    /// Fictitious identities of the tracks, for radars that receive neither the callsign nor the SSR code. A track
+    /// gets a random two-digit ID (01 to 99) when it appears in the scan; the ID stays while the track is seen and
+    /// is never given again in the session (only when all 99 have been used are the free ones given again). A track
+    /// that is out of the scan for <see cref="DropAfter"/> loses its ID: when it comes back it gets a new one. The
+    /// user can assign an ID of his own to a callsign, kept for the session; it wins over the random one.
+    /// Session only, nothing is saved.
+    /// </summary>
+    internal sealed class TrackIdentities
+    {
+        public const int MaxLength = 7;
+        private static readonly TimeSpan DropAfter = TimeSpan.FromSeconds(10);
+        private readonly Random random = new();
+        private readonly Dictionary<string, (string Id, DateTime LastSeen)> given = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> used = [];
+        private readonly Dictionary<string, string> assigned = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Random IDs given to the tracks (profile option); the assigned ones are shown anyway.</summary>
+        public bool RandomEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Gives an ID to the tracks seen now (inside the scan) and takes it away from those not seen for a while.
+        /// </summary>
+        public void Update(IEnumerable<string> seen, DateTime now)
+        {
+            foreach (string callsign in seen)
+            {
+                string id = given.TryGetValue(callsign, out var entry) ? entry.Id : NewId();
+                given[callsign] = (id, now);
+            }
+            foreach (string callsign in given.Where(g => now - g.Value.LastSeen > DropAfter).Select(g => g.Key).ToList())
+            {
+                given.Remove(callsign);
+            }
+        }
+
+        private string NewId()
+        {
+            List<string> free = Enumerable.Range(1, 99).Select(n => n.ToString("00")).Where(id => !used.Contains(id)).ToList();
+            if (free.Count == 0)
+            {
+                // All used in this session: the ones not shown now, again.
+                HashSet<string> shown = given.Values.Select(g => g.Id).ToHashSet();
+                free = Enumerable.Range(1, 99).Select(n => n.ToString("00")).Where(id => !shown.Contains(id)).ToList();
+                if (free.Count == 0) free = ["00"];
+            }
+            string chosen = free[random.Next(free.Count)];
+            used.Add(chosen);
+            return chosen;
+        }
+
+        /// <summary>ID shown for a callsign: the assigned one, else the random one (if enabled), else nothing.</summary>
+        public string Get(string callsign)
+        {
+            if (assigned.TryGetValue(callsign, out string? own)) return own;
+            return RandomEnabled && given.TryGetValue(callsign, out var entry) ? entry.Id : "";
+        }
+
+        public string? Assigned(string callsign) => assigned.TryGetValue(callsign, out string? own) ? own : null;
+
+        /// <summary>Assigns an ID to a callsign (empty: back to the random one).</summary>
+        public void Assign(string callsign, string? id)
+        {
+            id = (id ?? "").Trim().ToUpperInvariant();
+            if (id.Length > MaxLength) id = id[..MaxLength];
+            if (id.Length == 0) assigned.Remove(callsign);
+            else assigned[callsign] = id;
         }
     }
 
