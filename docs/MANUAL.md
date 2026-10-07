@@ -216,7 +216,7 @@ The tilt moves the **beam** inside the scan limits; the glide path, centreline a
 
 - Buttons **EL ▲ / EL ▼ / AZ L / AZ R / Neutral**, or the arrow keys and Home.
 - Step **2°** by default (*Settings → Radar*). The beam stops where it reaches a scan limit: the narrower the beam, the more it can be tilted; a beam as wide as the scan limits cannot be tilted at all. The range can differ up and down (and left and right): the EL/AZ TILT knobs have their 0 where the neutral position is.
-- The neutral position is the beam centre set in the profile (*Elevation / Azimuth centre in neutral*). The elevation centre can also be **automatic**: the glide path angle of the approach in use (published or free), so the beam is centred on the glide path by itself, also when the approach changes. (The glide path starts at the touchdown point and the beam at the antenna, so seen from the antenna the glide path is a little steeper near the runway; the GP angle is a good centre for the whole approach.)
+- The neutral position is the beam centre set in the profile (*Elevation / Azimuth centre in neutral*). The elevation centre is **automatic** by default: the glide path angle of the approach in use (published or free), so the beam is centred on the glide path by itself, also when the approach changes. (The glide path starts at the touchdown point and the beam at the antenna, so seen from the antenna the glide path is a little steeper near the runway; the GP angle is a good centre for the whole approach.)
 - Profiles from older versions are converted with the same picture: scan limits = the old ones widened by the old maximum tilt, beam = the old scan sector, same neutral position. Narrow the beam to work like an old PAR.
 - While tilted, an orange reminder is shown (`EL TILT 2.0 UP`, `AZ TILT 2.0 L`).
 - Left/right of the azimuth tilt are **as seen by the pilot** flying the approach. *Settings → Radar → Azimuth: swap left and right* makes them **as seen from the runway** looking at the approach (R = the pilot's left): AZ buttons, ← / → keys, AZ TILT knob and the L/R readouts all follow it.
@@ -386,7 +386,7 @@ Set once for your radar type:
 |---|---|---|
 | Approach limits | above / below the glide path, left / right of the centreline | 0.5 / 0.5 / 1.5 / 1.5 |
 | Scan limits (physical) | up, down (negative = below the horizon), left, right | new profile: 10 / −1 / 15 / 15 |
-| Antenna beam | *Narrow antenna beam moved by the tilt* (on/off); elevation width, azimuth width, elevation centre in neutral (or *automatic: the glide path angle in use*), azimuth centre in neutral (+ right); *Draw the edges of the beam* | new profile: off; when turned on: 7 / 24 / 4.5 / 0 |
+| Antenna beam | *Narrow antenna beam moved by the tilt* (on/off); elevation width, azimuth width, elevation centre in neutral (or *automatic: the glide path angle in use*, the default), azimuth centre in neutral (+ right); *Draw the edges of the beam* | new profile: off; when turned on: 7 / 24 / automatic (GP) / 0 |
 | Antenna tilt | step; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / not ticked |
 | Coasting tracks | seconds a track out of the beam is still shown at its estimated position (modern display; 0 = none) | 8 |
 

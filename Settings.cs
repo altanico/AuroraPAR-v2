@@ -186,8 +186,11 @@ namespace AuroraPAR
         /// On in the profiles of the earlier versions (same picture), off in a new profile (<see cref="CreateNew"/>).
         /// </summary>
         public bool BeamEnabled { get; set; } = true;
-        /// <summary>Elevation centre of the beam in neutral = the glide path angle in use (instead of <see cref="BeamElevationNeutral"/>).</summary>
-        public bool BeamElevationNeutralAuto { get; set; }
+        /// <summary>
+        /// Elevation centre of the beam in neutral = the glide path angle in use (instead of
+        /// <see cref="BeamElevationNeutral"/>). On by default.
+        /// </summary>
+        public bool BeamElevationNeutralAuto { get; set; } = true;
         /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).
