@@ -63,7 +63,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **2** | Elevation view ([4.2](#42-elevation-view-top)) |
 | **3** | Azimuth view ([4.3](#43-azimuth-view-bottom)) |
 
-**Right column, from the top (4–11):**
+**Right column, from the top (4–11).** The selectors "on the fly" are at the top; the buttons Hide labels, Analog, Coordination, Settings... and Runways... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons look like the keys of an equipment (capital letters; a green lamp on ANALOG/MODERN, and on COORDINATION while the panel is open) and the text fields like readout windows:
 
 | | Control | Use |
 |---|---|---|

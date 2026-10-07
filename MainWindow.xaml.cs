@@ -256,8 +256,13 @@ namespace AuroraPAR
             if (coordinationWindow == null)
             {
                 coordinationWindow = new CoordinationWindow(settings.Coordination, () => SettingsStore.Save(settings), connectedCallsign);
-                coordinationWindow.Closed += (s, e) => coordinationWindow = null;
+                coordinationWindow.Closed += (s, e) =>
+                {
+                    coordinationWindow = null;
+                    CoordinationButton.Tag = "Unlit";
+                };
                 coordinationWindow.Show();
+                CoordinationButton.Tag = "Lit";
             }
             else
             {
@@ -459,12 +464,15 @@ namespace AuroraPAR
             {
                 ControlPanel.Background = new SolidColorBrush(ScopeBezel.PanelColor);
                 DhLabel.Foreground = PanelTextBrush;
+                IcaoLabel.Foreground = PanelTextBrush;
             }
             else
             {
                 ControlPanel.ClearValue(Border.BackgroundProperty);
                 DhLabel.ClearValue(TextBlock.ForegroundProperty);
+                IcaoLabel.ClearValue(TextBlock.ForegroundProperty);
             }
+            ApplyControlStyles(analog);
             Visibility modern = analog ? Visibility.Collapsed : Visibility.Visible;
             DistanceComboBox.Visibility = modern;
             TiltPanel.Visibility = modern;
@@ -479,10 +487,44 @@ namespace AuroraPAR
                 SelectApproach(selectedApproach, keepDecisionHeight: true);
             }
             KnobPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
-            ModeButton.Content = analog ? "Modern (A)" : "Analog (A)";
             LayoutDisplay();
             UpdateKnobs();
             ApplyBrightness();
+        }
+
+        /// <summary>
+        /// Analog mode: buttons as the keys of an equipment (engraved capital labels, lamps), and the text fields
+        /// as readout windows (dark, amber text). Modern display: the normal controls.
+        /// </summary>
+        private void ApplyControlStyles(bool analog)
+        {
+            (Button Button, string Text)[] buttons =
+            [
+                (SettingsButton, "Settings..."),
+                (RunwaysButton, "Runways..."),
+                (CoordinationButton, "Coordination"),
+                (ModeButton, analog ? "Modern (A)" : "Analog (A)")
+            ];
+            foreach ((Button button, string text) in buttons)
+            {
+                if (analog) button.Style = (Style)FindResource("ConsoleButton"); else button.ClearValue(StyleProperty);
+                button.Content = analog ? text.Replace("...", "").ToUpperInvariant() : text;
+            }
+            // Lamps: the analog scope is on; the coordination key is lit while its panel is open.
+            ModeButton.Tag = "Lit";
+            CoordinationButton.Tag = coordinationWindow != null ? "Lit" : "Unlit";
+            if (analog)
+            {
+                IcaoFilterBox.Style = (Style)FindResource("ConsoleBox");
+                DhTextBox.Style = (Style)FindResource("ConsoleBox");
+                RunwayComboBox.Style = (Style)FindResource("ConsoleCombo");
+            }
+            else
+            {
+                IcaoFilterBox.ClearValue(StyleProperty);
+                DhTextBox.ClearValue(StyleProperty);
+                RunwayComboBox.ClearValue(StyleProperty);
+            }
         }
 
         /// <summary>
@@ -725,7 +767,7 @@ namespace AuroraPAR
                 : runwayList.Where(r => r.ICAO.StartsWith(text, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (filtered.Length == 0 && runwayList.Length > 0)
             {
-                IcaoFilterBox.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xC8, 0xC8));
+                IcaoFilterBox.Background = new SolidColorBrush(viewOptions.Analog ? Color.FromRgb(0x5A, 0x10, 0x10) : Color.FromRgb(0xFF, 0xC8, 0xC8));
                 return;
             }
             IcaoFilterBox.ClearValue(Control.BackgroundProperty);
