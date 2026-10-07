@@ -2,7 +2,7 @@
 
 ## Next update
 
-(nothing planned)
+- **Show / hide each line (Display style → Colours & lines).** Today a line can only be "hidden" by giving it the background colour. Add a **Show** check box in each row of the lines (glide path, centreline, approach limits, scan limits, decision height, runway and threshold, ground, touchdown point, altitude scale...; not the range marks, which have their own table, and not the background). Example: many analog radars had no approach limit lines. Hiding a line does not change anything else (e.g. the track stays green/red by the approach limits). To settle: the same choice for both modes, or separate for Modern and Analog.
 
 ## Done, to be tested
 
