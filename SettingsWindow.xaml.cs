@@ -495,7 +495,7 @@ namespace AuroraPAR
             AddNumberField("Left", p => p.ScanLeft, (p, v) => p.ScanLeft = v, 1, Profile.MaxScanAngle);
             AddNumberField("Right", p => p.ScanRight, (p, v) => p.ScanRight = v, 1, Profile.MaxScanAngle);
             AddHeader("Antenna beam (only the traffic inside the beam is seen)");
-            AddCheckRow("Narrow antenna beam moved by the tilt (advanced; off: the beam is the scan limits, no tilt)",
+            AddCheckRow("Narrow antenna beam moved by the tilt (advanced; off: the beam is the scan limits and there is no tilt)",
                 p => p.BeamEnabled, (p, v) =>
                 {
                     p.BeamEnabled = v;
@@ -506,7 +506,7 @@ namespace AuroraPAR
             AddNumberField("Elevation width", p => p.BeamElevation, (p, v) => p.BeamElevation = v, 0.5, 90);
             AddNumberField("Azimuth width", p => p.BeamAzimuth, (p, v) => p.BeamAzimuth = v, 0.5, 180);
             AddNumberField("Elevation centre in neutral", p => p.BeamElevationNeutral, (p, v) => p.BeamElevationNeutral = v, -30, 60);
-            AddCheckRow("Elevation centre in neutral: automatic, the glide path angle in use (instead of the value above)",
+            AddCheckRow("Elevation centre automatic: the glide path angle in use (instead of the value above)",
                 p => p.BeamElevationNeutralAuto, (p, v) => p.BeamElevationNeutralAuto = v);
             AddNumberField("Azimuth centre in neutral (+ right)", p => p.BeamAzimuthNeutral, (p, v) => p.BeamAzimuthNeutral = v, -90, 90);
             AddCheckRow("Draw the edges of the beam (otherwise only the thicker range marks show it)",
@@ -538,7 +538,12 @@ namespace AuroraPAR
         {
             int row = RadarGrid.RowDefinitions.Count;
             RadarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            CheckBox check = new() { Content = text, Margin = new Thickness(0, 4, 0, 2) };
+            // Long texts wrap instead of being cut at the edge of the window.
+            CheckBox check = new()
+            {
+                Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, MaxWidth = 360 },
+                Margin = new Thickness(0, 4, 0, 2)
+            };
             check.Checked += (s, e) => SetProfileValue(p => get(p), p => set(p, true));
             check.Unchecked += (s, e) => SetProfileValue(p => !get(p), p => set(p, false));
             refreshers.Add(() => check.IsChecked = get(Active));
