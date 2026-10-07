@@ -179,6 +179,8 @@ namespace AuroraPAR
         public double BeamAzimuth { get; set; } = 20;
         public double BeamElevationNeutral { get; set; } = 3.5;
         public double BeamAzimuthNeutral { get; set; }
+        /// <summary>Draw the edges of the antenna beam (off: the beam is shown only by the thicker range marks).</summary>
+        public bool ShowBeamEdges { get; set; }
         /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).

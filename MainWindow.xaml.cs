@@ -325,6 +325,22 @@ namespace AuroraPAR
             }
         }
 
+        private static readonly Style AnalogToolTipStyle = CreateAnalogToolTipStyle();
+
+        private static Style CreateAnalogToolTipStyle()
+        {
+            Style style = new(typeof(ToolTip));
+            style.Setters.Add(new Setter(Control.BackgroundProperty, CreateFrozenBrush(Color.FromRgb(0x1A, 0x1B, 0x18))));
+            style.Setters.Add(new Setter(Control.ForegroundProperty, CreateFrozenBrush(Color.FromRgb(0xFF, 0xB8, 0x40))));
+            style.Setters.Add(new Setter(Control.BorderBrushProperty, CreateFrozenBrush(Color.FromRgb(0x5A, 0x5C, 0x56))));
+            style.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(6, 4, 6, 4)));
+            style.Setters.Add(new Setter(Control.FontFamilyProperty, new FontFamily(new Uri("pack://application:,,,/"), "./Fonts/#B612")));
+            style.Setters.Add(new Setter(Control.FontSizeProperty, 12.0));
+            style.Seal();
+            return style;
+        }
+
         /// <summary>Steps of each tilt knob below and above the neutral position, as last drawn.</summary>
         private readonly Dictionary<Knob, (int Down, int Up)> knobLayouts = [];
 
@@ -583,6 +599,9 @@ namespace AuroraPAR
                 ControlPanel.ClearValue(Border.BackgroundProperty);
             }
             ApplyControlStyles(analog);
+            // Analog: tooltips as the rest of the console (dark, amber text) instead of the standard yellow ones.
+            if (analog) Resources[typeof(ToolTip)] = AnalogToolTipStyle;
+            else Resources.Remove(typeof(ToolTip));
             Visibility modern = analog ? Visibility.Collapsed : Visibility.Visible;
             // Analog: no drop-down lists, no DH field (the console readout and the knob are the DH): airport window
             // and keys instead.
@@ -1355,6 +1374,7 @@ namespace AuroraPAR
             viewOptions.HistorySymbol = profile.HistorySymbol;
             viewOptions.CoastSymbol = profile.CoastSymbol;
             viewOptions.CoastSeconds = profile.CoastSeconds;
+            viewOptions.ShowBeamEdges = profile.ShowBeamEdges;
             viewOptions.Identities.DropAfter = TimeSpan.FromSeconds(Math.Max(10, profile.CoastSeconds + 2));
             viewOptions.ElevationLabel = profile.ElevationLabel;
             viewOptions.Identities.RandomEnabled = profile.RandomTrackIds;

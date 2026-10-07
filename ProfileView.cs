@@ -100,10 +100,13 @@ namespace AuroraPAR
             {
                 AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, lower), StyleElement.ScanLimits);
             }
-            AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamUpper), StyleElement.AntennaBeam);
-            if (beamLower > 0)
+            if (Options.ShowBeamEdges)
             {
-                AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamLower), StyleElement.AntennaBeam);
+                AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamUpper), StyleElement.AntennaBeam);
+                if (beamLower > 0)
+                {
+                    AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamLower), StyleElement.AntennaBeam);
+                }
             }
             AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, H - Options.AntennaSymbol.Size / 2, Brush(StyleElement.Antenna));
             // Glide path and its approach limits, all starting at the touchdown point.

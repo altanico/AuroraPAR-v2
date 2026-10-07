@@ -491,6 +491,8 @@ namespace AuroraPAR
             AddNumberField("Azimuth width", p => p.BeamAzimuth, (p, v) => p.BeamAzimuth = v, 0.5, 180);
             AddNumberField("Elevation centre in neutral", p => p.BeamElevationNeutral, (p, v) => p.BeamElevationNeutral = v, -30, 60);
             AddNumberField("Azimuth centre in neutral (+ right)", p => p.BeamAzimuthNeutral, (p, v) => p.BeamAzimuthNeutral = v, -90, 90);
+            AddCheckRow("Draw the edges of the beam (otherwise only the thicker range marks show it)",
+                p => p.ShowBeamEdges, (p, v) => p.ShowBeamEdges = v);
             AddHeader("Antenna tilt (moves the beam inside the scan limits)");
             AddNumberField("Step", p => p.TiltStep, (p, v) => p.TiltStep = v, 0.5, 10);
             AddHeader("Coasting tracks (modern display)");
@@ -511,6 +513,20 @@ namespace AuroraPAR
             Grid.SetRow(swap, row);
             Grid.SetColumnSpan(swap, 3);
             RadarGrid.Children.Add(swap);
+        }
+
+        /// <summary>A check box over the whole width of the radar group, bound to a profile value.</summary>
+        private void AddCheckRow(string text, Func<Profile, bool> get, Action<Profile, bool> set)
+        {
+            int row = RadarGrid.RowDefinitions.Count;
+            RadarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            CheckBox check = new() { Content = text, Margin = new Thickness(0, 4, 0, 2) };
+            check.Checked += (s, e) => SetProfileValue(p => get(p), p => set(p, true));
+            check.Unchecked += (s, e) => SetProfileValue(p => !get(p), p => set(p, false));
+            refreshers.Add(() => check.IsChecked = get(Active));
+            Grid.SetRow(check, row);
+            Grid.SetColumnSpan(check, 3);
+            RadarGrid.Children.Add(check);
         }
 
         private void AddHeader(string text)

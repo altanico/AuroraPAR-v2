@@ -70,8 +70,11 @@ namespace AuroraPAR
             // Scan limits and beam edges, from the antenna.
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, left), StyleElement.ScanLimits);
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, right), StyleElement.ScanLimits);
-            AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamLeft), StyleElement.AntennaBeam);
-            AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamRight), StyleElement.AntennaBeam);
+            if (Options.ShowBeamEdges)
+            {
+                AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamLeft), StyleElement.AntennaBeam);
+                AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamRight), StyleElement.AntennaBeam);
+            }
             AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, cy, Brush(StyleElement.Antenna));
             // Extended centreline and its approach limits, all starting at the touchdown point:
             // dashed between touchdown and threshold, solid beyond the threshold.

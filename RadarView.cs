@@ -37,6 +37,8 @@ namespace AuroraPAR
         /// <summary>Coasting tracks (modern display): symbol, and seconds shown out of the beam (0 = none).</summary>
         public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);
         public double CoastSeconds { get; set; } = 8;
+        /// <summary>Edges of the antenna beam drawn (otherwise only the thicker range marks show it).</summary>
+        public bool ShowBeamEdges { get; set; }
         public LabelLayout ElevationLabel { get; set; } = LabelLayout.DefaultElevation();
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
         /// <summary>Analog scope: monochrome phosphor, echoes lit by the beam, no labels.</summary>

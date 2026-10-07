@@ -90,7 +90,7 @@ Both views are drawn as seen from the side of the runway, with the **antenna** (
 - **Touchdown point** (small yellow mark on the runway): all distances are measured **from the touchdown point**, as controllers give them on final. It is where the glide path meets the runway (about 290 m from the threshold for 50 ft TCH and 3°), or a value set for the runway.
 - **Range marks**: vertical lines at fixed distances from touchdown, with the distance written below them in the elevation view. Which marks are drawn at each range is configurable ([section 11.1](#111-range-marks)).
 - **Scan limits** (blue lines from the antenna): the physical limits of the antenna, fixed.
-- **Antenna beam** (turquoise lines from the antenna): the part the antenna is looking at now, moved by the antenna tilt inside the scan limits. **A track is seen only inside the beam.** The range marks are thicker inside the beam ([section 7](#7-antenna-tilt)).
+- **Antenna beam**: the part the antenna is looking at now, moved by the antenna tilt inside the scan limits. **A track is seen only inside the beam.** It is shown by the range marks, **thicker inside the beam**; its edges can also be drawn as lines (*Settings → Radar → Draw the edges of the beam*, off by default) ([section 7](#7-antenna-tilt)).
 - **Approach limits** (red lines from the touchdown point): the tolerance around the glide path / centreline. Inside them a track is **green**, outside **red**.
 - Between touchdown and threshold the glide path, centreline and approach limits are **dashed**; beyond the threshold they are solid.
 
@@ -252,6 +252,7 @@ Some runways have approaches with different glide path angles. In `runways.par` 
 - One **round screen** in a metal ring with the elevation view above and the azimuth view below, in **phosphor** colour (yellow-green by default, other colours in *Display style*).
 - The **antenna beam** sweeps the views in turn. Each aircraft is an **echo** that lights up when the beam passes over it and then fades until the next pass. Its position is always the latest one from Aurora: the beam changes only the brightness.
 - No labels and no altitude scale, as on the real scopes. The history tail fades with age.
+- The tooltips (help bubbles) are dark with amber text, like the console.
 - **Afterglow**: like the phosphor of the old screens, a faint trail of the echo stays where the aircraft was in the last seconds, and the history dots glow slightly when the beam passes over them.
 - In a low window the screen is cut at the top and bottom (only frame and glass), so the views stay large.
 
@@ -382,7 +383,7 @@ Set once for your radar type:
 |---|---|---|
 | Approach limits | above / below the glide path, left / right of the centreline | 0.5 / 0.5 / 1.5 / 1.5 |
 | Scan limits (physical) | up, down (negative = below the horizon), left, right | 18 / −11 / 20 / 20 |
-| Antenna beam | elevation width, azimuth width, elevation centre in neutral, azimuth centre in neutral (+ right) | 9 / 20 / 3.5 / 0 |
+| Antenna beam | elevation width, azimuth width, elevation centre in neutral, azimuth centre in neutral (+ right); *Draw the edges of the beam* | 9 / 20 / 3.5 / 0 / not ticked |
 | Antenna tilt | step; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / not ticked |
 | Coasting tracks | seconds a track out of the beam is still shown at its estimated position (modern display; 0 = none) | 8 |
 
