@@ -2,7 +2,8 @@
 
 ## Next update
 
-- **Show / hide each line (Display style → Colours & lines).** Today a line can only be "hidden" by giving it the background colour. Add a **Show** check box in each row of the lines (glide path, centreline, approach limits, scan limits, decision height, runway and threshold, ground, touchdown point, altitude scale...; not the range marks, which have their own table, and not the background). Example: many analog radars had no approach limit lines. Hiding a line does not change anything else (e.g. the track stays green/red by the approach limits). To settle: the same choice for both modes, or separate for Modern and Analog.
+- **Analog echo: gradual brightening as the beam arrives (eye candy).** Today the echo jumps to full brightness when the centre of the sweep passes over it, then fades (about 0.6 s). Make the rise gradual too: the echo starts to brighten as the beam approaches (beam width), reaches the maximum at the centre of the beam, then fades as now. ScanEffect: add the time until the next pass; brightness = max(rise, fade). Same for the glow of the history dots.
+- **Show / hide each line (Display style → Colours & lines).** Today a line can only be "hidden" by giving it the background colour. Add a **Show** check box in each row of the lines (glide path, centreline, approach limits, scan limits, decision height, runway and threshold, ground, touchdown point, altitude scale...; not the range marks, which have their own table, and not the background). Example: many analog radars had no approach limit lines. Hiding a line does not change anything else (e.g. the track stays green/red by the approach limits). Decided: separate for Modern and Analog (old radars lacked some lines).
 
 ## Done, to be tested
 
