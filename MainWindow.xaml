@@ -61,104 +61,13 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Window of the console readouts: dark with amber text. -->
-        <Style x:Key="ConsoleBox" TargetType="TextBox">
+        <!-- Small engraved title above a group of keys. -->
+        <Style x:Key="EngravedLabel" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="./Fonts/#B612"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#FFA830"/>
-            <Setter Property="Background" Value="#0A0705"/>
-            <Setter Property="BorderBrush" Value="#1A1B18"/>
-            <Setter Property="BorderThickness" Value="1.5"/>
-            <Setter Property="CaretBrush" Value="#FFA830"/>
-            <Setter Property="Padding" Value="3,1"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ConsoleComboItem" TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="#FFA830"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="6,3"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#3A2E14"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#4A3A18"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <ControlTemplate x:Key="ConsoleComboToggle" TargetType="ToggleButton">
-            <Border Background="Transparent">
-                <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0" Data="M0,0 L4,4 L8,0 Z" Fill="#FFA830"/>
-            </Border>
-        </ControlTemplate>
-        <Style x:Key="ConsoleCombo" TargetType="ComboBox">
-            <Setter Property="FontFamily" Value="./Fonts/#B612"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#FFA830"/>
-            <Setter Property="ItemContainerStyle" Value="{StaticResource ConsoleComboItem}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="22"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.ColumnSpan="2" Background="#0A0705" BorderBrush="#1A1B18" BorderThickness="1.5" CornerRadius="2"/>
-                            <ToggleButton Grid.ColumnSpan="2" Template="{StaticResource ConsoleComboToggle}" Focusable="False" ClickMode="Press"
-                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
-                            <ContentPresenter x:Name="Shown" IsHitTestVisible="False" Margin="8,2,22,2" VerticalAlignment="Center" HorizontalAlignment="Left"
-                                              Content="{TemplateBinding SelectionBoxItem}"
-                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
-                            <TextBox x:Name="PART_EditableTextBox" Visibility="Hidden" Background="Transparent" BorderThickness="0"
-                                     Foreground="{TemplateBinding Foreground}" CaretBrush="#FFA830" Margin="6,2,0,2" VerticalAlignment="Center"
-                                     IsReadOnly="{TemplateBinding IsReadOnly}">
-                                <TextBox.Template>
-                                    <ControlTemplate TargetType="TextBox">
-                                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False"/>
-                                    </ControlTemplate>
-                                </TextBox.Template>
-                            </TextBox>
-                            <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
-                                   Focusable="False" PopupAnimation="Slide">
-                                <Grid MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                                    <Border Background="#16170F" BorderBrush="#8C8E88" BorderThickness="1"/>
-                                    <ScrollViewer SnapsToDevicePixels="True">
-                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
-                                    </ScrollViewer>
-                                </Grid>
-                            </Popup>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEditable" Value="True">
-                                <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="Shown" Property="Visibility" Value="Hidden"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="Foreground" Value="#D8D8D0"/>
+            <Setter Property="Margin" Value="2,0,0,3"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -198,7 +107,20 @@
             <!-- Selectors "on the fly". Shrinks (never grows) when the window is too low for all the controls. -->
             <Viewbox Grid.Row="0" Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Top">
             <StackPanel Width="100">
-                <DockPanel Height="26" Margin="0,0,0,2"
+                <!-- Analog mode: airport entry (readout window) and push keys with a lamp for runway and glide path. -->
+                <StackPanel Name="AptPanel" Visibility="Collapsed" Margin="0,0,0,10">
+                    <TextBlock Text="APT" Style="{StaticResource EngravedLabel}"/>
+                    <Border Name="AptHost" HorizontalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Name="RunwayButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                    <TextBlock Text="RWY" Style="{StaticResource EngravedLabel}"/>
+                    <UniformGrid Name="RunwayButtons" Columns="2"/>
+                </StackPanel>
+                <StackPanel Name="GlideButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                    <TextBlock Text="GP DEG" Style="{StaticResource EngravedLabel}"/>
+                    <UniformGrid Name="GlideButtons" Columns="2"/>
+                </StackPanel>
+                <DockPanel Name="IcaoPanel" Height="26" Margin="0,0,0,2"
                            ToolTip="Airport filter: type the ICAO (or its first letters) to list only its runways. Empty: all the airports in runways.par.&#x0a;Red: no airport starts with these letters (the list is not changed).&#x0a;The airport of the callsign connected in Aurora (e.g. LIPC_APP gives LIPC) is set here when you connect, whatever was typed. Not saved: empty at the next start.">
                     <TextBlock Name="IcaoLabel" Text="ICAO" VerticalAlignment="Center" Margin="2,0,6,0"/>
                     <TextBox Name="IcaoFilterBox" CharacterCasing="Upper" MaxLength="4" VerticalContentAlignment="Center"/>
@@ -209,7 +131,7 @@
                     <TextBlock Name="GlidePathLabel" Text="GP (°)" Margin="2,0,0,2"/>
                     <ComboBox Name="GlidePathComboBox" Height="26" IsEditable="True" IsTextSearchEnabled="False"/>
                 </StackPanel>
-                <StackPanel Margin="0,10,0,0"
+                <StackPanel Name="DhPanel" Margin="0,10,0,0"
                             ToolTip="Decision height for this session only: not saved, reset when the runway changes.">
                     <TextBlock Name="DhLabel" Text="DH (ft)" Margin="2,0,0,2"/>
                     <DockPanel Height="26">

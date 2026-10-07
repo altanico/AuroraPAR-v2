@@ -41,8 +41,11 @@ namespace AuroraPAR
         private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = $"Antenna azimuth tilt. {KnobHelp}; double click on the centre: neutral." };
         private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = Profile.MaxBrightness / Profile.BrightnessStep, ToolTip = $"Brightness of the scope, 10% to 150% (above 100% for dim monitors). {KnobHelp}; double click on the centre: 100%." };
         private readonly Knob dhKnob = new() { Title = "DH", ToolTip = $"Decision height, 10 ft per step. {KnobHelp}; double click on the centre: runway value." };
-        /// <summary>Analog: published approaches of the runway (one detent per glide path angle in runways.par).</summary>
-        private readonly Knob glidePathKnob = new() { Title = "GP DEG", ToolTip = $"Glide path: the approaches of this runway in runways.par (one line per angle). {KnobHelp}; double click on the centre: first approach of the file." };
+        /// <summary>Analog: airport entry (readout window).</summary>
+        private readonly AptEntry aptEntry = new();
+        /// <summary>Analog: keys of the runways of the airport in use, and of the approaches (glide paths) of the runway.</summary>
+        private readonly List<(Runway Runway, Button Button)> runwayButtons = [];
+        private readonly List<(Runway Approach, Button Button)> glideButtons = [];
         /// <summary>Analog mode: readouts and lamps next to the scope.</summary>
         private readonly ConsolePanel consolePanel = new();
         private static readonly Brush PanelTextBrush = CreateFrozenBrush(Color.FromRgb(0xD8, 0xD8, 0xD0));
@@ -163,7 +166,9 @@ namespace AuroraPAR
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
             infoPanel.Children.Add(glidePathText);
             infoPanel.Children.Add(ToolTips.KeepOpen(missedApproachText));
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, glidePathKnob, brightnessKnob }) ToolTips.KeepOpen(knob);
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob }) ToolTips.KeepOpen(knob);
+            aptEntry.Submit = SelectAirport;
+            AptHost.Child = aptEntry;
             BrightnessDownButton.Click += (s, e) => ChangeBrightness(-1);
             BrightnessUpButton.Click += (s, e) => ChangeBrightness(1);
             BrightnessPanel.MouseWheel += (s, e) =>
@@ -313,22 +318,10 @@ namespace AuroraPAR
             };
             dhKnob.Turned += steps => SetDecisionHeight(runway.MDH + steps * DecisionHeightStep);
             dhKnob.Reset += () => SetDecisionHeight(runway.DefaultMDH);
-            glidePathKnob.Turned += steps =>
-            {
-                int index = Array.IndexOf(approaches, selectedApproach);
-                if (approaches.Length > 0) SelectApproach(approaches[Math.Clamp(index + steps, 0, approaches.Length - 1)]);
-                UpdateKnobs();
-            };
-            glidePathKnob.Reset += () =>
-            {
-                Runway? first = runwayList.FirstOrDefault(r => r.RunwayKey == runway.RunwayKey);
-                if (first != null && approaches.Contains(first)) SelectApproach(first);
-                UpdateKnobs();
-            };
             brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 100 / Profile.BrightnessStep - 1 ? "100" : i == Profile.MaxBrightness / Profile.BrightnessStep - 1 ? "MAX" : null;
             brightnessKnob.Turned += steps => ChangeBrightness(steps);
             brightnessKnob.Reset += () => SetBrightness(100);
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, glidePathKnob, brightnessKnob })
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob })
             {
                 KnobPanel.Children.Add(knob);
             }
@@ -355,20 +348,75 @@ namespace AuroraPAR
                 knob.Index = steps + (radar.TiltStep > 0 ? (int)Math.Round(tilt / radar.TiltStep) : 0);
             }
             rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
-            // Locked selector of the published approaches, only when the runway has more than one.
-            glidePathKnob.Visibility = approaches.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
-            if (approaches.Length > 1)
+        }
+
+        /// <summary>
+        /// Analog mode: one key with a lamp for each runway of the airport in use (none when it has only one), and
+        /// one for each published approach (glide path) of the runway (none when it has only one). The lamp shows
+        /// the one in use. The keys are rebuilt only when the runways or approaches change.
+        /// </summary>
+        private void UpdateAnalogButtons()
+        {
+            bool analog = viewOptions.Analog;
+            Runway[] airport = analog ? runwayList.Where(r => string.Equals(r.ICAO, runway.ICAO, StringComparison.OrdinalIgnoreCase)).ToArray() : [];
+            RunwayButtonPanel.Visibility = airport.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
+            if (!runwayButtons.Select(b => b.Runway).SequenceEqual(airport))
             {
-                if (glidePathKnob.Positions != approaches.Length || glidePathKnob.Tag != approaches)
+                RunwayButtons.Children.Clear();
+                runwayButtons.Clear();
+                if (airport.Length > 1)
                 {
-                    Runway[] list = approaches;
-                    glidePathKnob.Positions = list.Length;
-                    glidePathKnob.Tag = list;
-                    glidePathKnob.LabelFor = i => i >= 0 && i < list.Length ? Runway.FormatGlideSlope(list[i].GlideSlope) : null;
-                    glidePathKnob.InvalidateVisual();
+                    foreach (Runway r in airport)
+                    {
+                        Button button = ConsoleKey(r.BaseDesignator.ToUpperInvariant(), $"Runway {r.BaseDesignator}");
+                        button.Click += (s, e) => SelectRunway(r);
+                        RunwayButtons.Children.Add(button);
+                        runwayButtons.Add((r, button));
+                    }
                 }
-                glidePathKnob.Index = Math.Max(0, Array.IndexOf(approaches, selectedApproach));
             }
+            foreach ((Runway r, Button button) in runwayButtons)
+            {
+                button.Tag = r.RunwayKey == runway.RunwayKey ? "Lit" : "Unlit";
+            }
+            Runway[] glide = analog && approaches.Length > 1 ? approaches : [];
+            GlideButtonPanel.Visibility = glide.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
+            if (!glideButtons.Select(b => b.Approach).SequenceEqual(glide))
+            {
+                GlideButtons.Children.Clear();
+                glideButtons.Clear();
+                foreach (Runway a in glide)
+                {
+                    Button button = ConsoleKey(Runway.FormatGlideSlope(a.GlideSlope), $"Approach with a {Runway.FormatGlideSlope(a.GlideSlope)}° glide path");
+                    button.Click += (s, e) => SelectApproach(a);
+                    GlideButtons.Children.Add(button);
+                    glideButtons.Add((a, button));
+                }
+            }
+            foreach ((Runway a, Button button) in glideButtons)
+            {
+                button.Tag = a == runway ? "Lit" : "Unlit";
+            }
+        }
+
+        private Button ConsoleKey(string text, string toolTip)
+        {
+            return new Button
+            {
+                Content = text,
+                Height = 30,
+                Margin = new Thickness(2, 0, 2, 2),
+                Style = (Style)FindResource("ConsoleButton"),
+                Tag = "Unlit",
+                ToolTip = toolTip
+            };
+        }
+
+        /// <summary>Selects a runway of the list (also when the ICAO filter would hide it).</summary>
+        private void SelectRunway(Runway r)
+        {
+            ShowAllIfHidden(r);
+            RunwayComboBox.SelectedItem = r;
         }
 
         /// <summary>
@@ -462,17 +510,20 @@ namespace AuroraPAR
             if (analog)
             {
                 ControlPanel.Background = new SolidColorBrush(ScopeBezel.PanelColor);
-                DhLabel.Foreground = PanelTextBrush;
-                IcaoLabel.Foreground = PanelTextBrush;
             }
             else
             {
                 ControlPanel.ClearValue(Border.BackgroundProperty);
-                DhLabel.ClearValue(TextBlock.ForegroundProperty);
-                IcaoLabel.ClearValue(TextBlock.ForegroundProperty);
             }
             ApplyControlStyles(analog);
             Visibility modern = analog ? Visibility.Collapsed : Visibility.Visible;
+            // Analog: no drop-down lists, no DH field (the console readout and the knob are the DH): airport window
+            // and keys instead.
+            AptPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
+            IcaoPanel.Visibility = modern;
+            RunwayComboBox.Visibility = modern;
+            DhPanel.Visibility = modern;
+            aptEntry.Icao = runway.ICAO;
             DistanceComboBox.Visibility = modern;
             TiltPanel.Visibility = modern;
             BrightnessPanel.Visibility = modern;
@@ -488,6 +539,7 @@ namespace AuroraPAR
             KnobPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
             LayoutDisplay();
             UpdateKnobs();
+            UpdateAnalogButtons();
             ApplyBrightness();
         }
 
@@ -511,18 +563,6 @@ namespace AuroraPAR
             // Lamps: the analog scope is on; the coordination key is lit while its panel is open.
             ModeButton.Tag = "Lit";
             CoordinationButton.Tag = coordinationWindow != null ? "Lit" : "Unlit";
-            if (analog)
-            {
-                IcaoFilterBox.Style = (Style)FindResource("ConsoleBox");
-                DhTextBox.Style = (Style)FindResource("ConsoleBox");
-                RunwayComboBox.Style = (Style)FindResource("ConsoleCombo");
-            }
-            else
-            {
-                IcaoFilterBox.ClearValue(StyleProperty);
-                DhTextBox.ClearValue(StyleProperty);
-                RunwayComboBox.ClearValue(StyleProperty);
-            }
         }
 
         /// <summary>
@@ -765,7 +805,7 @@ namespace AuroraPAR
                 : runwayList.Where(r => r.ICAO.StartsWith(text, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (filtered.Length == 0 && runwayList.Length > 0)
             {
-                IcaoFilterBox.Background = new SolidColorBrush(viewOptions.Analog ? Color.FromRgb(0x5A, 0x10, 0x10) : Color.FromRgb(0xFF, 0xC8, 0xC8));
+                IcaoFilterBox.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xC8, 0xC8));
                 return;
             }
             IcaoFilterBox.ClearValue(Control.BackgroundProperty);
@@ -811,13 +851,26 @@ namespace AuroraPAR
             if (string.IsNullOrWhiteSpace(callsign) || callsign == suggestedCallsign) return;
             suggestedCallsign = callsign;
             string icao = callsign.Split('_', '-')[0].Trim().ToUpperInvariant();
-            if (icao.Length != 4 || !runwayList.Any(r => string.Equals(r.ICAO, icao, StringComparison.OrdinalIgnoreCase))) return;
+            if (icao.Length != 4) return;
+            SelectAirport(icao);
+        }
+
+        /// <summary>
+        /// Sets an airport: the filter shows it, and if the runway in use belongs to another airport its first runway
+        /// is selected. False when the file has no such airport (nothing changes).
+        /// </summary>
+        private bool SelectAirport(string code)
+        {
+            string icao = code.Trim().ToUpperInvariant();
+            Runway? first = runwayList.FirstOrDefault(r => string.Equals(r.ICAO, icao, StringComparison.OrdinalIgnoreCase));
+            if (first == null) return false;
             SetFilterText(icao);
             ApplyRunwayFilter(userTyped: false);
             if (selectedApproach == null || !string.Equals(selectedApproach.ICAO, icao, StringComparison.OrdinalIgnoreCase))
             {
-                RunwayComboBox.SelectedItem = runwayList.First(r => string.Equals(r.ICAO, icao, StringComparison.OrdinalIgnoreCase));
+                RunwayComboBox.SelectedItem = first;
             }
+            return true;
         }
 
         /// <summary>Glide path of the approach to restore at start.</summary>
@@ -950,6 +1003,7 @@ namespace AuroraPAR
                 updatingGlidePath = false;
             }
             if (viewOptions.Analog) UpdateKnobs();
+            UpdateAnalogButtons();
         }
 
         private const double DecisionHeightStep = 10;
@@ -1060,7 +1114,7 @@ namespace AuroraPAR
         /// </summary>
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (Keyboard.FocusedElement is TextBox) return;
+            if (Keyboard.FocusedElement is TextBox or AptEntry) return;
             switch (e.Key)
             {
                 case Key.Up: TiltAntenna(1, 0); break;
@@ -1322,7 +1376,11 @@ namespace AuroraPAR
 
         private void UpdateInfo()
         {
-            if (viewOptions.Analog) UpdateKnobs();
+            if (viewOptions.Analog)
+            {
+                UpdateKnobs();
+                aptEntry.Icao = runway.ICAO;
+            }
             Profile profile = settings.Active;
             bool qfe = profile.PressureReference == PressureReference.QFE;
             string pressure = qnh == 0 ? "----" : Pressure.Format(qfe ? Pressure.QfeFromQnh(qnh, runway.Elevation) : qnh, profile.PressureUnit);

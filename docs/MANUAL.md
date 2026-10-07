@@ -221,7 +221,7 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). The designator may also end with the angle, e.g. `LIPC;11 2.8;…` and `LIPC;11 2.5;…`: both are runway `LIPC 11`. AuroraPAR groups them: the runway appears **once** in the list, and the **GP (°)** box lists the published angles. Choosing one changes only the approach: range, antenna tilt and traffic history stay.
 
 - **Modern display:** besides the published angles, any angle from 1.0° to 7.0° can be **typed** in the GP box and confirmed with **Enter** (Esc: back). It is an **unpublished approach**: the angle and `UNPUBLISHED APPROACH` are shown in orange. The **DH does not change** (it comes from the obstacles); the **missed approach point** moves with the angle, and the new **MAPt DIST** is shown in orange next to the warning. Not saved: selecting the runway again goes back to the file.
-- **Analog mode:** only the published approaches, with the **GP DEG** knob (shown when the runway has more than one).
+- **Analog mode:** only the published approaches, as keys with a lamp under **GP DEG** (shown when the runway has more than one) — see [9.4](#94-airport-runway-and-approach-keys).
 - **MAPt DIST** (information area, and the console in the analog mode) is shown for every approach: `DH / (tan(GP) × 6076 ft)`. Compare it with the chart to check the file.
 
 ---
@@ -267,13 +267,23 @@ Status lamps:
 
 ### 9.3 Knobs (right)
 
-**RANGE NM**, **EL TILT**, **AZ TILT**, **DH**, **GP DEG** (only for runways with several approaches) and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–150%, saved in the profile, separately from the modern display; above 100% the faint elements — range marks, limits, DH — get closer to full intensity and the phosphor gets lighter, for dim monitors):
+**RANGE NM**, **EL TILT**, **AZ TILT**, **DH** and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–150%, saved in the profile, separately from the modern display; above 100% the faint elements — range marks, limits, DH — get closer to full intensity and the phosphor gets lighter, for dim monitors):
 
 - **click on the right half** of the knob: one step clockwise; **left half**: one step counter-clockwise. The mouse pointer becomes a curved arrow showing the direction. Every click counts (two quick clicks = two steps);
 - **mouse wheel** over the knob;
-- **centre** of the knob (up/down arrow pointer): **drag** up/down to turn; **double click**: tilt back to neutral, DH back to the runway value, GP back to the first approach of the file, BRT back to 100%.
+- **centre** of the knob (up/down arrow pointer): **drag** up/down to turn; **double click**: tilt back to neutral, DH back to the runway value, BRT back to 100%.
 
 The knobs always follow the real state, also when it is changed with the keyboard.
+
+### 9.4 Airport, runway and approach keys
+
+In the analog mode the column on the right has no drop-down lists and no DH field (the DH is the console readout and the knob):
+
+- **APT** — a readout window like those of the console. It shows the airport in use. Click it and type the ICAO (the last character blinks); with four characters, or **Enter**, the airport is set and its first runway is selected. **Esc** cancels, **Ctrl+V** pastes. If the airport is not in `runways.par` the window flashes and shows the airport in use again. With a callsign such as `LIPC_APP` connected in Aurora its airport is set at the connection.
+- **RWY** — one key for each runway of the airport (two columns); the lamp is lit on the runway in use. An airport with a single runway has no keys (the runway is in the RWY readout of the console). The approaches of the same runway (several glide path angles) are one key.
+- **GP DEG** — one key for each published approach (glide path angle) of the runway in use, with the lamp on the one in use. A runway with a single approach has no keys. The free angle is only in the modern display.
+
+The ICAO is the same filter as in the modern display: what you set here is already there when you switch back.
 
 ---
 
@@ -506,7 +516,7 @@ All profiles and options are in one file:
 | Range | Mouse wheel · range list · RANGE knob |
 | Tilt | ↑ ↓ ← → · Home = neutral · tilt buttons · EL/AZ knobs |
 | DH | − / + · type in the box · DH knob (double click on the centre = runway value) |
-| Glide path | GP box: published angles, or type an angle + Enter (unpublished, orange) · GP DEG knob (analog) |
+| Glide path | GP box: published angles, or type an angle + Enter (unpublished, orange) · GP DEG keys (analog) |
 | Labels | L = all · drag = move · double click = back · right click = hide |
 | Display | A = Modern / Analog |
 | Distances | Always from the **touchdown point** |

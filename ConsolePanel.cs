@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Input;
 using System.Windows.Media.Effects;
 
 namespace AuroraPAR
@@ -432,6 +433,184 @@ namespace AuroraPAR
         {
             freezable.Freeze();
             return freezable;
+        }
+    }
+    /// <summary>
+    /// Airport entry of the analog console: a readout window (same 14-segment display as the console) that takes
+    /// the keyboard. It shows the airport in use; click it and type the ICAO (the last character blinks as the
+    /// cursor): with four characters, or Enter, the code is sent to <see cref="Submit"/>; if that refuses it
+    /// (unknown airport) the window flashes and shows the airport in use again. Esc cancels. Ctrl+V pastes.
+    /// </summary>
+    internal class AptEntry : Border
+    {
+        private const int Cells = 4;
+        private readonly SegmentDisplay display = new(Cells);
+        private readonly System.Windows.Threading.DispatcherTimer blink = new() { Interval = TimeSpan.FromMilliseconds(450) };
+        private readonly System.Windows.Threading.DispatcherTimer flash = new() { Interval = TimeSpan.FromMilliseconds(160) };
+        private string icao = "";
+        private string typed = "";
+        private bool editing;
+        private bool cursorOn = true;
+        private int flashStep;
+
+        /// <summary>Receives the code typed; returns false when it is not valid (unknown airport).</summary>
+        public Func<string, bool>? Submit { get; set; }
+
+        public AptEntry()
+        {
+            Child = display;
+            Focusable = true;
+            FocusVisualStyle = null;
+            Cursor = Cursors.IBeam;
+            Background = Brushes.Transparent;
+            ToolTip = "Airport (ICAO). Click and type the 4 letters: the runway keys of that airport appear. Enter confirms, Esc cancels. With a callsign like LIPC_APP connected in Aurora, its airport is set at the connection.";
+            blink.Tick += (s, e) =>
+            {
+                cursorOn = !cursorOn;
+                Refresh();
+            };
+            flash.Tick += (s, e) =>
+            {
+                flashStep++;
+                if (flashStep >= 6)
+                {
+                    flash.Stop();
+                    flashStep = 0;
+                }
+                Refresh();
+            };
+        }
+
+        /// <summary>Airport in use, shown when nothing is being typed.</summary>
+        public string Icao
+        {
+            get => icao;
+            set
+            {
+                value ??= "";
+                if (icao == value) return;
+                icao = value;
+                Refresh();
+            }
+        }
+
+        private void Refresh()
+        {
+            string text;
+            if (flash.IsEnabled && flashStep % 2 == 0)
+            {
+                text = "";
+            }
+            else if (editing)
+            {
+                text = typed + (cursorOn && typed.Length < Cells ? "_" : "");
+            }
+            else
+            {
+                text = icao;
+            }
+            display.Text = text.PadRight(Cells);
+        }
+
+        private void Cancel()
+        {
+            editing = false;
+            blink.Stop();
+            typed = "";
+            Refresh();
+        }
+
+        private void Commit()
+        {
+            string code = typed;
+            editing = false;
+            blink.Stop();
+            typed = "";
+            Keyboard.ClearFocus();
+            if (Submit?.Invoke(code) == true)
+            {
+                Refresh();
+            }
+            else
+            {
+                flashStep = 0;
+                flash.Start();
+                Refresh();
+            }
+        }
+
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            Focus();
+            e.Handled = true;
+        }
+
+        protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
+        {
+            base.OnGotKeyboardFocus(e);
+            flash.Stop();
+            editing = true;
+            typed = "";
+            cursorOn = true;
+            blink.Start();
+            Refresh();
+        }
+
+        protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
+        {
+            base.OnLostKeyboardFocus(e);
+            if (editing) Cancel();
+        }
+
+        protected override void OnTextInput(TextCompositionEventArgs e)
+        {
+            if (!editing) return;
+            foreach (char c in e.Text.ToUpperInvariant())
+            {
+                if (char.IsLetterOrDigit(c) && c < 128 && typed.Length < Cells) typed += c;
+            }
+            e.Handled = true;
+            cursorOn = true;
+            if (typed.Length >= Cells) Commit(); else Refresh();
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            if (!editing) return;
+            switch (e.Key)
+            {
+                case Key.Back:
+                    if (typed.Length > 0) typed = typed[..^1];
+                    cursorOn = true;
+                    Refresh();
+                    e.Handled = true;
+                    break;
+                case Key.Enter:
+                    e.Handled = true;
+                    if (typed.Length > 0) Commit(); else { Cancel(); Keyboard.ClearFocus(); }
+                    break;
+                case Key.Escape:
+                    e.Handled = true;
+                    Cancel();
+                    Keyboard.ClearFocus();
+                    break;
+                case Key.V when Keyboard.Modifiers == ModifierKeys.Control:
+                    e.Handled = true;
+                    try
+                    {
+                        string pasted = new string((Clipboard.GetText() ?? "").Where(c => c < 128 && char.IsLetterOrDigit(c)).ToArray()).ToUpperInvariant();
+                        if (pasted.Length > 0)
+                        {
+                            typed = pasted[..Math.Min(Cells, pasted.Length)];
+                            Commit();
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Clipboard busy: nothing is pasted.
+                    }
+                    break;
+            }
         }
     }
 }
