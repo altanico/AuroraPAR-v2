@@ -8,6 +8,8 @@
 
 ## Done, to be tested (last update)
 
+- Modern display: runway keys and GP keys as in the analog mode (flat PC style, the one in use in blue); no runway drop-down list; the ICAO box sets the airport (4th letter, or Enter with a unique prefix; Esc / leaving it: back to the airport in use). Check: typing in the ICAO box (keys A, L do not act), single-runway airport, unpublished angle (no GP key lit), switching mode back and forth.
+
 - Analog keys: square, whole key backlit (warm white), big characters; RWY, GP DEG and the bottom keys MODERN / COORD / SETUP / blank spare key. Option **Show horizontal lines every 1000** (altitude grid, vertical view, style "Altitude lines"). Note: the distance text of the range marks can already be limited to whole miles per range (Settings, range marks, text column): a quick global switch was not added.
 
 - Analog right column: APT readout window with keyboard entry (4 characters or Enter, Esc, Ctrl+V; flashes when unknown), runway keys with lamp (none with one runway), GP DEG keys with lamp (none with one approach); no drop-down lists, no DH field, no GP knob. Check: the letter A in the ICAO does not switch mode; 8 or more runways; low window.

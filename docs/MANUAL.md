@@ -67,10 +67,10 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 
 | | Control | Use |
 |---|---|---|
-| **4** | **ICAO** filter and runway list | Type the ICAO (or its first letters) to list only that airport's runways; an airport with one runway is selected at once, with several the list opens. Empty: all the airports. Red: no airport matches. The filter is for the session (empty at the next start, with the last runway still selected). When you connect with a callsign of an airport in the file (LIPC_APP → LIPC) that airport has priority: it is set in the filter whatever was typed, and its first runway is selected if you were on another airport; without such a callsign nothing changes. One entry per runway: its approaches (glide path angles) are chosen with **GP (°)**. |
+| **4** | **ICAO** and **Runway** keys | The ICAO box shows the airport in use. Type another ICAO: with the fourth letter (or **Enter**, when the letters typed fit a single airport) it is set and its first runway is selected. Red: no airport in `runways.par` starts with these letters. **Esc** or leaving the box shows the airport in use again. Below, one key per runway of the airport (two columns, the one in use in blue; none when the airport has a single runway); the approaches of the same runway are one key. When you connect with a callsign of an airport in the file (LIPC_APP → LIPC) that airport is set at the connection; without such a callsign the last runway stays. There is no drop-down list of the runways. |
 | **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
-| | **GP (°)** | Glide path of the approach: the published angles of the runway, or a free angle (unpublished approach) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
+| | **GP (°)** | Glide path of the approach: one key per published angle of the runway (when it has more than one), and below the box for a free angle (unpublished approach) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
 | | **BRT** with **−** / **+** | Brightness of the radar picture, 10–150% (also with the mouse wheel over it); saved in the profile. Up to 100% the picture is dimmed; above 100% the colours are made brighter and lighter, for dim monitors. |
 | **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
@@ -222,7 +222,7 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 
 ## 8b. Glide path: several approaches and unpublished angle
 
-Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). The designator may also end with the angle, e.g. `LIPC;11 2.8;…` and `LIPC;11 2.5;…`: both are runway `LIPC 11`. AuroraPAR groups them: the runway appears **once** in the list, and the **GP (°)** box lists the published angles. Choosing one changes only the approach: range, antenna tilt and traffic history stay.
+Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). The designator may also end with the angle, e.g. `LIPC;11 2.8;…` and `LIPC;11 2.5;…`: both are runway `LIPC 11`. AuroraPAR groups them: the runway has **one** key, and **GP (°)** has a key for each published angle (the box below lists them too). Choosing one changes only the approach: range, antenna tilt and traffic history stay.
 
 - **Modern display:** besides the published angles, any angle from 1.0° to 7.0° can be **typed** in the GP box and confirmed with **Enter** (Esc: back). It is an **unpublished approach**: the angle and `UNPUBLISHED APPROACH` are shown in orange. The **DH does not change** (it comes from the obstacles); the **missed approach point** moves with the angle, and the new **MAPt DIST** is shown in orange next to the warning. Not saved: selecting the runway again goes back to the file.
 - **Analog mode:** only the published approaches, as keys with a lamp under **GP DEG** (shown when the runway has more than one) — see [9.4](#94-airport-runway-and-approach-keys).
@@ -287,7 +287,7 @@ In the analog mode the column on the right has no drop-down lists and no DH fiel
 - **RWY** — one square key for each runway of the airport (two columns); the key of the runway in use is lit. An airport with a single runway has no keys (the runway is in the RWY readout of the console). The approaches of the same runway (several glide path angles) are one key.
 - **GP DEG** — one key for each published approach (glide path angle) of the runway in use, with the one in use lit. A runway with a single approach has no keys. The free angle is only in the modern display.
 
-The ICAO is the same filter as in the modern display: what you set here is already there when you switch back.
+The airport is the same as in the modern display (ICAO box and runway keys there): what you set here is already there when you switch back.
 
 ---
 

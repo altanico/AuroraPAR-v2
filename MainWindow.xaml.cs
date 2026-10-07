@@ -150,19 +150,26 @@ namespace AuroraPAR
             infoPanel.Children.Add(infoText);
             // One entry per runway: "LIPC 11" for the lines "LIPC 11 2.8" and "LIPC 11 2.5".
             RunwayComboBox.DisplayMemberPath = nameof(Runway.DisplayName);
+            // ICAO box (modern display): like the APT window of the analog console, it sets the airport in use.
             IcaoFilterBox.TextChanged += (s, e) =>
             {
-                if (!settingFilter) ApplyRunwayFilter(userTyped: true);
+                if (!settingFilter) IcaoTyped(enter: false);
             };
             IcaoFilterBox.KeyDown += (s, e) =>
             {
-                if (e.Key == Key.Enter && RunwayComboBox.Items.Count > 0)
+                if (e.Key == Key.Enter)
                 {
-                    RunwayComboBox.Focus();
-                    RunwayComboBox.IsDropDownOpen = true;
+                    IcaoTyped(enter: true);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    ShowAirportInUse();
+                    Keyboard.ClearFocus();
                     e.Handled = true;
                 }
             };
+            IcaoFilterBox.LostKeyboardFocus += (s, e) => ShowAirportInUse();
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
             infoPanel.Children.Add(glidePathText);
             infoPanel.Children.Add(ToolTips.KeepOpen(missedApproachText));
@@ -358,7 +365,16 @@ namespace AuroraPAR
         private void UpdateAnalogButtons()
         {
             bool analog = viewOptions.Analog;
-            Runway[] airport = analog ? runwayList.Where(r => string.Equals(r.ICAO, runway.ICAO, StringComparison.OrdinalIgnoreCase)).ToArray() : [];
+            // Keys of the other mode: built again in the style of this one.
+            if (keysAnalog != analog)
+            {
+                keysAnalog = analog;
+                RunwayButtons.Children.Clear();
+                runwayButtons.Clear();
+                GlideButtons.Children.Clear();
+                glideButtons.Clear();
+            }
+            Runway[] airport = runwayList.Where(r => string.Equals(r.ICAO, runway.ICAO, StringComparison.OrdinalIgnoreCase)).ToArray();
             RunwayButtonPanel.Visibility = airport.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
             if (!runwayButtons.Select(b => b.Runway).SequenceEqual(airport))
             {
@@ -379,7 +395,7 @@ namespace AuroraPAR
             {
                 button.Tag = r.RunwayKey == runway.RunwayKey ? "Lit" : "Unlit";
             }
-            Runway[] glide = analog && approaches.Length > 1 ? approaches : [];
+            Runway[] glide = approaches.Length > 1 ? approaches : [];
             GlideButtonPanel.Visibility = glide.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
             if (!glideButtons.Select(b => b.Approach).SequenceEqual(glide))
             {
@@ -399,6 +415,10 @@ namespace AuroraPAR
             }
         }
 
+        /// <summary>Mode the runway and glide path keys were built for.</summary>
+        private bool keysAnalog;
+
+        /// <summary>Runway or glide path key: square console key (analog) or flat key (modern display).</summary>
         private Button ConsoleKey(string text, string toolTip)
         {
             Button key = new()
@@ -406,7 +426,17 @@ namespace AuroraPAR
                 Content = text,
                 ToolTip = toolTip
             };
-            StyleAsKey(key, text);
+            if (viewOptions.Analog)
+            {
+                StyleAsKey(key, text);
+            }
+            else
+            {
+                key.Style = (Style)FindResource("ModernKey");
+                key.Height = 28;
+                key.Margin = new Thickness(1, 0, 1, 2);
+                key.Tag = "Unlit";
+            }
             return key;
         }
 
@@ -554,8 +584,8 @@ namespace AuroraPAR
             // and keys instead.
             AptPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
             IcaoPanel.Visibility = modern;
-            RunwayComboBox.Visibility = modern;
             DhPanel.Visibility = modern;
+            ApplyKeyPanels(analog);
             aptEntry.Icao = runway.ICAO;
             DistanceComboBox.Visibility = modern;
             TiltPanel.Visibility = modern;
@@ -574,6 +604,56 @@ namespace AuroraPAR
             UpdateKnobs();
             UpdateAnalogButtons();
             ApplyBrightness();
+        }
+
+        /// <summary>
+        /// Runway and glide path key groups: on a recessed plate with engraved titles (analog), or plain with the titles
+        /// of the modern display; there the glide path keys are just above the free angle box.
+        /// </summary>
+        private void ApplyKeyPanels(bool analog)
+        {
+            foreach (Border plate in new[] { RunwayPlate, GlidePlate })
+            {
+                if (analog)
+                {
+                    plate.Background = new SolidColorBrush(Color.FromRgb(0x1F, 0x20, 0x1D));
+                    plate.BorderBrush = new SolidColorBrush(Color.FromRgb(0x0E, 0x0F, 0x0D));
+                    plate.Padding = new Thickness(0, 2, 0, 0);
+                }
+                else
+                {
+                    plate.Background = Brushes.Transparent;
+                    plate.BorderBrush = Brushes.Transparent;
+                    plate.Padding = new Thickness(0);
+                }
+            }
+            if (analog)
+            {
+                RunwayKeysLabel.Style = (Style)FindResource("EngravedLabel");
+                RunwayKeysLabel.Text = "RWY";
+            }
+            else
+            {
+                RunwayKeysLabel.Style = null;
+                RunwayKeysLabel.Margin = new Thickness(2, 0, 0, 2);
+                RunwayKeysLabel.Text = "Runway";
+            }
+            GlideKeysLabel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
+            // Analog: after the distance box (collapsed there); modern: inside the GP panel, between title and box.
+            Panel target = analog ? SelectorStack : GlidePathPanel;
+            if (GlideButtonPanel.Parent != target)
+            {
+                ((Panel)GlideButtonPanel.Parent).Children.Remove(GlideButtonPanel);
+                if (analog)
+                {
+                    target.Children.Insert(SelectorStack.Children.IndexOf(DistanceComboBox) + 1, GlideButtonPanel);
+                }
+                else
+                {
+                    target.Children.Insert(GlidePathPanel.Children.IndexOf(GlidePathLabel) + 1, GlideButtonPanel);
+                }
+            }
+            GlideButtonPanel.Margin = analog ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 0, 2);
         }
 
         /// <summary>
@@ -886,6 +966,32 @@ namespace AuroraPAR
             {
                 RunwayComboBox.IsDropDownOpen = true;
             }
+        }
+
+        /// <summary>
+        /// Letters typed in the ICAO box: red when no airport starts with them; the airport is set with the fourth
+        /// letter, or with Enter when the letters fit a single airport.
+        /// </summary>
+        private void IcaoTyped(bool enter)
+        {
+            string text = IcaoFilterBox.Text.Trim().ToUpperInvariant();
+            string[] airports = runwayList.Select(r => r.ICAO.ToUpperInvariant())
+                .Where(icao => icao.StartsWith(text, StringComparison.Ordinal)).Distinct().ToArray();
+            if (text.Length > 0 && airports.Length == 0)
+            {
+                IcaoFilterBox.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xC8, 0xC8));
+                return;
+            }
+            IcaoFilterBox.ClearValue(Control.BackgroundProperty);
+            if (text.Length == 4 && airports.Contains(text)) SelectAirport(text);
+            else if (enter && text.Length > 0 && airports.Length == 1) SelectAirport(airports[0]);
+        }
+
+        /// <summary>The ICAO box shows the airport in use again (after Esc, or when it loses the focus).</summary>
+        private void ShowAirportInUse()
+        {
+            IcaoFilterBox.ClearValue(Control.BackgroundProperty);
+            if (IcaoFilterBox.Text != runway.ICAO) SetFilterText(runway.ICAO);
         }
 
         /// <summary>Empties the filter if it hides the given runway (e.g. the one of the last session).</summary>
@@ -1440,6 +1546,10 @@ namespace AuroraPAR
             {
                 UpdateKnobs();
                 aptEntry.Icao = runway.ICAO;
+            }
+            else if (!IcaoFilterBox.IsKeyboardFocusWithin && IcaoFilterBox.Text != runway.ICAO)
+            {
+                SetFilterText(runway.ICAO);
             }
             Profile profile = settings.Active;
             bool qfe = profile.PressureReference == PressureReference.QFE;

@@ -64,6 +64,37 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Modern display: flat keys of a PC program (runway and glide path keys); Tag "Lit" = the one in use. -->
+        <Style x:Key="ModernKey" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#202020"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Face" CornerRadius="3" Background="#EDEDED" BorderBrush="#C4C4C4" BorderThickness="1" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="False"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Face" Property="Background" Value="#E0EAF6"/>
+                                <Setter TargetName="Face" Property="BorderBrush" Value="#7FA7D6"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Lit">
+                                <Setter TargetName="Face" Property="Background" Value="#0078D4"/>
+                                <Setter TargetName="Face" Property="BorderBrush" Value="#005A9E"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Face" Property="Background" Value="#CCDDF0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Small engraved title above a group of keys. -->
         <Style x:Key="EngravedLabel" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="./Fonts/#B612"/>
@@ -109,27 +140,30 @@
             </Grid.RowDefinitions>
             <!-- Selectors "on the fly". Shrinks (never grows) when the window is too low for all the controls. -->
             <Viewbox Grid.Row="0" Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Top">
-            <StackPanel Width="100">
+            <StackPanel Name="SelectorStack" Width="100">
                 <!-- Analog mode: airport entry (readout window) and push keys with a lamp for runway and glide path. -->
                 <StackPanel Name="AptPanel" Visibility="Collapsed" Margin="0,0,0,10">
                     <TextBlock Text="APT" Style="{StaticResource EngravedLabel}"/>
                     <Border Name="AptHost" HorizontalAlignment="Center"/>
                 </StackPanel>
-                <StackPanel Name="RunwayButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
-                    <TextBlock Text="RWY" Style="{StaticResource EngravedLabel}"/>
-                    <Border Background="#1F201D" BorderBrush="#0E0F0D" BorderThickness="1" CornerRadius="5" Padding="0,2,0,0"><UniformGrid Name="RunwayButtons" Columns="2"/></Border>
-                </StackPanel>
-                <StackPanel Name="GlideButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
-                    <TextBlock Text="GP DEG" Style="{StaticResource EngravedLabel}"/>
-                    <Border Background="#1F201D" BorderBrush="#0E0F0D" BorderThickness="1" CornerRadius="5" Padding="0,2,0,0"><UniformGrid Name="GlideButtons" Columns="2"/></Border>
-                </StackPanel>
-                <DockPanel Name="IcaoPanel" Height="26" Margin="0,0,0,2"
-                           ToolTip="Airport filter: type the ICAO (or its first letters) to list only its runways. Empty: all the airports in runways.par.&#x0a;Red: no airport starts with these letters (the list is not changed).&#x0a;The airport of the callsign connected in Aurora (e.g. LIPC_APP gives LIPC) is set here when you connect, whatever was typed. Not saved: empty at the next start.">
+                <DockPanel Name="IcaoPanel" Height="26" Margin="0,0,0,8"
+                           ToolTip="Airport in use: type its ICAO; with the fourth letter (or Enter, when the letters typed fit a single airport) its runways appear as keys below. Red: no airport in runways.par starts with these letters. Esc or leaving the box: back to the airport in use.&#x0a;The airport of the callsign connected in Aurora (e.g. LIPC_APP gives LIPC) is set here when you connect.">
                     <TextBlock Name="IcaoLabel" Text="ICAO" VerticalAlignment="Center" Margin="2,0,6,0"/>
                     <TextBox Name="IcaoFilterBox" CharacterCasing="Upper" MaxLength="4" VerticalContentAlignment="Center"/>
                 </DockPanel>
-                <ComboBox Name="RunwayComboBox" Height="30"/>
+                <!-- Runway keys of the airport in use (both modes; none when it has a single runway). -->
+                <StackPanel Name="RunwayButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                    <TextBlock Name="RunwayKeysLabel" Text="RWY" Style="{StaticResource EngravedLabel}"/>
+                    <Border Name="RunwayPlate" Background="#1F201D" BorderBrush="#0E0F0D" BorderThickness="1" CornerRadius="5" Padding="0,2,0,0"><UniformGrid Name="RunwayButtons" Columns="2"/></Border>
+                </StackPanel>
+                <!-- Internal list of the runways (selection), never shown: the keys and the ICAO box replace it. -->
+                <ComboBox Name="RunwayComboBox" Height="30" Visibility="Collapsed"/>
                 <ComboBox Name="DistanceComboBox" Height="30"/>
+                <!-- Glide path keys of the published approaches (none with one). Modern: moved into GlidePathPanel, above the free angle box. -->
+                <StackPanel Name="GlideButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
+                    <TextBlock Name="GlideKeysLabel" Text="GP DEG" Style="{StaticResource EngravedLabel}"/>
+                    <Border Name="GlidePlate" Background="#1F201D" BorderBrush="#0E0F0D" BorderThickness="1" CornerRadius="5" Padding="0,2,0,0"><UniformGrid Name="GlideButtons" Columns="2"/></Border>
+                </StackPanel>
                 <StackPanel Name="GlidePathPanel" Margin="0,10,0,0">
                     <TextBlock Name="GlidePathLabel" Text="GP (°)" Margin="2,0,0,2"/>
                     <ComboBox Name="GlidePathComboBox" Height="26" IsEditable="True" IsTextSearchEnabled="False"/>
