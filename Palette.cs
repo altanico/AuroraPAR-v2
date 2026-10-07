@@ -108,7 +108,7 @@ namespace AuroraPAR
             StyleElement.ScanLimits or StyleElement.Antenna or StyleElement.RangeText => 0.55,
             StyleElement.MarkFive or StyleElement.MarkTwo or StyleElement.MarkOne or StyleElement.AltitudeScale => 0.5,
             StyleElement.ApproachLimits or StyleElement.MarkQuarter => 0.45,
-            StyleElement.MarkHalf => 0.3,
+            StyleElement.MarkHalf or StyleElement.AltitudeLines => 0.3,
             _ => 1
         };
 

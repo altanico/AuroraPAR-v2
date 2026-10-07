@@ -16,6 +16,8 @@ namespace AuroraPAR
         /// <summary>True: heights above the threshold (QFE); false: altitudes (QNH).</summary>
         public bool Qfe { get; set; }
         public bool ShowAltitudeScale { get; set; } = true;
+        /// <summary>Horizontal lines every 1000 in the vertical view.</summary>
+        public bool ShowAltitudeLines { get; set; }
         /// <summary>Heights, deviations and vertical speed in metres (true) or feet (false).</summary>
         public bool ScaleInMetres { get; set; }
         /// <summary>Labels shown (switch of the session, not saved).</summary>

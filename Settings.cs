@@ -178,6 +178,8 @@ namespace AuroraPAR
         public PressureUnit PressureUnit { get; set; } = PressureUnit.HectoPascal;
         public MinimaLabel MinimaLabel { get; set; } = MinimaLabel.DaDh;
         public bool ShowAltitudeScale { get; set; } = true;
+        /// <summary>Horizontal lines every 1000 (in the unit of the scale) in the vertical view: off by default.</summary>
+        public bool ShowAltitudeLines { get; set; }
         /// <summary>
         /// Unit of heights: altitude scale and labels (altitude, deviations in ft or m, vertical speed in ft/min or m/s).
         /// </summary>

@@ -19,39 +19,42 @@
                             <Border x:Name="Cap" CornerRadius="4" BorderBrush="#0E0F0D" BorderThickness="1" Margin="0,0,0,3">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#6E706A" Offset="0"/>
-                                        <GradientStop Color="#44463F" Offset="0.1"/>
-                                        <GradientStop Color="#383A34" Offset="1"/>
+                                        <GradientStop Color="#5A5C56" Offset="0"/>
+                                        <GradientStop Color="#3A3C36" Offset="0.08"/>
+                                        <GradientStop Color="#2C2D29" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                                 <Grid>
                                     <Border x:Name="Hover" CornerRadius="3" Background="White" Opacity="0" IsHitTestVisible="False"/>
-                                    <Ellipse x:Name="Lamp" Width="5" Height="5" HorizontalAlignment="Left" VerticalAlignment="Top"
-                                             Margin="6,5,0,0" Visibility="Collapsed" Fill="#1E281E" Stroke="#0E0F0D" StrokeThickness="0.8"/>
                                     <ContentPresenter x:Name="Label" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="False"/>
                                 </Grid>
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="Tag" Value="Unlit">
-                                <Setter TargetName="Lamp" Property="Visibility" Value="Visible"/>
-                            </Trigger>
+                            <!-- Lit: the whole key is backlit (warm white), the engraving turns dark. -->
                             <Trigger Property="Tag" Value="Lit">
-                                <Setter TargetName="Lamp" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="Lamp" Property="Fill" Value="#60FF60"/>
-                                <Setter TargetName="Lamp" Property="Effect">
+                                <Setter Property="Foreground" Value="#33270A"/>
+                                <Setter TargetName="Cap" Property="Effect">
                                     <Setter.Value>
-                                        <DropShadowEffect Color="#50FF50" ShadowDepth="0" BlurRadius="6" Opacity="0.9"/>
+                                        <DropShadowEffect Color="#FFC85A" ShadowDepth="0" BlurRadius="12" Opacity="0.6"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Cap" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#FFF7DE" Offset="0"/>
+                                            <GradientStop Color="#FFE8B0" Offset="0.6"/>
+                                            <GradientStop Color="#FFD983" Offset="1"/>
+                                        </LinearGradientBrush>
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Hover" Property="Opacity" Value="0.08"/>
+                                <Setter TargetName="Hover" Property="Opacity" Value="0.1"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Cap" Property="Margin" Value="0,2,0,1"/>
                                 <Setter TargetName="Hover" Property="Opacity" Value="0"/>
-                                <Setter TargetName="Cap" Property="Background" Value="#2E302B"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Root" Property="Opacity" Value="0.5"/>
@@ -114,11 +117,11 @@
                 </StackPanel>
                 <StackPanel Name="RunwayButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
                     <TextBlock Text="RWY" Style="{StaticResource EngravedLabel}"/>
-                    <UniformGrid Name="RunwayButtons" Columns="2"/>
+                    <Border Background="#1F201D" BorderBrush="#0E0F0D" BorderThickness="1" CornerRadius="5" Padding="0,2,0,0"><UniformGrid Name="RunwayButtons" Columns="2"/></Border>
                 </StackPanel>
                 <StackPanel Name="GlideButtonPanel" Visibility="Collapsed" Margin="0,0,0,8">
                     <TextBlock Text="GP DEG" Style="{StaticResource EngravedLabel}"/>
-                    <UniformGrid Name="GlideButtons" Columns="2"/>
+                    <Border Background="#1F201D" BorderBrush="#0E0F0D" BorderThickness="1" CornerRadius="5" Padding="0,2,0,0"><UniformGrid Name="GlideButtons" Columns="2"/></Border>
                 </StackPanel>
                 <DockPanel Name="IcaoPanel" Height="26" Margin="0,0,0,2"
                            ToolTip="Airport filter: type the ICAO (or its first letters) to list only its runways. Empty: all the airports in runways.par.&#x0a;Red: no airport starts with these letters (the list is not changed).&#x0a;The airport of the callsign connected in Aurora (e.g. LIPC_APP gives LIPC) is set here when you connect, whatever was typed. Not saved: empty at the next start.">
@@ -171,12 +174,19 @@
             <!-- System buttons, fixed at the bottom edge, apart from the selectors. -->
             <StackPanel Grid.Row="1" Width="100" VerticalAlignment="Bottom" Margin="0,6,0,4">
                 <Border Height="1" Background="#55808080" Margin="0,0,0,6"/>
-                <Button Name="ModeButton" Content="Analog (A)" Margin="0,4,0,0" Height="26"
-                        ToolTip="Switch between the modern display and the analog scope (key A)."/>
-                <Button Name="CoordinationButton" Content="Coordination" Margin="0,4,0,0" Height="26"
-                        ToolTip="Coordination light panel with the tower (voiceless coordination)."/>
-                <Border Height="1" Background="#55808080" Margin="0,8,0,4"/>
-                <Button Name="SettingsButton" Content="Settings..." Margin="0,4,0,0" Height="30"/>
+                <!-- Modern: one button per row. Analog: square keys, two per row, on a recessed plate (see ApplyControlStyles). -->
+                <Border Name="SystemPlate" CornerRadius="5" BorderThickness="1">
+                <WrapPanel Width="98">
+                    <Button Name="ModeButton" Content="Analog (A)" Margin="0,4,0,0" Height="26" Width="98"
+                            ToolTip="Switch between the modern display and the analog scope (key A)."/>
+                    <Button Name="CoordinationButton" Content="Coordination" Margin="0,4,0,0" Height="26" Width="98"
+                            ToolTip="Coordination light panel with the tower (voiceless coordination)."/>
+                    <Border Name="SystemSeparator" Height="1" Width="98" Background="#55808080" Margin="0,8,0,4"/>
+                    <Button Name="SettingsButton" Content="Settings..." Margin="0,4,0,0" Height="30" Width="98"/>
+                    <!-- Analog only: a blank key, spare for a future function. -->
+                    <Button Name="SpareKey" Visibility="Collapsed" IsTabStop="False"/>
+                </WrapPanel>
+                </Border>
             </StackPanel>
             </Grid>
         </Border>

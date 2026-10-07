@@ -128,6 +128,8 @@
                         <RadioButton Name="ScaleMetresRadio" GroupName="ScaleUnit" Content="m, m/s" VerticalAlignment="Center"/>
                     </StackPanel>
                     <CheckBox Name="AltitudeScaleCheck" Content="Show the altitude scale" Margin="0,8,0,0"/>
+                    <CheckBox Name="AltitudeLinesCheck" Content="Show horizontal lines every 1000 (altitude grid)" Margin="0,4,0,0"
+                              ToolTip="Lines across the vertical view every 1000 ft (or m, as the scale). Colour and style: Altitude lines in the display colours."/>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
                                 ToolTip="Used for the magnetic final course (CRS) of the runways without their own variation in runways.par. East positive: 3E, 2.5W or -2.">
                         <TextBlock Text="Default magnetic variation:" VerticalAlignment="Center"/>

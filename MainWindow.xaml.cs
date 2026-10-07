@@ -401,15 +401,27 @@ namespace AuroraPAR
 
         private Button ConsoleKey(string text, string toolTip)
         {
-            return new Button
+            Button key = new()
             {
                 Content = text,
-                Height = 30,
-                Margin = new Thickness(2, 0, 2, 2),
-                Style = (Style)FindResource("ConsoleButton"),
-                Tag = "Unlit",
                 ToolTip = toolTip
             };
+            StyleAsKey(key, text);
+            return key;
+        }
+
+        /// <summary>
+        /// Square console key: 45 wide, with big characters (smaller when the text is longer). The whole key lights
+        /// up when its <see cref="FrameworkElement.Tag"/> is "Lit".
+        /// </summary>
+        private void StyleAsKey(Button key, string text)
+        {
+            key.Style = (Style)FindResource("ConsoleButton");
+            key.Width = 45;
+            key.Height = 48;
+            key.Margin = new Thickness(2, 0, 2, 2);
+            key.FontSize = text.Length <= 2 ? 20 : text.Length == 3 ? 16 : text.Length <= 5 ? 12 : 11;
+            key.Tag = "Unlit";
         }
 
         /// <summary>Selects a runway of the list (also when the ICAO filter would hide it).</summary>
@@ -549,20 +561,43 @@ namespace AuroraPAR
         /// </summary>
         private void ApplyControlStyles(bool analog)
         {
-            (Button Button, string Text)[] buttons =
+            // Analog: short engraved names on square keys (the full name in the tooltip); the mode key names the
+            // display it switches to.
+            (Button Button, string Modern, string Analog, string Tip, int Height)[] buttons =
             [
-                (SettingsButton, "Settings..."),
-                (CoordinationButton, "Coordination"),
-                (ModeButton, analog ? "Modern (A)" : "Analog (A)")
+                (ModeButton, "Analog (A)", "MODERN", "Switch to the modern display (key A).", 26),
+                (CoordinationButton, "Coordination", "COORD", "Coordination light panel with the tower (voiceless coordination).", 26),
+                (SettingsButton, "Settings...", "SETUP", "Settings.", 30)
             ];
-            foreach ((Button button, string text) in buttons)
+            foreach ((Button button, string modern, string analogText, string tip, int height) in buttons)
             {
-                if (analog) button.Style = (Style)FindResource("ConsoleButton"); else button.ClearValue(StyleProperty);
-                button.Content = analog ? text.Replace("...", "").ToUpperInvariant() : text;
+                if (analog)
+                {
+                    StyleAsKey(button, analogText);
+                    button.Content = analogText;
+                    button.ToolTip = tip;
+                }
+                else
+                {
+                    button.ClearValue(StyleProperty);
+                    button.ClearValue(FontSizeProperty);
+                    button.Content = modern;
+                    button.Width = 98;
+                    button.Height = height;
+                    button.Margin = new Thickness(0, 4, 0, 0);
+                    button.Tag = null;
+                    button.ToolTip = button == ModeButton ? "Switch between the modern display and the analog scope (key A)." : button == CoordinationButton ? tip : null;
+                }
             }
-            // Lamps: the analog scope is on; the coordination key is lit while its panel is open.
-            ModeButton.Tag = "Lit";
-            CoordinationButton.Tag = coordinationWindow != null ? "Lit" : "Unlit";
+            if (analog) StyleAsKey(SpareKey, "");
+            else SpareKey.ClearValue(StyleProperty);
+            SpareKey.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
+            SystemSeparator.Visibility = analog ? Visibility.Collapsed : Visibility.Visible;
+            SystemPlate.Background = analog ? new SolidColorBrush(Color.FromRgb(0x1F, 0x20, 0x1D)) : Brushes.Transparent;
+            SystemPlate.BorderBrush = analog ? new SolidColorBrush(Color.FromRgb(0x0E, 0x0F, 0x0D)) : Brushes.Transparent;
+            SystemPlate.Padding = analog ? new Thickness(0, 2, 0, 0) : new Thickness(0);
+            // Lamp: the coordination key is lit while its panel is open. The mode key is a plain command.
+            CoordinationButton.Tag = analog ? (coordinationWindow != null ? "Lit" : "Unlit") : null;
         }
 
         /// <summary>
@@ -1182,6 +1217,7 @@ namespace AuroraPAR
             phosphorGlow.Color = viewOptions.Theme.Glow;
             // The old scopes had no altitude scale.
             viewOptions.ShowAltitudeScale = profile.ShowAltitudeScale && !analog;
+            viewOptions.ShowAltitudeLines = profile.ShowAltitudeLines;
             viewOptions.ScaleInMetres = profile.AltitudeScaleUnit == LengthUnit.Metres;
             viewOptions.HistoryEnabled = profile.HistoryEnabled;
             viewOptions.HistoryDots = profile.HistoryDots;

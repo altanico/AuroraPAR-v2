@@ -63,7 +63,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **2** | Elevation view ([4.2](#42-elevation-view-top)) |
 | **3** | Azimuth view ([4.3](#43-azimuth-view-bottom)) |
 
-**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination and Settings... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons look like the keys of an equipment (capital letters; a green lamp on ANALOG/MODERN, and on COORDINATION while the panel is open) and the text fields like readout windows:
+**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination and Settings... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons are square keys like those of a real console (big capital letters; the whole key lights up in warm white when active: the runway and approach in use, COORD while the panel is open) and the text fields are readout windows. The bottom keys are **MODERN** (back to the modern display), **COORD**, **SETUP** (Settings) and a blank spare key that does nothing:
 
 | | Control | Use |
 |---|---|---|
@@ -280,8 +280,8 @@ The knobs always follow the real state, also when it is changed with the keyboar
 In the analog mode the column on the right has no drop-down lists and no DH field (the DH is the console readout and the knob):
 
 - **APT** — a readout window like those of the console. It shows the airport in use. Click it and type the ICAO (the last character blinks); with four characters, or **Enter**, the airport is set and its first runway is selected. **Esc** cancels, **Ctrl+V** pastes. If the airport is not in `runways.par` the window flashes and shows the airport in use again. With a callsign such as `LIPC_APP` connected in Aurora its airport is set at the connection.
-- **RWY** — one key for each runway of the airport (two columns); the lamp is lit on the runway in use. An airport with a single runway has no keys (the runway is in the RWY readout of the console). The approaches of the same runway (several glide path angles) are one key.
-- **GP DEG** — one key for each published approach (glide path angle) of the runway in use, with the lamp on the one in use. A runway with a single approach has no keys. The free angle is only in the modern display.
+- **RWY** — one square key for each runway of the airport (two columns); the key of the runway in use is lit. An airport with a single runway has no keys (the runway is in the RWY readout of the console). The approaches of the same runway (several glide path angles) are one key.
+- **GP DEG** — one key for each published approach (glide path angle) of the runway in use, with the one in use lit. A runway with a single approach has no keys. The free angle is only in the modern display.
 
 The ICAO is the same filter as in the modern display: what you set here is already there when you switch back.
 
@@ -381,6 +381,7 @@ The scale of the views does not change with the scan limits: wider limits or a t
 | Name of the minimum | DA/DH, OCA/OCH, MDA/MDH |
 | Heights, deviations and vertical speed | ft and ft/min, or m and m/s |
 | Altitude scale | shown or not (Modern mode) |
+| Altitude grid | horizontal lines every 1000 (ft or m, as the scale) in the vertical view, inside the scan limits; off by default; colour and style: *Altitude lines* in the display colours |
 | Default magnetic variation | e.g. `3E`, `2W`: used for the final course of runways without their own variation |
 
 ---
@@ -409,7 +410,7 @@ For every element of the **Modern** display:
 - **width**: 1–6 px;
 - a **preview**.
 
-Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits, antenna (symbol; profiles from older versions start with the colour of the scan limits), decision height, runway and threshold, ground, touchdown point, altitude scale, background; and the colours of **plots** (history) and **tracks** inside / outside the limits and of the label text.
+Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits, antenna (symbol; profiles from older versions start with the colour of the scan limits), decision height, runway and threshold, ground, touchdown point, altitude scale, altitude lines, background; and the colours of **plots** (history) and **tracks** inside / outside the limits and of the label text.
 
 **Analog scope**: the analog display has a fixed theme. Only the **phosphor** colour is chosen — yellow-green (P39), amber/yellow, green (P1), orange, blue-white or any colour — and all elements use it with different brightness.
 

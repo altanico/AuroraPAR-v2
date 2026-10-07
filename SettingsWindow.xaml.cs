@@ -106,6 +106,8 @@ namespace AuroraPAR
             MdaMdhRadio.Checked += (s, e) => SetProfileValue(p => p.MinimaLabel == MinimaLabel.MdaMdh, p => p.MinimaLabel = MinimaLabel.MdaMdh);
             AltitudeScaleCheck.Checked += (s, e) => SetProfileValue(p => p.ShowAltitudeScale, p => p.ShowAltitudeScale = true);
             AltitudeScaleCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ShowAltitudeScale, p => p.ShowAltitudeScale = false);
+            AltitudeLinesCheck.Checked += (s, e) => SetProfileValue(p => p.ShowAltitudeLines, p => p.ShowAltitudeLines = true);
+            AltitudeLinesCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ShowAltitudeLines, p => p.ShowAltitudeLines = false);
             ScaleFeetRadio.Checked += (s, e) => SetProfileValue(p => p.AltitudeScaleUnit == LengthUnit.Feet, p => p.AltitudeScaleUnit = LengthUnit.Feet);
             ScaleMetresRadio.Checked += (s, e) => SetProfileValue(p => p.AltitudeScaleUnit == LengthUnit.Metres, p => p.AltitudeScaleUnit = LengthUnit.Metres);
             FileLocationText.Text = $"Settings file{(SettingsStore.IsPortable ? " (portable mode)" : "")}: {SettingsStore.FilePath}";
@@ -145,6 +147,7 @@ namespace AuroraPAR
                 OcaOchRadio.IsChecked = Active.MinimaLabel == MinimaLabel.OcaOch;
                 MdaMdhRadio.IsChecked = Active.MinimaLabel == MinimaLabel.MdaMdh;
                 AltitudeScaleCheck.IsChecked = Active.ShowAltitudeScale;
+                AltitudeLinesCheck.IsChecked = Active.ShowAltitudeLines;
                 ScaleFeetRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Feet;
                 ScaleMetresRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Metres;
                 HistoryCheck.IsChecked = Active.HistoryEnabled;

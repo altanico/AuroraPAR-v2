@@ -77,6 +77,7 @@ namespace AuroraPAR
             double end = length + range;
             double upper = Radar.ElevationUpper;
             double lower = Radar.ElevationLower;
+            if (Options.ShowAltitudeLines) DrawAltitudeLines(end, upper, lower);
             // Ground beyond the threshold.
             AddLine(length * xscale, H, end * xscale, H, StyleElement.Ground);
             // Runway.
@@ -159,6 +160,32 @@ namespace AuroraPAR
             if (Options.ShowAltitudeScale)
             {
                 DrawAltitudeScale();
+            }
+        }
+
+        /// <summary>
+        /// Horizontal lines every 1000 (ft or m, as the scale), inside the scan limits, from the upper limit to the
+        /// end of the range (or to the lower limit when it is above the ground).
+        /// </summary>
+        private void DrawAltitudeLines(double end, double upper, double lower)
+        {
+            const double FeetPerMetre = 1 / 0.3048;
+            double unitToFeet = Options.ScaleInMetres ? FeetPerMetre : 1;
+            double baseValue = Options.Qfe ? 0 : Runway.Elevation / unitToFeet;
+            double topValue = baseValue + H / yscale / unitToFeet;
+            double tanUpper = Math.Tan(upper * Math.PI / 180);
+            if (tanUpper <= 0) return;
+            for (double value = (Math.Floor(baseValue / 1000) + 1) * 1000; value <= topValue; value += 1000)
+            {
+                double heightFt = (value - baseValue) * unitToFeet;
+                if (heightFt <= 0) continue;
+                double y = Y(heightFt);
+                if (y < 0) break;
+                double heightNM = heightFt / Runway.FeetPerNM;
+                double fromX = (AntennaNM + heightNM / tanUpper) * xscale;
+                double toX = end * xscale;
+                if (lower > 0) toX = Math.Min(toX, (AntennaNM + heightNM / Math.Tan(lower * Math.PI / 180)) * xscale);
+                if (fromX < toX) AddLine(fromX, y, toX, y, StyleElement.AltitudeLines);
             }
         }
 
