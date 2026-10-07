@@ -2,7 +2,9 @@
 
 ## Next update
 
-(empty: the last block — GP selector and MAPt DIST, antenna colour, azimuth swap, analog afterglow, knob mouse zones, DH above QNH — is done and to be tested, see below.)
+- **Modern: "Hide labels (L)" goes back to the top section** (with the selectors "on the fly"), not with the system buttons at the bottom: it is a quick display switch, not a setting. In the analog mode nothing changes (no labels there).
+
+(the previous blocks — GP selector and MAPt DIST, antenna colour, azimuth swap, analog afterglow, knob mouse zones, DH above QNH — is done and to be tested, see below.)
 
 ## Done, to be tested (last update)
 
