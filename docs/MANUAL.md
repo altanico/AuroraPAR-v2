@@ -18,6 +18,7 @@ This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https
 6. [Controls and keyboard](#6-controls-and-keyboard)
 7. [Antenna tilt](#7-antenna-tilt)
 8. [Decision height](#8-decision-height)
+   - [8b. Glide path: several approaches and unpublished angle](#8b-glide-path-several-approaches-and-unpublished-angle)
 9. [Analog mode](#9-analog-mode)
    - [9b. Coordination panel](#9b-coordination-panel)
 10. [Settings and profiles](#10-settings-and-profiles)
@@ -70,6 +71,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
+| | **GP (°)** | Glide path of the approach: the published angles of the runway, or a free angle (unpublished approach) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
 | | **BRT** with **−** / **+** | Brightness of the radar picture, 10–150% (also with the mouse wheel over it); saved in the profile. Up to 100% the picture is dimmed; above 100% the colours are made brighter and lighter, for dim monitors. |
 | **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
@@ -133,7 +135,8 @@ In the top corner of the elevation view, on the runway side:
 |---|---|
 | `RWY 16L` | Selected runway. |
 | `CRS 163` | **Final course, magnetic.** Calculated, *not* the published value: runway true heading corrected with the magnetic variation, rounded to the degree. Check it against the approach chart (tooltip). |
-| `GP 3.0°` | Glide path angle. |
+| `GP 3.0°` | Glide path angle. With a typed angle that is not published: `GP 3.4° UNPUBLISHED APPROACH` in orange. |
+| `MAPt DIST 0.98 NM` | **Missed approach point**: distance from the touchdown point where the glide path reaches the DH/OCH in use. Compare it with the chart (MAPt / RPI DIST) to check `runways.par`; it is the distance for "approach terminating at …". Orange together with an unpublished angle (it is then the new MAPt). |
 | `QNH 1013` / `QFE 1001` | Pressure setting (QFE computed for the threshold elevation), in hPa or inHg. |
 | `DA 392 ft` | Minimum: DA/DH, OCA/OCH or MDA/MDH; altitude with QNH, height with QFE. |
 | `EL TILT 2.0 UP` (orange) | Shown only while the antenna is tilted. |
@@ -201,6 +204,7 @@ As on a real PAR, the antenna can be tilted to look higher/lower or more left/ri
 - Buttons **EL ▲ / EL ▼ / AZ L / AZ R / Neutral**, or the arrow keys and Home.
 - Step **2°**, up to **10°** each way by default (*Settings → Radar*).
 - While tilted, an orange reminder is shown (`EL TILT 2.0 UP`, `AZ TILT 2.0 L`).
+- Left/right of the azimuth tilt are **as seen by the pilot** flying the approach. *Settings → Radar → Azimuth: swap left and right* makes them **as seen from the runway** looking at the approach (R = the pilot's left): AZ buttons, ← / → keys, AZ TILT knob and the L/R readouts all follow it.
 - The tilt goes back to neutral when the runway changes, and is never saved.
 
 ---
@@ -210,6 +214,16 @@ As on a real PAR, the antenna can be tilted to look higher/lower or more left/ri
 The DH of each runway comes from `runways.par`. During the session it can be changed **on the fly** with **−** / **+** (10 ft steps) or by typing a value in the box. It is not saved: it goes back to the file value when the runway is selected again.
 
 The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and references*.
+
+---
+
+## 8b. Glide path: several approaches and unpublished angle
+
+Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). AuroraPAR groups them: the runway appears **once** in the list, and the **GP (°)** box lists the published angles. Choosing one changes only the approach: range, antenna tilt and traffic history stay.
+
+- **Modern display:** besides the published angles, any angle from 1.0° to 7.0° can be **typed** in the GP box and confirmed with **Enter** (Esc: back). It is an **unpublished approach**: the angle and `UNPUBLISHED APPROACH` are shown in orange. The **DH does not change** (it comes from the obstacles); the **missed approach point** moves with the angle, and the new **MAPt DIST** is shown in orange next to the warning. Not saved: selecting the runway again goes back to the file.
+- **Analog mode:** only the published approaches, with the **GP DEG** knob (shown when the runway has more than one).
+- **MAPt DIST** (information area, and the console in the analog mode) is shown for every approach: `DH / (tan(GP) × 6076 ft)`. Compare it with the chart to check the file.
 
 ---
 
@@ -225,6 +239,7 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 - One **round screen** in a metal ring with the elevation view above and the azimuth view below, in **phosphor** colour (yellow-green by default, other colours in *Display style*).
 - The **antenna beam** sweeps the views in turn. Each aircraft is an **echo** that lights up when the beam passes over it and then fades until the next pass. Its position is always the latest one from Aurora: the beam changes only the brightness.
 - No labels and no altitude scale, as on the real scopes. The history tail fades with age.
+- **Afterglow**: like the phosphor of the old screens, a faint trail of the echo stays where the aircraft was in the last seconds, and the history dots glow slightly when the beam passes over them.
 - In a low window the screen is cut at the top and bottom (only frame and glass), so the views stay large.
 
 ### 9.2 Console panel (left)
@@ -237,8 +252,9 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 | RWY | Runway |
 | CRS | Final course, magnetic (calculated — see tooltip) |
 | GP DEG | Glide path angle |
-| QNH / QFE | Pressure setting |
+| MAPt DIST | Missed approach point distance from touchdown, NM (see [8b](#8b-glide-path-several-approaches-and-unpublished-angle)) |
 | DA FT (or OCA, DH…) | Minimum |
+| QNH / QFE | Pressure setting |
 | RANGE NM | Displayed range |
 | EL TILT / AZ TILT | Antenna tilt (`U`/`D`, `L`/`R`) |
 
@@ -252,10 +268,11 @@ Status lamps:
 
 ### 9.3 Knobs (right)
 
-**RANGE NM**, **EL TILT**, **AZ TILT**, **DH** and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–150%, saved in the profile, separately from the modern display; above 100% the faint elements — range marks, limits, DH — get closer to full intensity and the phosphor gets lighter, for dim monitors):
+**RANGE NM**, **EL TILT**, **AZ TILT**, **DH**, **GP DEG** (only for runways with several approaches) and **BRT** (brightness of the scope only — frame, glass and console panel are not dimmed; 10–150%, saved in the profile, separately from the modern display; above 100% the faint elements — range marks, limits, DH — get closer to full intensity and the phosphor gets lighter, for dim monitors):
 
-- turn with the **mouse wheel** over the knob, by **dragging** up/down, or by **clicking** on the right half (clockwise) / left half (counter-clockwise);
-- **double click**: tilt back to neutral, DH back to the runway value, BRT back to 100%.
+- **click on the right half** of the knob: one step clockwise; **left half**: one step counter-clockwise. The mouse pointer becomes a curved arrow showing the direction. Every click counts (two quick clicks = two steps);
+- **mouse wheel** over the knob;
+- **centre** of the knob (up/down arrow pointer): **drag** up/down to turn; **double click**: tilt back to neutral, DH back to the runway value, GP back to the first approach of the file, BRT back to 100%.
 
 The knobs always follow the real state, also when it is changed with the keyboard.
 
@@ -342,7 +359,7 @@ Set once for your radar type:
 |---|---|---|
 | Approach limits | above / below the glide path, left / right of the centreline | 0.5 / 0.5 / 1.5 / 1.5 |
 | Scan limits | up, down (negative = below the horizon), left, right | 8 / −1 / 10 / 10 |
-| Antenna tilt | step, maximum | 2 / 10 |
+| Antenna tilt | step, maximum; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / 10 / not ticked |
 
 The scale of the views does not change with the scan limits: wider limits or a tilt move the blue lines, the rest keeps its size.
 
@@ -383,7 +400,7 @@ For every element of the **Modern** display:
 - **width**: 1–6 px;
 - a **preview**.
 
-Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits and antenna, decision height, runway and threshold, ground, touchdown point, altitude scale, background; and the colours of **plots** (history) and **tracks** inside / outside the limits and of the label text.
+Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits, antenna (symbol; profiles from older versions start with the colour of the scan limits), decision height, runway and threshold, ground, touchdown point, altitude scale, background; and the colours of **plots** (history) and **tracks** inside / outside the limits and of the label text.
 
 **Analog scope**: the analog display has a fixed theme. Only the **phosphor** colour is chosen — yellow-green (P39), amber/yellow, green (P1), orange, blue-white or any colour — and all elements use it with different brightness.
 
@@ -449,6 +466,8 @@ ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH_M;WIDTH_M;GLIDE_SLOP
 
 To give the magnetic variation without the touchdown distance leave that field empty: `...;10;;3E`.
 
+Several lines with the same ICAO and designator and different glide path angles are the approaches of one runway ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)).
+
 ---
 
 ## 13. Where the settings are stored
@@ -487,7 +506,8 @@ All profiles and options are in one file:
 |---|---|
 | Range | Mouse wheel · range list · RANGE knob |
 | Tilt | ↑ ↓ ← → · Home = neutral · tilt buttons · EL/AZ knobs |
-| DH | − / + · type in the box · DH knob (double click = runway value) |
+| DH | − / + · type in the box · DH knob (double click on the centre = runway value) |
+| Glide path | GP box: published angles, or type an angle + Enter (unpublished, orange) · GP DEG knob (analog) |
 | Labels | L = all · drag = move · double click = back · right click = hide |
 | Display | A = Modern / Analog |
 | Distances | Always from the **touchdown point** |
