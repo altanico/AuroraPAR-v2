@@ -232,8 +232,11 @@ namespace AuroraPAR
         public string Color { get; set; } = "#00FF00";
         public LineDash Dash { get; set; } = LineDash.Solid;
         public double Width { get; set; } = 1;
+        /// <summary>Line not drawn in the modern display / on the analog scope (see <see cref="DisplayStyleSettings.CanHide"/>).</summary>
+        public bool Hidden { get; set; }
+        public bool HiddenAnalog { get; set; }
 
-        public LineStyle Copy() => new() { Color = Color, Dash = Dash, Width = Width };
+        public LineStyle Copy() => new() { Color = Color, Dash = Dash, Width = Width, Hidden = Hidden, HiddenAnalog = HiddenAnalog };
     }
 
     /// <summary>
@@ -252,6 +255,12 @@ namespace AuroraPAR
                 or StyleElement.LabelText => false,
             _ => true
         };
+
+        /// <summary>
+        /// Lines that can be hidden (in each mode): all the lines but the range marks, which have their own table.
+        /// </summary>
+        public static bool CanHide(StyleElement element) => IsLine(element)
+            && element is not (StyleElement.MarkFive or StyleElement.MarkTwo or StyleElement.MarkOne or StyleElement.MarkHalf or StyleElement.MarkQuarter);
 
         public static string Name(StyleElement element) => element switch
         {

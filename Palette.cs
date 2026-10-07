@@ -30,6 +30,9 @@ namespace AuroraPAR
         public Brush Brush(StyleElement element) => elements[element].Brush;
         public double Width(StyleElement element) => elements[element].Width;
         public LineDash Dash(StyleElement element) => elements[element].Dash;
+        /// <summary>Lines hidden in this mode (Display style → Colours &amp; lines, Show).</summary>
+        private readonly HashSet<StyleElement> hidden = [];
+        public bool IsHidden(StyleElement element) => hidden.Contains(element);
 
         /// <summary>
         /// <paramref name="boost"/> (0 to 1) is the brightness above 100%: the colours are made brighter and
@@ -45,11 +48,13 @@ namespace AuroraPAR
                 // The background stays as chosen: only what is drawn on it gets brighter.
                 if (element != StyleElement.Background) color = Boost(color, boost);
                 theme.elements[element] = (Frozen(color), style.Width, style.Dash);
+                if (style.Hidden && DisplayStyleSettings.CanHide(element)) theme.hidden.Add(element);
             }
             return theme;
         }
 
-        public static Theme Analog(Color phosphor, double boost = 0)
+        /// <param name="style">Only for the lines hidden on the analog scope (the colours are the phosphor).</param>
+        public static Theme Analog(Color phosphor, double boost = 0, DisplayStyleSettings? style = null)
         {
             boost = Math.Clamp(boost, 0, 1);
             Theme theme = new()
@@ -65,6 +70,7 @@ namespace AuroraPAR
                     ? Brushes.Transparent
                     : Frozen(Phosphor(phosphor, Brightness(element), boost));
                 theme.elements[element] = (brush, defaults.Width, defaults.Dash);
+                if (style != null && style.Get(element).HiddenAnalog && DisplayStyleSettings.CanHide(element)) theme.hidden.Add(element);
             }
             return theme;
         }

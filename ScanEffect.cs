@@ -71,6 +71,37 @@ namespace AuroraPAR
             return Math.Min(Modulo(t - first, cycle), Modulo(t - second, cycle));
         }
 
+        /// <summary>
+        /// Seconds until the beam next passes over <paramref name="position"/> (see <see cref="SinceLastPass"/>): the
+        /// beam has a width, so an echo starts to brighten as it arrives.
+        /// </summary>
+        public static double UntilNextPass(double t, ScanEffectSpeed speed, bool elevation, double position)
+        {
+            double p = SweepSeconds(speed);
+            double cycle = 4 * p;
+            position = Math.Clamp(position, 0, 1);
+            double first = (elevation ? 0 : p) + position * p;
+            double second = (elevation ? 2 * p : 3 * p) + (1 - position) * p;
+            return Math.Min(Modulo(first - t, cycle), Modulo(second - t, cycle));
+        }
+
+        /// <summary>
+        /// Time constant of the brightening of an echo as the beam arrives (a little less than a tenth of a sweep:
+        /// the width of the beam).
+        /// </summary>
+        public static double RiseSeconds(ScanEffectSpeed speed) => 0.08 * SweepSeconds(speed);
+
+        /// <summary>
+        /// Light of an echo lit by the beam, 0 to 1: rises as the beam arrives, full at its centre, then fades
+        /// (persistence of the phosphor, time constant <paramref name="fadeSeconds"/>).
+        /// </summary>
+        public static double BeamLight(double t, ScanEffectSpeed speed, bool elevation, double position, double fadeSeconds)
+        {
+            double fade = Math.Exp(-SinceLastPass(t, speed, elevation, position) / fadeSeconds);
+            double rise = Math.Exp(-UntilNextPass(t, speed, elevation, position) / RiseSeconds(speed));
+            return Math.Max(fade, rise);
+        }
+
         private static double Modulo(double value, double divisor)
         {
             double r = value % divisor;

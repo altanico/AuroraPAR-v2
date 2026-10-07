@@ -75,12 +75,12 @@ namespace AuroraPAR
             grid.Children.Clear();
             grid.RowDefinitions.Clear();
             grid.ColumnDefinitions.Clear();
-            foreach (double width in new double[] { 200, 250, 100, 70, 80 })
+            foreach (double width in new double[] { 200, 250, 100, 70, 80, 60, 60 })
             {
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(width) });
             }
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            string[] headers = ["Element", "Colour", "Line", "Width", "Preview"];
+            string[] headers = ["Element", "Colour", "Line", "Width", "Preview", "Modern", "Analog"];
             for (int c = 0; c < headers.Length; c++)
             {
                 TextBlock header = Header(headers[c]);
@@ -142,6 +142,17 @@ namespace AuroraPAR
                 }
                 UpdatePreview();
                 AddCell(grid, preview, r, 4);
+                // Show the line or not, separately in the modern display and on the analog scope (many old scopes
+                // had no approach limit lines, for example). Only the drawing changes.
+                if (DisplayStyleSettings.CanHide(element))
+                {
+                    CheckBox showModern = new() { IsChecked = !style.Hidden, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, ToolTip = "Draw this line in the modern display" };
+                    showModern.Click += (s, e) => Change(st => st.Hidden = showModern.IsChecked != true);
+                    AddCell(grid, showModern, r, 5);
+                    CheckBox showAnalog = new() { IsChecked = !style.HiddenAnalog, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, ToolTip = "Draw this line on the analog scope" };
+                    showAnalog.Click += (s, e) => Change(st => st.HiddenAnalog = showAnalog.IsChecked != true);
+                    AddCell(grid, showAnalog, r, 6);
+                }
                 r++;
             }
             building = false;

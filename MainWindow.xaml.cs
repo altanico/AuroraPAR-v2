@@ -282,6 +282,22 @@ namespace AuroraPAR
             bool enabled = profile.ScanEffect || viewOptions.Analog;
             profileView.RenderSweep(enabled, t, profile.ScanEffectSpeed);
             horizontalView.RenderSweep(enabled, t, profile.ScanEffectSpeed);
+            MoveTracks();
+        }
+
+        /// <summary>
+        /// Modern display: the smoothed and the coasting tracks are estimated positions, moved on at every frame of
+        /// the screen (not only when a poll of Aurora ends, which is irregular), so they move smoothly. Only the
+        /// tracks are updated (static parts and the information area are not rebuilt).
+        /// </summary>
+        private void MoveTracks()
+        {
+            if (!Open || viewOptions.Analog) return;
+            List<Aircraft> aircrafts = lastAircrafts;
+            if (aircrafts.Count == 0) return;
+            trackFilter.Apply(aircrafts, DateTime.UtcNow, settings.Active.TrackSmoothing);
+            profileView.Render(aircrafts);
+            horizontalView.Render(aircrafts);
         }
 
         private static Brush CreateFrozenBrush(Color color)
@@ -1389,7 +1405,7 @@ namespace AuroraPAR
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             viewOptions.Analog = analog;
             viewOptions.Theme = analog
-                ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor), BrightnessBoost(profile))
+                ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor), BrightnessBoost(profile), profile.Style)
                 : Theme.Modern(profile.Style, BrightnessBoost(profile));
             viewOptions.RangeMarks = profile.RangeMarks;
             // Reminders of all the lines (approaches) of the runway.

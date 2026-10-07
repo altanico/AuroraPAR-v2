@@ -2,14 +2,15 @@
 
 ## Next update
 
-- **Smoother tracks: move them at every screen frame.** Today the smoothed track (and the coasting track) is redrawn only when a poll of Aurora ends (about every 0.1 s, but irregular: one #TRPOS request per aircraft), so now and then it makes a small jump. Move the estimated position on at every frame (CompositionTarget.Rendering, as the scan effect), independent of the data rhythm: only the track symbol, label and leader positions, without rebuilding anything else.
-- **Analog echo: gradual brightening as the beam arrives (eye candy).** Today the echo jumps to full brightness when the centre of the sweep passes over it, then fades (about 0.6 s). Make the rise gradual too: the echo starts to brighten as the beam approaches (beam width), reaches the maximum at the centre of the beam, then fades as now. ScanEffect: add the time until the next pass; brightness = max(rise, fade). Same for the glow of the history dots.
-- **Show / hide each line (Display style → Colours & lines).** Today a line can only be "hidden" by giving it the background colour. Add a **Show** check box in each row of the lines (glide path, centreline, approach limits, scan limits, decision height, runway and threshold, ground, touchdown point, altitude scale...; not the range marks, which have their own table, and not the background). Example: many analog radars had no approach limit lines. Hiding a line does not change anything else (e.g. the track stays green/red by the approach limits). Decided: separate for Modern and Analog (old radars lacked some lines).
+(nothing planned)
 
 ## Done, to be tested
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Show / hide each line** (Display style → Colours & lines, columns Modern and Analog; not the range marks). Check: hide the approach limits on the analog scope only; altitude scale hidden also hides its values.
+- **Analog echo:** brightens as the beam arrives (rise time about a tenth of the sweep), brightest at the centre, then fades; same for the dots.
+- **Tracks moved at every screen frame** (Modern): smoothed and coasting tracks glide. Check: smoothness, CPU use with many aircraft, dragging labels.
 - **Track smoothing** (Modern; Off / Light / Strong, default Light): smooth track and steadier label values, history dots at the real positions; coasting starts from the smoothed position. Check: no lag felt on final with Light, turns with Strong, a new aircraft (no jump), landing.
 - **Antenna beam on/off:** new profile (first start) = beam off, scan limits −1/+10°, ±15°; tilt controls show a hint. Turning the beam on sets it 4°/6° narrower than the scan limits. Existing profiles: beam off too, scan limits back to the old ones (v1 values; profiles of the first beam builds back to the old sector, or the new defaults when it cannot be found). **Automatic elevation centre** (= GP angle in use), on by default. Check: first start without settings file, hint on knobs / buttons / arrow keys, turning on, auto centre when changing approach.
 - **Analog:** fade out of the beam about 6 s; soft beam edge (echo weaker in the last 0.5°). **Tooltips** open after 1.1 s.

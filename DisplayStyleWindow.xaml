@@ -23,7 +23,7 @@
             <TabItem Header="Colours &amp; lines">
                 <StackPanel Margin="10">
                     <TextBlock TextWrapping="Wrap" MaxWidth="600" Foreground="Gray"
-                               Text="Modern display: colour, line style and width of each element. Plots are the history dots, tracks the aircraft symbols. Changes are applied immediately."/>
+                               Text="Modern display: colour, line style and width of each element. Plots are the history dots, tracks the aircraft symbols. Modern / Analog (last two columns): draw the line or not, separately in the modern display and on the analog scope (e.g. no approach limit lines, as on many old scopes; the track colour still follows the limits). Changes are applied immediately."/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="520" Margin="0,10,0,0">
                         <Grid Name="StyleGrid"/>
                     </ScrollViewer>

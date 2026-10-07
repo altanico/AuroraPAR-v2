@@ -213,6 +213,8 @@ namespace AuroraPAR
         /// </summary>
         private void DrawAltitudeScale()
         {
+            // Hidden in this mode (Display style → Colours & lines, Show): no ticks and no values.
+            if (Options.Theme.IsHidden(StyleElement.AltitudeScale)) return;
             const double FeetPerMetre = 1 / 0.3048;
             double unitToFeet = Options.ScaleInMetres ? FeetPerMetre : 1;
             string unit = Options.ScaleInMetres ? "m" : "ft";

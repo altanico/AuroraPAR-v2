@@ -389,9 +389,10 @@ namespace AuroraPAR
                     if (!double.IsNaN(track.OutOfBeamSince)) FadeOutOfBeam(track);
                     continue;
                 }
-                double age = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(track.Logical));
-                // Weaker near the edge of the beam (soft edge).
-                double echo = (0.18 + 0.82 * Math.Exp(-age / 0.6)) * (0.15 + 0.85 * track.EdgeFactor);
+                // Brightens as the beam arrives, full at its centre, then fades; weaker near the edge of the antenna
+                // beam (soft edge).
+                double light = ScanEffect.BeamLight(t, speed, IsElevation, PositionOf(track.Logical), 0.6);
+                double echo = (0.18 + 0.82 * light) * (0.15 + 0.85 * track.EdgeFactor);
                 track.Symbol.Opacity = echo;
                 // Afterglow: the copies behind the echo light up and fade with it.
                 for (int k = 0; k < track.Ghosts.Length; k++)
@@ -403,8 +404,8 @@ namespace AuroraPAR
                 {
                     Path dot = track.Dots[i];
                     if (dot.Visibility != Visibility.Visible || dot.Tag is not Point logical) continue;
-                    double dotAge = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(logical));
-                    SetOpacity(dot, track.DotBase[i] * (0.6 + 0.4 * Math.Exp(-dotAge / 0.6)));
+                    double dotLight = ScanEffect.BeamLight(t, speed, IsElevation, PositionOf(logical), 0.6);
+                    SetOpacity(dot, track.DotBase[i] * (0.6 + 0.4 * dotLight));
                 }
             }
         }
@@ -1001,6 +1002,8 @@ namespace AuroraPAR
         /// <paramref name="extraWidth"/>: pixels added to the width of the element (range marks inside the beam).</summary>
         protected void AddLine(double x1, double y1, double x2, double y2, StyleElement element, bool dashed = false, double extraWidth = 0)
         {
+            // Hidden in this mode (Display style → Colours & lines, Show).
+            if (Options.Theme.IsHidden(element)) return;
             Line line = new()
             {
                 X1 = ToScreenX(x1),

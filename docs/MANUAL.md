@@ -157,7 +157,7 @@ Each aircraft inside the antenna beam is shown with a **track symbol** (default:
 
 **Coasting track** (modern display). When an aircraft leaves the beam, the radar computer keeps it for a few seconds at an **estimated position**: straight on from the last position seen in the beam, at the same ground speed and vertical speed (the real position is not used). The symbol changes to the **coasting symbol** (default: diamond) so you know it is no longer seen; the label stays, with the estimated values; no new history dots. After **8 s** by default (*Settings → Radar → Coasting tracks*, 0–30 s, 0 = hidden at once) track, label and tail disappear. If the aircraft comes back into the beam it is shown again at its real position (it may jump a little). Symbol and colour of the coasting track: *Settings → Symbols* and *Display style → Coasting tracks*. On the analog scope there is no estimate: out of the beam the echo goes dark and its afterglow fades (about 6 s).
 
-**Track smoothing** (modern display). Aurora sends the positions a little irregularly and the altitude in steps, so a raw track moves in small jumps. As the computer of a modern radar, AuroraPAR moves the track smoothly with the speed, direction and vertical speed of the aircraft (as the coasting track) and at every new position from Aurora pulls it part of the way towards the real one: the track stays on the aircraft and moves smoothly, and the label values are steadier. The history dots stay at the real positions (the "plots"). *Settings → Tracks and labels → Track smoothing*: **Off** (raw positions), **Light** (default), **Strong** (smoother, a little late in turns and rate changes). The analog scope always shows the raw echo.
+**Track smoothing** (modern display). Aurora sends the positions a little irregularly and the altitude in steps, so a raw track moves in small jumps. As the computer of a modern radar, AuroraPAR moves the track smoothly with the speed, direction and vertical speed of the aircraft (as the coasting track) and at every new position from Aurora pulls it part of the way towards the real one: the track stays on the aircraft and moves smoothly, and the label values are steadier. The history dots stay at the real positions (the "plots"). The estimated position is moved on at every frame of the screen, so the track glides instead of stepping. *Settings → Tracks and labels → Track smoothing*: **Off** (raw positions), **Light** (default), **Strong** (smoother, a little late in turns and rate changes). The analog scope always shows the raw echo.
 
 > Aurora interpolates the horizontal position between real network updates but the altitude changes only when a real update arrives (every few seconds). In the elevation view this can make the tail look like steps. A dot interval of about 3 s makes it less visible.
 
@@ -252,7 +252,7 @@ Some runways have approaches with different glide path angles. In `runways.par` 
 ### 9.1 The scope
 
 - One **round screen** in a metal ring with the elevation view above and the azimuth view below, in **phosphor** colour (yellow-green by default, other colours in *Display style*).
-- The **antenna beam** sweeps the views in turn. Each aircraft is an **echo** that lights up when the beam passes over it and then fades until the next pass. Its position is always the latest one from Aurora: the beam changes only the brightness.
+- The **antenna beam** sweeps the views in turn. Each aircraft is an **echo** that brightens as the beam arrives, is brightest at its centre and then fades until the next pass. Its position is always the latest one from Aurora: the beam changes only the brightness.
 - No labels and no altitude scale, as on the real scopes. The history tail fades with age.
 - The tooltips (help bubbles) are dark with amber text, like the console.
 - **Afterglow**: like the phosphor of the old screens, a faint trail of the echo stays where the aircraft was in the last seconds, and the history dots glow slightly when the beam passes over them.
@@ -431,6 +431,8 @@ For every element of the **Modern** display:
 - a **preview**.
 
 Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits, antenna beam, antenna (symbol; profiles from older versions start with the colour of the scan limits), decision height, runway and threshold, ground, touchdown point, altitude scale, altitude lines, background; and the colours of **plots** (history) and **tracks** inside / outside the limits, of the **coasting tracks** and of the label text.
+
+The last two columns, **Modern** and **Analog**, show or hide each line (not the range marks, which have their own table), separately in the two modes: for example no approach limit lines on the analog scope, as on many old radars. Only the drawing changes: the track is still green or red by the approach limits.
 
 **Analog scope**: the analog display has a fixed theme. Only the **phosphor** colour is chosen — yellow-green (P39), amber/yellow, green (P1), orange, blue-white or any colour — and all elements use it with different brightness.
 
