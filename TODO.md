@@ -2,6 +2,7 @@
 
 ## Next update
 
+- **Smooth normal tracks (track filter, Modern only).** The coasting track moves smoothly (computed from speed and direction), the normal one jerks (Aurora positions arrive irregularly, altitude in steps). Use a radar-computer style filter (alpha-beta): the program predicts the position as in coasting and at every Aurora update corrects part of the difference towards the real position. Track symbol and label values from the filtered position; the history dots stay at the real (measured) positions, as plots on real radars. Setting in the profile: Off / Light / Strong (stronger = smoother but a little late in turns and rate changes); default Light. Coasting starts from the last filtered state (no jump). Analog: raw echo, unchanged. This also settles the pending decision "smoothed altitude in the elevation view".
 - **Antenna beam on/off (the tilt is an advanced function).** Settings → Radar: a switch *Antenna beam* (narrow beam moved by the tilt). Off: the beam is the scan limits (only the scan limits are set), no tilt, normal range marks. **Default of a new profile (no settings file yet): off, with wide scan limits that work at once, also for newcomers.** Existing profiles keep what they have (converted ones: on, same picture). Decided:
   - Default scan limits of a new profile: elevation −1° to +10°, azimuth ±15°; beam off.
   - Beam off: the tilt controls stay visible (Modern buttons, Analog EL/AZ TILT knobs, arrow keys), but using them shows a tooltip/message: "To use the antenna tilt, turn on the antenna beam (Settings → Radar)".
@@ -34,7 +35,7 @@ Last updates, newest first. When an item works in the test, delete it.
 
 ## Decisions pending
 
-- Smoothed altitude in the elevation view (to hide the steps of the real altitude updates)?
+- (Settled: see "Smooth normal tracks" in Next update.)
 - Runway reminders following the runway when it is renamed in the editor?
 
 ## Later
