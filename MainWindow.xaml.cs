@@ -35,11 +35,14 @@ namespace AuroraPAR
         /// <summary>Clock of the antenna scan effect.</summary>
         private readonly System.Diagnostics.Stopwatch sweepClock = System.Diagnostics.Stopwatch.StartNew();
         /// <summary>Knobs of the analog console.</summary>
-        private readonly Knob rangeKnob = new() { Title = "RANGE NM", ToolTip = "Range. Turn with the mouse wheel, drag up/down or click right/left." };
-        private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = "Antenna elevation tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
-        private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = "Antenna azimuth tilt. Turn with the mouse wheel, drag up/down or click right/left; double click: neutral." };
-        private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = Profile.MaxBrightness / Profile.BrightnessStep, ToolTip = "Brightness of the scope, 10% to 150% (above 100% for dim monitors). Turn with the mouse wheel, drag up/down or click right/left; double click: 100%." };
-        private readonly Knob dhKnob = new() { Title = "DH", ToolTip = "Decision height, 10 ft per step. Turn with the mouse wheel, drag up/down or click right/left; double click: runway value." };
+        private const string KnobHelp = "Click the right half: one step clockwise; left half: counter-clockwise (the pointer shows the direction). Mouse wheel. Centre: drag up/down";
+        private readonly Knob rangeKnob = new() { Title = "RANGE NM", ToolTip = $"Range. {KnobHelp}." };
+        private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = $"Antenna elevation tilt. {KnobHelp}; double click on the centre: neutral." };
+        private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = $"Antenna azimuth tilt. {KnobHelp}; double click on the centre: neutral." };
+        private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = Profile.MaxBrightness / Profile.BrightnessStep, ToolTip = $"Brightness of the scope, 10% to 150% (above 100% for dim monitors). {KnobHelp}; double click on the centre: 100%." };
+        private readonly Knob dhKnob = new() { Title = "DH", ToolTip = $"Decision height, 10 ft per step. {KnobHelp}; double click on the centre: runway value." };
+        /// <summary>Analog: published approaches of the runway (one detent per glide path angle in runways.par).</summary>
+        private readonly Knob glidePathKnob = new() { Title = "GP DEG", ToolTip = $"Glide path: the approaches of this runway in runways.par (one line per angle). {KnobHelp}; double click on the centre: first approach of the file." };
         /// <summary>Analog mode: readouts and lamps next to the scope.</summary>
         private readonly ConsolePanel consolePanel = new();
         private static readonly Brush PanelTextBrush = CreateFrozenBrush(Color.FromRgb(0xD8, 0xD8, 0xD0));
@@ -50,7 +53,19 @@ namespace AuroraPAR
         /// Runway file, next to the program (not in the current directory, which depends on how the program is started).
         /// </summary>
         private readonly string dataPath = Path.Combine(AppContext.BaseDirectory, "runways.par");
+        /// <summary>All the lines of the runway file (one per approach).</summary>
         private Runway[] runways = [];
+        /// <summary>
+        /// Runways of the drop-down: one per airport and designator. Lines with the same airport and designator and
+        /// a different glide path are approaches of the same runway, chosen with the GP selector.
+        /// </summary>
+        private Runway[] runwayList = [];
+        /// <summary>Published approaches of the current runway, by glide path angle.</summary>
+        private Runway[] approaches = [];
+        /// <summary>Published approach in use (<see cref="runway"/> is it, or its unpublished copy with another angle).</summary>
+        private Runway? selectedApproach;
+        /// <summary>True while the GP selector is filled by the program.</summary>
+        private bool updatingGlidePath;
         /// <summary>
         /// True while the runway list is reloaded after editing, so the current range is kept.
         /// </summary>
@@ -66,6 +81,16 @@ namespace AuroraPAR
         /// </summary>
         private readonly StackPanel infoPanel = new();
         private readonly TextBlock infoText = new() { FontSize = 14, Foreground = Brushes.White };
+        /// <summary>Glide path, with the "unpublished approach" warning.</summary>
+        private readonly TextBlock glidePathText = new() { FontSize = 14, Foreground = Brushes.White, Background = Brushes.Transparent };
+        /// <summary>Missed approach point distance, on its own line for its tooltip.</summary>
+        private readonly TextBlock missedApproachText = new()
+        {
+            FontSize = 14,
+            Foreground = Brushes.White,
+            Background = Brushes.Transparent,
+            ToolTip = "MAPt DIST - missed approach point: distance in NM from the touchdown point where the glide path reaches the decision height in use (DH / OCH).\nCompare it with the approach chart (MAPt / RPI DIST) to check runways.par; it is the distance for \"approach terminating at ...\".\nThe DH does not change with the glide path angle, the MAPt does: with an unpublished angle this is the new MAPt."
+        };
         /// <summary>Final course, on its own line for its tooltip.</summary>
         private readonly TextBlock courseText = new()
         {
@@ -121,7 +146,9 @@ namespace AuroraPAR
             horizontalView = new(Horizontal, runway, radar, viewOptions);
             infoPanel.Children.Add(infoText);
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob }) ToolTips.KeepOpen(knob);
+            infoPanel.Children.Add(glidePathText);
+            infoPanel.Children.Add(ToolTips.KeepOpen(missedApproachText));
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, glidePathKnob, brightnessKnob }) ToolTips.KeepOpen(knob);
             BrightnessDownButton.Click += (s, e) => ChangeBrightness(-1);
             BrightnessUpButton.Click += (s, e) => ChangeBrightness(1);
             BrightnessPanel.MouseWheel += (s, e) =>
@@ -151,8 +178,8 @@ namespace AuroraPAR
             SettingsButton.Click += SettingsButton_Click;
             TiltUpButton.Click += (s, e) => TiltAntenna(1, 0);
             TiltDownButton.Click += (s, e) => TiltAntenna(-1, 0);
-            TiltLeftButton.Click += (s, e) => TiltAntenna(0, -1);
-            TiltRightButton.Click += (s, e) => TiltAntenna(0, 1);
+            TiltLeftButton.Click += (s, e) => TiltAntenna(0, -AzimuthSign);
+            TiltRightButton.Click += (s, e) => TiltAntenna(0, AzimuthSign);
             TiltNeutralButton.Click += (s, e) => NeutralAntenna();
             LabelsButton.Click += (s, e) => ToggleLabels();
             ModeButton.Click += (s, e) => ToggleDisplayMode();
@@ -172,6 +199,31 @@ namespace AuroraPAR
             };
             DhTextBox.LostFocus += (s, e) => ApplyDecisionHeightText();
             DhTextBox.Text = FormatHeight(runway.MDH);
+            GlidePathComboBox.SelectionChanged += (s, e) =>
+            {
+                if (updatingGlidePath || GlidePathComboBox.SelectedIndex < 0 || GlidePathComboBox.SelectedIndex >= approaches.Length) return;
+                // Back from an unpublished angle the DH in use is kept (it does not depend on the angle).
+                SelectApproach(approaches[GlidePathComboBox.SelectedIndex], keepDecisionHeight: runway.IsUnpublished);
+            };
+            GlidePathComboBox.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    ApplyGlidePathText();
+                    Keyboard.ClearFocus();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    UpdateGlidePathSelector();
+                    Keyboard.ClearFocus();
+                    e.Handled = true;
+                }
+            };
+            GlidePathComboBox.LostKeyboardFocus += (s, e) =>
+            {
+                if (!GlidePathComboBox.IsKeyboardFocusWithin) ApplyGlidePathText();
+            };
             ApplyProfile();
             // Antenna scan effect: redrawn at every frame of the screen (graphic only, independent of the traffic refresh).
             CompositionTarget.Rendering += (s, e) => RenderSweep();
@@ -234,7 +286,7 @@ namespace AuroraPAR
                 if (radar.NeutralElevation()) InvalidateViews();
                 UpdateKnobs();
             };
-            azimuthKnob.Turned += steps => TiltAntenna(0, steps);
+            azimuthKnob.Turned += steps => TiltAntenna(0, steps * AzimuthSign);
             azimuthKnob.Reset += () =>
             {
                 if (radar.NeutralAzimuth()) InvalidateViews();
@@ -242,10 +294,21 @@ namespace AuroraPAR
             };
             dhKnob.Turned += steps => SetDecisionHeight(runway.MDH + steps * DecisionHeightStep);
             dhKnob.Reset += () => SetDecisionHeight(runway.DefaultMDH);
+            glidePathKnob.Turned += steps =>
+            {
+                int index = Array.IndexOf(approaches, selectedApproach);
+                if (approaches.Length > 0) SelectApproach(approaches[Math.Clamp(index + steps, 0, approaches.Length - 1)]);
+                UpdateKnobs();
+            };
+            glidePathKnob.Reset += () =>
+            {
+                if (RunwayComboBox.SelectedItem is Runway first && approaches.Contains(first)) SelectApproach(first);
+                UpdateKnobs();
+            };
             brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 100 / Profile.BrightnessStep - 1 ? "100" : i == Profile.MaxBrightness / Profile.BrightnessStep - 1 ? "MAX" : null;
             brightnessKnob.Turned += steps => ChangeBrightness(steps);
             brightnessKnob.Reset += () => SetBrightness(100);
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob })
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, glidePathKnob, brightnessKnob })
             {
                 KnobPanel.Children.Add(knob);
             }
@@ -260,7 +323,7 @@ namespace AuroraPAR
             foreach ((Knob knob, double tilt, string low, string high) in new[]
             {
                 (elevationKnob, radar.TiltElevation, "DN", "UP"),
-                (azimuthKnob, radar.TiltAzimuth, "L", "R")
+                (azimuthKnob, radar.TiltAzimuth * AzimuthSign, "L", "R")
             })
             {
                 if (knob.Positions != 2 * steps + 1)
@@ -272,7 +335,27 @@ namespace AuroraPAR
                 knob.Index = steps + (radar.TiltStep > 0 ? (int)Math.Round(tilt / radar.TiltStep) : 0);
             }
             rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
+            // Locked selector of the published approaches, only when the runway has more than one.
+            glidePathKnob.Visibility = approaches.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
+            if (approaches.Length > 1)
+            {
+                if (glidePathKnob.Positions != approaches.Length || glidePathKnob.Tag != approaches)
+                {
+                    Runway[] list = approaches;
+                    glidePathKnob.Positions = list.Length;
+                    glidePathKnob.Tag = list;
+                    glidePathKnob.LabelFor = i => i >= 0 && i < list.Length ? Runway.FormatGlideSlope(list[i].GlideSlope) : null;
+                    glidePathKnob.InvalidateVisual();
+                }
+                glidePathKnob.Index = Math.Max(0, Array.IndexOf(approaches, selectedApproach));
+            }
         }
+
+        /// <summary>
+        /// Sign of the azimuth tilt as shown and commanded: 1 = as seen by the pilot, -1 = swapped (as seen from the
+        /// runway), see <see cref="Profile.AzimuthTiltSwapped"/>.
+        /// </summary>
+        private int AzimuthSign => settings.Active.AzimuthTiltSwapped ? -1 : 1;
 
         /// <summary>
         /// Brightness of the radar picture by steps of 10% (from 10% to 150%), separate for the modern display and
@@ -372,7 +455,13 @@ namespace AuroraPAR
             BrightnessPanel.Visibility = modern;
             DhDownButton.Visibility = modern;
             DhUpButton.Visibility = modern;
+            GlidePathPanel.Visibility = modern;
             LabelsButton.Visibility = modern;
+            // The analog scope has only the published approaches (no free angle).
+            if (analog && runway.IsUnpublished && selectedApproach != null)
+            {
+                SelectApproach(selectedApproach, keepDecisionHeight: true);
+            }
             KnobPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
             ModeButton.Content = analog ? "Modern (A)" : "Analog (A)";
             LayoutDisplay();
@@ -437,10 +526,11 @@ namespace AuroraPAR
             timer.Stop();
             aurora.Close();
             // Remember runway and range for the next start.
-            if (RunwayComboBox.SelectedItem is Runway selected)
+            if (RunwayComboBox.SelectedItem is Runway)
             {
-                settings.LastRunway = selected.ToString();
-                settings.LastRange = selected.Distance;
+                settings.LastRunway = runway.ToString();
+                settings.LastRange = runway.Distance;
+                settings.LastGlideSlope = selectedApproach?.GlideSlope;
             }
             SaveWindowPlacement();
             SettingsStore.Save(settings);
@@ -512,7 +602,8 @@ namespace AuroraPAR
             try
             {
                 runways = await DataFile.GetRunways(dataPath);
-                RunwayComboBox.ItemsSource = runways;
+                runwayList = GroupRunways(runways);
+                RunwayComboBox.ItemsSource = runwayList;
                 if (runways.Length == 0)
                 {
                     MessageBox.Show(this, $"No valid runway found in {Path.GetFullPath(dataPath)}.", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -524,7 +615,7 @@ namespace AuroraPAR
             }
             RunwayComboBox.SelectionChanged += RunwayComboBox_SelectionChanged;
             // Restore the runway used last time.
-            Runway? last = runways.FirstOrDefault(r => r.ToString() == settings.LastRunway);
+            Runway? last = runwayList.FirstOrDefault(r => r.ToString() == settings.LastRunway);
             if (last != null)
             {
                 restoringSession = true;
@@ -546,9 +637,16 @@ namespace AuroraPAR
 
         private void RunwayComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count > 0 && e.AddedItems[0] is Runway r)
+            if (e.AddedItems.Count > 0 && e.AddedItems[0] is Runway first)
             {
                 Runway previous = runway;
+                approaches = ApproachesOf(first);
+                // Approach: the one of the last session or the one in use before reloading the file (same angle),
+                // otherwise the first line of the file for this runway.
+                double? wantedGlideSlope = restoringSession ? settings.LastGlideSlope
+                    : reloadingRunways ? (selectedApproach?.GlideSlope) : null;
+                Runway r = (wantedGlideSlope is double gp ? approaches.FirstOrDefault(a => Math.Abs(a.GlideSlope - gp) < 0.005) : null) ?? first;
+                selectedApproach = r;
                 runway = r;
                 // The decision height changed on the fly is not kept: back to the runway file value.
                 runway.MDH = runway.DefaultMDH;
@@ -571,8 +669,138 @@ namespace AuroraPAR
                 {
                     runway.Distance = d;
                 }
+                UpdateGlidePathSelector();
                 InvalidateViews();
             }
+        }
+
+        /// <summary>One entry per runway (airport and designator), the first line of the file for each.</summary>
+        private static Runway[] GroupRunways(Runway[] lines)
+        {
+            return lines.GroupBy(r => r.ToString()).Select(g => g.First()).ToArray();
+        }
+
+        /// <summary>Published approaches of a runway: the lines of the file with the same airport and designator, by angle.</summary>
+        private Runway[] ApproachesOf(Runway first)
+        {
+            string key = first.ToString();
+            return runways.Where(r => r.ToString() == key)
+                .GroupBy(r => Math.Round(r.GlideSlope, 3))
+                .Select(g => g.First())
+                .OrderBy(r => r.GlideSlope)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Another published approach of the same runway (other glide path angle): its own line of the file (DH,
+        /// touchdown...), same range, antenna tilt and tracks. <paramref name="keepDecisionHeight"/>: the DH in use is
+        /// kept (back from an unpublished angle), otherwise the DH of the line.
+        /// </summary>
+        private void SelectApproach(Runway approach, bool keepDecisionHeight = false)
+        {
+            if (approach == runway) { UpdateGlidePathSelector(); return; }
+            double mdh = runway.MDH;
+            double distance = runway.Distance;
+            selectedApproach = approach;
+            runway = approach;
+            runway.MDH = keepDecisionHeight ? mdh : runway.DefaultMDH;
+            runway.Distance = distance;
+            DhTextBox.Text = FormatHeight(runway.MDH);
+            profileView.SetRunway(runway, keepTracks: true);
+            horizontalView.SetRunway(runway, keepTracks: true);
+            UpdateGlidePathSelector();
+            InvalidateViews();
+        }
+
+        /// <summary>
+        /// Modern display: an angle typed by the controller that is not one of the published approaches. Same runway
+        /// and DH in use, only the glide path (and so the touchdown point if not given in the file, and the MAPt) changes.
+        /// </summary>
+        private void SetUnpublishedGlideSlope(double degrees)
+        {
+            Runway basis = selectedApproach ?? runway;
+            Runway copy = basis.WithGlideSlope(degrees);
+            copy.MDH = runway.MDH;
+            copy.Distance = runway.Distance;
+            runway = copy;
+            profileView.SetRunway(runway, keepTracks: true);
+            horizontalView.SetRunway(runway, keepTracks: true);
+            UpdateGlidePathSelector();
+            InvalidateViews();
+        }
+
+        /// <summary>Lowest and highest glide path angle that can be typed (degrees).</summary>
+        private const double MinGlideSlope = 1.0;
+        private const double MaxGlideSlope = 7.0;
+
+        /// <summary>Reads the angle typed in the GP box: a published one selects that approach, another one is unpublished.</summary>
+        private void ApplyGlidePathText()
+        {
+            if (updatingGlidePath) return;
+            string text = GlidePathComboBox.Text.Trim().Replace(',', '.').TrimEnd('°').Trim();
+            if (!double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double degrees)
+                || degrees < MinGlideSlope || degrees > MaxGlideSlope)
+            {
+                UpdateGlidePathSelector();
+                return;
+            }
+            degrees = Math.Round(degrees, 2);
+            Runway? published = approaches.FirstOrDefault(a => Math.Abs(a.GlideSlope - degrees) < 0.005);
+            if (published != null)
+            {
+                SelectApproach(published, keepDecisionHeight: runway.IsUnpublished);
+            }
+            else if (viewOptions.Analog)
+            {
+                UpdateGlidePathSelector();
+            }
+            else if (Math.Abs(degrees - runway.GlideSlope) >= 0.005)
+            {
+                SetUnpublishedGlideSlope(degrees);
+            }
+            else
+            {
+                UpdateGlidePathSelector();
+            }
+        }
+
+        /// <summary>Fills the GP box (published angles) and shows the angle in use, orange when unpublished.</summary>
+        private void UpdateGlidePathSelector()
+        {
+            updatingGlidePath = true;
+            try
+            {
+                List<string> items = approaches.Select(a => Runway.FormatGlideSlope(a.GlideSlope)).ToList();
+                if (GlidePathComboBox.ItemsSource is not List<string> current || !current.SequenceEqual(items))
+                {
+                    GlidePathComboBox.ItemsSource = items;
+                }
+                GlidePathComboBox.SelectedIndex = runway.IsUnpublished ? -1 : Array.IndexOf(approaches, runway);
+                GlidePathComboBox.Text = Runway.FormatGlideSlope(runway.GlideSlope);
+                if (runway.IsUnpublished)
+                {
+                    GlidePathComboBox.Foreground = Brushes.DarkOrange;
+                    GlidePathComboBox.FontWeight = FontWeights.Bold;
+                    GlidePathLabel.Text = "GP (°) UNPUBL.";
+                }
+                else
+                {
+                    GlidePathComboBox.ClearValue(Control.ForegroundProperty);
+                    GlidePathComboBox.ClearValue(Control.FontWeightProperty);
+                    GlidePathLabel.Text = "GP (°)";
+                }
+                GlidePathPanel.ToolTip = (approaches.Length > 1
+                        ? $"Glide path: {approaches.Length} published approaches for this runway in runways.par ({string.Join(", ", items)}°): choose one in the list."
+                        : "Glide path of this runway in runways.par.")
+                    + $"\nAnother angle ({MinGlideSlope:0.0} to {MaxGlideSlope:0.0}) can be typed and confirmed with Enter: it is an UNPUBLISHED APPROACH (shown in orange)."
+                    + "\nThe DH stays the same; the missed approach point (MAPt DIST) moves with the angle."
+                    + "\nEsc: back to the angle in use. Not saved: choosing the runway again goes back to the file.";
+            }
+            finally
+            {
+                updatingGlidePath = false;
+            }
+            if (viewOptions.Analog) UpdateKnobs();
         }
 
         private const double DecisionHeightStep = 10;
@@ -629,9 +857,11 @@ namespace AuroraPAR
         private async Task ReloadRunways()
         {
             string? currentName = (RunwayComboBox.SelectedItem as Runway)?.ToString();
+            double? unpublished = runway.IsUnpublished ? runway.GlideSlope : null;
             try
             {
                 runways = await DataFile.GetRunways(dataPath);
+                runwayList = GroupRunways(runways);
             }
             catch (Exception ex)
             {
@@ -641,11 +871,17 @@ namespace AuroraPAR
             reloadingRunways = true;
             try
             {
-                RunwayComboBox.ItemsSource = runways;
-                Runway? same = runways.FirstOrDefault(r => r.ToString() == currentName);
+                RunwayComboBox.ItemsSource = runwayList;
+                Runway? same = runwayList.FirstOrDefault(r => r.ToString() == currentName);
                 if (same != null)
                 {
                     RunwayComboBox.SelectedItem = same;
+                    // An unpublished angle in use stays (modern display), unless the file now has it.
+                    if (unpublished is double degrees && !viewOptions.Analog
+                        && !approaches.Any(a => Math.Abs(a.GlideSlope - degrees) < 0.005))
+                    {
+                        SetUnpublishedGlideSlope(degrees);
+                    }
                 }
             }
             finally
@@ -677,8 +913,8 @@ namespace AuroraPAR
             {
                 case Key.Up: TiltAntenna(1, 0); break;
                 case Key.Down: TiltAntenna(-1, 0); break;
-                case Key.Left: TiltAntenna(0, -1); break;
-                case Key.Right: TiltAntenna(0, 1); break;
+                case Key.Left: TiltAntenna(0, -AzimuthSign); break;
+                case Key.Right: TiltAntenna(0, AzimuthSign); break;
                 case Key.Home: NeutralAntenna(); break;
                 case Key.L: ToggleLabels(); break;
                 case Key.A: ToggleDisplayMode(); break;
@@ -773,6 +1009,8 @@ namespace AuroraPAR
             TextAlignment alignment = right ? TextAlignment.Right : TextAlignment.Left;
             infoText.TextAlignment = alignment;
             courseText.TextAlignment = alignment;
+            glidePathText.TextAlignment = alignment;
+            missedApproachText.TextAlignment = alignment;
             infoText2.TextAlignment = alignment;
             statusText.TextAlignment = alignment;
             dataText.TextAlignment = alignment;
@@ -936,11 +1174,22 @@ namespace AuroraPAR
                 ? $"{heightName} {FormatHeight(runway.MDH)} ft"
                 : $"{altitudeName} {FormatHeight(runway.MDH + runway.Elevation)} ft";
             string course = runway.FinalCourse(profile.MagneticVariation).ToString("000", System.Globalization.CultureInfo.InvariantCulture);
-            string glidePath = runway.GlideSlope.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture);
+            string glidePath = Runway.FormatGlideSlope(runway.GlideSlope);
+            string missedApproach = runway.MissedApproachPointText();
             // Texts changed only when different, so an open tooltip is not disturbed by the refresh.
             SetText(infoText, $"RWY {runway.Designator}");
             SetText(courseText, $"CRS {course}");
-            SetText(infoText2, $"GP {glidePath}°\n{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}");
+            bool unpublished = runway.IsUnpublished;
+            SetText(glidePathText, unpublished ? $"GP {glidePath}° UNPUBLISHED APPROACH" : $"GP {glidePath}°");
+            SetText(missedApproachText, $"MAPt DIST {missedApproach}{(missedApproach == "----" ? "" : " NM")}");
+            Brush highlight = unpublished ? Brushes.Orange : Brushes.White;
+            FontWeight weight = unpublished ? FontWeights.Bold : FontWeights.Normal;
+            foreach (TextBlock block in new[] { glidePathText, missedApproachText })
+            {
+                if (block.Foreground != highlight) block.Foreground = highlight;
+                if (block.FontWeight != weight) block.FontWeight = weight;
+            }
+            SetText(infoText2, $"{(qfe ? "QFE" : "QNH")} {pressure}\n{minimum}");
             if (viewOptions.Analog)
             {
                 consolePanel.Update(new ConsoleData(
@@ -952,9 +1201,11 @@ namespace AuroraPAR
                     qfe ? heightName : altitudeName,
                     FormatHeight(qfe ? runway.MDH : runway.MDH + runway.Elevation),
                     runway.GlideSlope,
+                    missedApproach,
                     runway.Distance,
                     radar.TiltElevation,
                     radar.TiltAzimuth,
+                    profile.AzimuthTiltSwapped,
                     aurora.Connected,
                     dataInterval,
                     !double.IsNaN(dataInterval) && dataInterval > MaxGoodDataInterval));
@@ -973,7 +1224,8 @@ namespace AuroraPAR
                 }
                 if (radar.TiltAzimuth != 0)
                 {
-                    parts.Add($"AZ TILT {Math.Abs(radar.TiltAzimuth).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} {(radar.TiltAzimuth > 0 ? "R" : "L")}");
+                    double shown = radar.TiltAzimuth * AzimuthSign;
+                    parts.Add($"AZ TILT {Math.Abs(shown).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} {(shown > 0 ? "R" : "L")}");
                 }
                 tiltText.Text = string.Join("\n", parts);
                 tiltText.Visibility = Visibility.Visible;

@@ -205,6 +205,8 @@ namespace AuroraPAR
         Centerline,
         ApproachLimits,
         ScanLimits,
+        /// <summary>Antenna symbol (added later: older profiles get the colour of the scan limits).</summary>
+        Antenna,
         DecisionHeight,
         Runway,
         Ground,
@@ -240,7 +242,7 @@ namespace AuroraPAR
         public static bool IsLine(StyleElement element) => element switch
         {
             StyleElement.RangeText or StyleElement.Background or StyleElement.PlotInside or StyleElement.PlotOutside
-                or StyleElement.TrackInside or StyleElement.TrackOutside or StyleElement.LabelText => false,
+                or StyleElement.Antenna or StyleElement.TrackInside or StyleElement.TrackOutside or StyleElement.LabelText => false,
             _ => true
         };
 
@@ -255,7 +257,8 @@ namespace AuroraPAR
             StyleElement.GlidePath => "Glide path",
             StyleElement.Centerline => "Centreline",
             StyleElement.ApproachLimits => "Approach limits",
-            StyleElement.ScanLimits => "Scan limits and antenna",
+            StyleElement.ScanLimits => "Scan limits",
+            StyleElement.Antenna => "Antenna",
             StyleElement.DecisionHeight => "Decision height",
             StyleElement.Runway => "Runway and threshold",
             StyleElement.Ground => "Ground",
@@ -279,6 +282,7 @@ namespace AuroraPAR
             StyleElement.Centerline => new() { Color = "#FFFF00", Width = 2 },
             StyleElement.ApproachLimits => new() { Color = "#FF0000", Width = 1 },
             StyleElement.ScanLimits => new() { Color = "#5F9EA0", Width = 3 },
+            StyleElement.Antenna => new() { Color = "#5F9EA0" },
             StyleElement.DecisionHeight => new() { Color = "#FF0000", Width = 2 },
             StyleElement.Runway => new() { Color = "#008000", Width = 3 },
             StyleElement.Ground => new() { Color = "#008000", Width = 2 },
@@ -309,6 +313,13 @@ namespace AuroraPAR
         public void Normalize()
         {
             Elements ??= [];
+            // Profiles saved before the antenna had its own colour: same colour as the scan limits, as it was.
+            if ((!Elements.TryGetValue(StyleElement.Antenna, out LineStyle? antenna) || antenna == null)
+                && Elements.TryGetValue(StyleElement.ScanLimits, out LineStyle? scan) && scan != null
+                && ColorText.TryParse(scan.Color, out _))
+            {
+                Elements[StyleElement.Antenna] = new LineStyle { Color = scan.Color };
+            }
             foreach (StyleElement element in Enum.GetValues<StyleElement>())
             {
                 if (!Elements.TryGetValue(element, out LineStyle? style) || style == null)

@@ -96,7 +96,7 @@ namespace AuroraPAR
             {
                 AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, lower), StyleElement.ScanLimits);
             }
-            AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, H - Options.AntennaSymbol.Size / 2, Brush(StyleElement.ScanLimits));
+            AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, H - Options.AntennaSymbol.Size / 2, Brush(StyleElement.Antenna));
             // Glide path and its approach limits, all starting at the touchdown point.
             AddGlidePathLine(0, StyleElement.GlidePath);
             AddGlidePathLine(-Radar.ApproachBelow, StyleElement.ApproachLimits);

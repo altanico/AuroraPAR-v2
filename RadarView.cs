@@ -92,6 +92,9 @@ namespace AuroraPAR
         private static readonly System.Diagnostics.Stopwatch HistoryClock = System.Diagnostics.Stopwatch.StartNew();
         /// <summary>Lines of the antenna scan effect (beam and glow), created when first needed.</summary>
         private readonly List<Line> sweepLines = [];
+        /// <summary>Afterglow of the echo: seconds between two copies, and strength of each copy (newest first).</summary>
+        private const double GhostSpacing = 0.8;
+        private static readonly double[] GhostStrengths = [0.4, 0.24, 0.12];
         /// <summary>Echo of an aircraft on the analog scope: a small blob, longer along the range.</summary>
         private static readonly Geometry EchoGeometry = CreateEchoGeometry();
         private Vector dragStartOffset;
@@ -109,7 +112,17 @@ namespace AuroraPAR
             public int SymbolVersion = -1;
             public readonly Line Leader = new() { StrokeThickness = 1 };
             public readonly List<Path> Dots = [];
+            /// <summary>Opacity of each history dot by its age, before the glow of the beam (analog scope).</summary>
+            public readonly List<double> DotBase = [];
             public int DotsVersion = -1;
+            /// <summary>
+            /// Analog scope: faint copies of the echo where it was a moment ago (afterglow of the phosphor), and their
+            /// strength (0 = hidden).
+            /// </summary>
+            public readonly Path[] Ghosts = new Path[GhostStrengths.Length];
+            public readonly double[] GhostStrength = new double[GhostStrengths.Length];
+            /// <summary>Positions of the last seconds (world coordinates), for the afterglow.</summary>
+            public readonly List<(double Time, double Along, double Value, bool Inside)> Recent = [];
             /// <summary>Previous positions, in world coordinates (see <see cref="ToWorld"/>), oldest first.</summary>
             /// <summary>Inside: the aircraft was inside the scan limits there (only those dots are drawn).</summary>
             public readonly List<(double Along, double Value, bool Inside)> History = [];
@@ -138,6 +151,7 @@ namespace AuroraPAR
                 yield return Symbol;
                 yield return Label;
                 yield return Leader;
+                foreach (Path ghost in Ghosts) if (ghost != null) yield return ghost;
                 foreach (Path dot in Dots) yield return dot;
             }
         }
@@ -186,9 +200,13 @@ namespace AuroraPAR
         /// <summary>False when the track is outside the drawable area (it is then hidden).</summary>
         protected virtual bool IsDrawable(Point logical) => true;
 
-        public void SetRunway(Runway runway)
+        /// <summary>
+        /// <paramref name="keepTracks"/>: another approach of the same runway (other glide path angle): positions
+        /// and history (along the centreline from the threshold) are still valid.
+        /// </summary>
+        public void SetRunway(Runway runway, bool keepTracks = false)
         {
-            if (runway != Runway)
+            if (runway != Runway && !keepTracks)
             {
                 // Positions and history refer to the previous runway.
                 ClearTracks();
@@ -334,19 +352,74 @@ namespace AuroraPAR
             Point origin = SweepOrigin();
             Point low = SweepEnd(0);
             Point high = SweepEnd(1);
+            // Position across the scan (0..1) of a point, from its direction seen from the antenna.
+            double PositionOf(Point logical)
+            {
+                double dx = logical.X - origin.X;
+                if (dx > 1 && Math.Abs(high.Y - low.Y) > 1)
+                {
+                    double y = origin.Y + (logical.Y - origin.Y) * (low.X - origin.X) / dx;
+                    return (y - low.Y) / (high.Y - low.Y);
+                }
+                return 0.5;
+            }
             foreach (Track track in tracks.Values)
             {
                 if (track.Symbol.Visibility != Visibility.Visible) continue;
-                // Position of the echo across the scan (0..1), from its direction seen from the antenna.
-                double position = 0.5;
-                double dx = track.Logical.X - origin.X;
-                if (dx > 1 && Math.Abs(high.Y - low.Y) > 1)
+                double age = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(track.Logical));
+                double echo = 0.18 + 0.82 * Math.Exp(-age / 0.6);
+                track.Symbol.Opacity = echo;
+                // Afterglow: the copies behind the echo light up and fade with it.
+                for (int k = 0; k < track.Ghosts.Length; k++)
                 {
-                    double y = origin.Y + (track.Logical.Y - origin.Y) * (low.X - origin.X) / dx;
-                    position = (y - low.Y) / (high.Y - low.Y);
+                    if (track.GhostStrength[k] > 0) SetOpacity(track.Ghosts[k], track.GhostStrength[k] * echo);
                 }
-                double age = ScanEffect.SinceLastPass(t, speed, IsElevation, position);
-                track.Symbol.Opacity = 0.18 + 0.82 * Math.Exp(-age / 0.6);
+                // History dots: a faint glow when the beam passes over them.
+                for (int i = 0; i < track.Dots.Count && i < track.DotBase.Count; i++)
+                {
+                    Path dot = track.Dots[i];
+                    if (dot.Visibility != Visibility.Visible || dot.Tag is not Point logical) continue;
+                    double dotAge = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(logical));
+                    SetOpacity(dot, track.DotBase[i] * (0.6 + 0.4 * Math.Exp(-dotAge / 0.6)));
+                }
+            }
+        }
+
+        /// <summary>Changes the opacity only when the difference can be seen, to keep the redraw light.</summary>
+        private static void SetOpacity(UIElement element, double opacity)
+        {
+            if (Math.Abs(element.Opacity - opacity) > 0.015) element.Opacity = opacity;
+        }
+
+        /// <summary>
+        /// Analog scope: places the afterglow copies of the echo where the aircraft was 0.8, 1.6 and 2.4 s ago
+        /// (only inside the scan, and only when they do not overlap the echo).
+        /// </summary>
+        private void UpdateGhosts(Track track, double now)
+        {
+            for (int k = 0; k < track.Ghosts.Length; k++)
+            {
+                Path ghost = track.Ghosts[k];
+                track.GhostStrength[k] = 0;
+                int index = Options.Analog ? track.Recent.FindLastIndex(s => s.Time <= now - (k + 1) * GhostSpacing) : -1;
+                if (index < 0 || !track.Recent[index].Inside)
+                {
+                    ghost.Visibility = Visibility.Collapsed;
+                    continue;
+                }
+                Point logical = WorldToLogical(track.Recent[index].Along, track.Recent[index].Value);
+                if (!IsDrawable(logical) || (logical - track.Logical).Length < 1.5)
+                {
+                    ghost.Visibility = Visibility.Collapsed;
+                    continue;
+                }
+                ghost.Stroke = track.Color;
+                ghost.Fill = track.Color;
+                Canvas.SetLeft(ghost, ToScreenX(logical.X));
+                Canvas.SetTop(ghost, ToScreenY(logical.Y));
+                track.GhostStrength[k] = GhostStrengths[k];
+                SetOpacity(ghost, GhostStrengths[k] * track.Symbol.Opacity);
+                ghost.Visibility = Visibility.Visible;
             }
         }
 
@@ -363,9 +436,16 @@ namespace AuroraPAR
             (double along, double value) = ToWorld(aircraft);
             // History: a dot every HistoryInterval seconds, at a new position given by Aurora.
             bool changed = aircraft.Latitude != track.LastLatitude || aircraft.Longitude != track.LastLongitude || aircraft.Altitude != track.LastAltitude;
+            double now = HistoryClock.Elapsed.TotalSeconds;
+            bool inside = Radar.IsInsideScan(aircraft, Runway);
             if (changed)
             {
-                double now = HistoryClock.Elapsed.TotalSeconds;
+                // Recent positions for the afterglow of the analog scope (a few seconds are enough).
+                track.Recent.Add((now, along, value, inside));
+                while (track.Recent.Count > 0 && track.Recent[0].Time < now - (GhostStrengths.Length + 1) * GhostSpacing)
+                {
+                    track.Recent.RemoveAt(0);
+                }
                 if (!double.IsNaN(track.LastLatitude) && now - track.LastHistoryTime >= Options.HistoryInterval - 0.05)
                 {
                     track.LastHistoryTime = now;
@@ -379,7 +459,6 @@ namespace AuroraPAR
                 track.LastLongitude = aircraft.Longitude;
                 track.LastAltitude = aircraft.Altitude;
             }
-            bool inside = Radar.IsInsideScan(aircraft, Runway);
             track.LastWorld = (along, value, inside);
 
             Point logical = WorldToLogical(along, value);
@@ -404,6 +483,7 @@ namespace AuroraPAR
             Canvas.SetLeft(track.Symbol, track.Position.X);
             Canvas.SetTop(track.Symbol, track.Position.Y);
             track.Symbol.Visibility = Visibility.Visible;
+            UpdateGhosts(track, now);
             UpdateHistory(track);
             UpdateLabel(track, aircraft);
         }
@@ -448,6 +528,8 @@ namespace AuroraPAR
                 Canvas.Children.Remove(track.Dots[^1]);
                 track.Dots.RemoveAt(track.Dots.Count - 1);
             }
+            while (track.DotBase.Count < count) track.DotBase.Add(1);
+            if (track.DotBase.Count > count) track.DotBase.RemoveRange(count, track.DotBase.Count - count);
             int first = track.History.Count - count;
             for (int i = 0; i < count; i++)
             {
@@ -456,8 +538,13 @@ namespace AuroraPAR
                 Path dot = track.Dots[i];
                 dot.Stroke = track.PlotColor;
                 dot.Fill = filled ? track.PlotColor : null;
-                // Analog scope: the older the position, the dimmer its glow.
-                dot.Opacity = Options.Analog ? 0.08 + 0.42 * (i + 1) / count : 1;
+                // Analog scope: the older the position, the dimmer its glow (the beam adds a little, see UpdateEchoBrightness).
+                double opacity = Options.Analog ? 0.08 + 0.42 * (i + 1) / count : 1;
+                track.DotBase[i] = opacity;
+                // Analog: the glow of the beam is set at every frame; here only a dot that moved to a dimmer place.
+                if (!Options.Analog) dot.Opacity = 1;
+                else if (dot.Opacity > opacity) dot.Opacity = opacity * 0.6;
+                dot.Tag = logical;
                 Canvas.SetLeft(dot, ToScreenX(logical.X));
                 Canvas.SetTop(dot, ToScreenY(logical.Y));
                 // A radar shows only what its antenna saw: no dots where the aircraft was outside the scan limits.
@@ -565,6 +652,13 @@ namespace AuroraPAR
             ToolTips.KeepOpen(track.Label);
             track.Label.ToolTip = "Drag to move · double click: back to its place · right click: hide (right click near the track or key L twice to show it again)";
             Canvas.Children.Add(track.Symbol);
+            for (int k = 0; k < track.Ghosts.Length; k++)
+            {
+                Path ghost = new() { Data = EchoGeometry, StrokeThickness = 2, IsHitTestVisible = false, Opacity = 0, Visibility = Visibility.Collapsed };
+                Panel.SetZIndex(ghost, HistoryZIndex + 1);
+                Canvas.Children.Add(ghost);
+                track.Ghosts[k] = ghost;
+            }
             Canvas.Children.Add(track.Leader);
             Canvas.Children.Add(track.Label);
 

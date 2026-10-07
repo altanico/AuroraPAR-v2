@@ -39,6 +39,10 @@
                 <ComboBox Name="DistanceComboBox" Height="30"/>
                 <Button Name="SettingsButton" Content="Settings..." Height="30" Margin="0,4,0,0"/>
                 <Button Name="RunwaysButton" Content="Runways..." Height="30" Margin="0,4,0,0"/>
+                <StackPanel Name="GlidePathPanel" Margin="0,10,0,0">
+                    <TextBlock Name="GlidePathLabel" Text="GP (°)" Margin="2,0,0,2"/>
+                    <ComboBox Name="GlidePathComboBox" Height="26" IsEditable="True" IsTextSearchEnabled="False"/>
+                </StackPanel>
                 <StackPanel Margin="0,10,0,0"
                             ToolTip="Decision height for this session only: not saved, reset when the runway changes.">
                     <TextBlock Name="DhLabel" Text="DH (ft)" Margin="2,0,0,2"/>

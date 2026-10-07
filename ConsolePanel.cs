@@ -18,9 +18,11 @@ namespace AuroraPAR
         string MinimumName,
         string MinimumText,
         double GlideSlope,
+        string MissedApproach,
         double Range,
         double TiltElevation,
         double TiltAzimuth,
+        bool AzimuthSwapped,
         bool Connected,
         double DataInterval,
         bool DataSlow);
@@ -44,6 +46,7 @@ namespace AuroraPAR
         private readonly SegmentDisplay minimum = new(Cells);
         private readonly SegmentDisplay finalCourse = new(Cells);
         private readonly SegmentDisplay glideSlope = new(Cells);
+        private readonly SegmentDisplay missedApproach = new(Cells);
         private readonly SegmentDisplay range = new(Cells);
         private readonly SegmentDisplay tiltElevation = new(Cells);
         private readonly SegmentDisplay tiltAzimuth = new(Cells);
@@ -78,12 +81,13 @@ namespace AuroraPAR
             stack.Children.Add(Row(Label("APT"), icao, "Airport (ICAO)."));
             stack.Children.Add(Row(Label("RWY"), runway, "Runway (designator in runways.par)."));
             stack.Children.Add(Row(Label("CRS"), finalCourse, "Final course (magnetic). Calculated, not the published value: runway true heading from runways.par corrected with the magnetic variation (of the runway, or the default in Settings), rounded to the degree. Check it against the approach chart."));
-            stack.Children.Add(Row(Label("GP DEG"), glideSlope, "Glide path angle of the runway, in degrees."));
-            stack.Children.Add(Row(pressureLabel, pressure, "Pressure setting: QNH, or QFE computed for the threshold elevation."));
+            stack.Children.Add(Row(Label("GP DEG"), glideSlope, "Glide path angle of the approach, in degrees. With several approaches for the runway in runways.par, chosen with the GP knob."));
+            stack.Children.Add(Row(Label("MAPt DIST"), missedApproach, "Missed approach point: distance in NM from the touchdown point where the glide path reaches the decision height (DH / OCH set with the DH knob). Compare it with the approach chart (MAPt / RPI DIST) to check runways.par; it is the distance for \"approach terminating at ...\"."));
             stack.Children.Add(Row(minimumLabel, minimum, "Minimum: altitude with QNH, height with QFE (set with the DH knob)."));
+            stack.Children.Add(Row(pressureLabel, pressure, "Pressure setting: QNH, or QFE computed for the threshold elevation."));
             stack.Children.Add(Row(Label("RANGE NM"), range, "Displayed range."));
             stack.Children.Add(Row(Label("EL TILT"), tiltElevation, "Antenna elevation tilt in degrees (U up, D down)."));
-            stack.Children.Add(Row(Label("AZ TILT"), tiltAzimuth, "Antenna azimuth tilt in degrees (L left, R right, as seen by the pilot)."));
+            stack.Children.Add(Row(Label("AZ TILT"), tiltAzimuth, "Antenna azimuth tilt in degrees (L left, R right): as seen by the pilot, or as seen from the runway when swapped in Settings."));
             stack.Children.Add(new Border
             {
                 Height = 1,
@@ -148,10 +152,11 @@ namespace AuroraPAR
             minimumLabel.Text = $"{data.MinimumName} FT";
             minimum.Text = data.MinimumText;
             finalCourse.Text = data.FinalCourse;
-            glideSlope.Text = data.GlideSlope.ToString("0.0#", CultureInfo.InvariantCulture);
+            glideSlope.Text = Runway.FormatGlideSlope(data.GlideSlope);
+            missedApproach.Text = data.MissedApproach;
             range.Text = data.Range.ToString("0.#", CultureInfo.InvariantCulture);
             tiltElevation.Text = Tilt(data.TiltElevation, "U", "D");
-            tiltAzimuth.Text = Tilt(data.TiltAzimuth, "R", "L");
+            tiltAzimuth.Text = Tilt(data.AzimuthSwapped ? -data.TiltAzimuth : data.TiltAzimuth, "R", "L");
             statusLamp.State = data.Connected ? LampState.Green : LampState.Red;
             bool blink = DateTime.Now.Millisecond < 500;
             string measured;

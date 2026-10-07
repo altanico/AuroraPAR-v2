@@ -144,6 +144,42 @@ namespace AuroraPAR
             }
         }
 
+        /// <summary>
+        /// True for an approach with a glide path angle typed by the controller (modern display), not one of the
+        /// lines of the runway file: "unpublished approach".
+        /// </summary>
+        public bool IsUnpublished { get; private set; }
+
+        /// <summary>
+        /// Copy of this approach with another glide path angle, marked as unpublished. Everything else (DH, range,
+        /// touchdown, magnetic variation) is the same; the touchdown point follows the angle when it is not given
+        /// in the file.
+        /// </summary>
+        public Runway WithGlideSlope(double glideSlope)
+        {
+            Runway copy = (Runway)MemberwiseClone();
+            copy.GlideSlope = glideSlope;
+            copy.IsUnpublished = true;
+            copy.SourceLine = null;
+            copy.SourceText = null;
+            copy.InsertAfterLine = null;
+            return copy;
+        }
+
+        /// <summary>Glide path angle as written on the screen (e.g. 3.0, 2.75).</summary>
+        public static string FormatGlideSlope(double degrees)
+        {
+            return degrees.ToString("0.0#", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>Missed approach point distance as written on the screen (e.g. 0.98), "----" when not known.</summary>
+        public string MissedApproachPointText()
+        {
+            double nm = MissedApproachPointNM;
+            if (!(nm > 0) || double.IsInfinity(nm)) return "----";
+            return nm.ToString(nm < 10 ? "0.00" : "0.0", CultureInfo.InvariantCulture);
+        }
+
         public override string ToString()
         {
             return $"{ICAO} {Designator}";

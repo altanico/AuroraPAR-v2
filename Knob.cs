@@ -10,8 +10,13 @@ namespace AuroraPAR
     /// does and sets <see cref="Index"/> back, so the knob always shows the real state (also when it is changed
     /// with the keyboard or the mouse wheel elsewhere).
     ///
-    /// Turning: mouse wheel over the knob, drag up/down, or click on the right half (clockwise) / left half
-    /// (counter-clockwise). Double click: <see cref="Reset"/>.
+    /// Mouse, with separate zones (the pointer shows what a click does):
+    /// - right half of the knob: each click one step clockwise (curved arrow pointer to the right);
+    /// - left half: each click one step counter-clockwise (curved arrow to the left);
+    /// - centre of the knob: drag up/down to turn, double click for <see cref="Reset"/> (up/down arrow pointer);
+    /// - mouse wheel anywhere over the control.
+    /// A click acts when the button is pressed, and every click counts (two quick clicks are two steps, not a
+    /// reset). Outside the knob and its scale a click does nothing.
     /// </summary>
     internal class Knob : FrameworkElement
     {
@@ -40,8 +45,18 @@ namespace AuroraPAR
         private int index;
         /// <summary>Angle of the pointer of an endless knob (<see cref="Positions"/> = 0).</summary>
         private double endlessAngle;
-        private Point? pressPoint;
-        private bool dragged;
+        /// <summary>Radius of the centre zone (drag and double click), in pixels.</summary>
+        private const double CentreRadius = 7;
+        /// <summary>Clickable radius: the knob and its scale.</summary>
+        private const double ActiveRadius = TickOuter + 3;
+        /// <summary>Vertical strip around the middle where a click does nothing (between the two halves).</summary>
+        private const double NeutralHalfWidth = 2.5;
+
+        private static readonly Cursor ClockwiseCursor = KnobCursors.Arc(clockwise: true);
+        private static readonly Cursor CounterClockwiseCursor = KnobCursors.Arc(clockwise: false);
+
+        /// <summary>Where a drag (from the centre zone) started.</summary>
+        private Point? dragPoint;
 
         /// <summary>Name written above the knob.</summary>
         public string Title { get; set; } = "";
@@ -72,7 +87,51 @@ namespace AuroraPAR
         public Knob()
         {
             Height = 86;
-            Cursor = Cursors.Hand;
+        }
+
+        private enum Zone
+        {
+            Outside,
+            Neutral,
+            Centre,
+            Clockwise,
+            CounterClockwise
+        }
+
+        private Zone ZoneAt(Point p)
+        {
+            Vector v = p - Center;
+            if (v.Length > ActiveRadius) return Zone.Outside;
+            if (v.Length <= CentreRadius) return Zone.Centre;
+            if (Math.Abs(v.X) <= NeutralHalfWidth) return Zone.Neutral;
+            return v.X > 0 ? Zone.Clockwise : Zone.CounterClockwise;
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            Point position = e.GetPosition(this);
+            if (dragPoint is Point start && IsMouseCaptured)
+            {
+                int steps = (int)((start.Y - position.Y) / DragStep);
+                if (steps != 0)
+                {
+                    dragPoint = new Point(start.X, start.Y - steps * DragStep);
+                    Step(steps);
+                }
+                return;
+            }
+            Cursor = ZoneAt(position) switch
+            {
+                Zone.Clockwise => ClockwiseCursor,
+                Zone.CounterClockwise => CounterClockwiseCursor,
+                Zone.Centre => Cursors.SizeNS,
+                _ => null
+            };
+        }
+
+        protected override void OnMouseLeave(MouseEventArgs e)
+        {
+            if (!IsMouseCaptured) Cursor = null;
         }
 
         private Point Center => new(ActualWidth / 2, 50);
@@ -152,45 +211,135 @@ namespace AuroraPAR
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             e.Handled = true;
-            if (e.ClickCount == 2)
-            {
-                pressPoint = null;
-                Reset?.Invoke();
-                return;
-            }
-            pressPoint = e.GetPosition(this);
-            dragged = false;
-            CaptureMouse();
-        }
-
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            if (pressPoint is not Point start || !IsMouseCaptured) return;
             Point position = e.GetPosition(this);
-            int steps = (int)((start.Y - position.Y) / DragStep);
-            if (steps != 0)
+            switch (ZoneAt(position))
             {
-                dragged = true;
-                pressPoint = new Point(start.X, start.Y - steps * DragStep);
-                Step(steps);
+                case Zone.Clockwise:
+                    Step(1);
+                    break;
+                case Zone.CounterClockwise:
+                    Step(-1);
+                    break;
+                case Zone.Centre:
+                    if (e.ClickCount == 2)
+                    {
+                        dragPoint = null;
+                        Reset?.Invoke();
+                        return;
+                    }
+                    dragPoint = position;
+                    CaptureMouse();
+                    break;
             }
         }
 
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {
             e.Handled = true;
+            dragPoint = null;
             if (IsMouseCaptured) ReleaseMouseCapture();
-            if (pressPoint != null && !dragged)
-            {
-                Step(e.GetPosition(this).X >= ActualWidth / 2 ? 1 : -1);
-            }
-            pressPoint = null;
         }
 
         private static T Frozen<T>(T freezable) where T : Freezable
         {
             freezable.Freeze();
             return freezable;
+        }
+    }
+
+    /// <summary>
+    /// Mouse pointers of the knobs: a curved arrow turning clockwise or counter-clockwise (as on the knobs of the
+    /// flight simulators), drawn at start and turned into a Windows cursor (32x32, 32-bit with transparency).
+    /// </summary>
+    internal static class KnobCursors
+    {
+        private const int Pixels = 32;
+
+        public static Cursor Arc(bool clockwise)
+        {
+            try
+            {
+                return new Cursor(new System.IO.MemoryStream(CursorFile(Render(clockwise), Pixels / 2, Pixels / 2 + 2)));
+            }
+            catch (Exception)
+            {
+                return Cursors.Hand;
+            }
+        }
+
+        /// <summary>Arrow drawn on a transparent 32x32 image: white with a black outline, readable on any colour.</summary>
+        private static byte[] Render(bool clockwise)
+        {
+            Point centre = new(Pixels / 2.0, Pixels / 2.0 + 3);
+            const double radius = 10;
+            const double span = 75;
+            Point Polar(double degrees) => new(centre.X + radius * Math.Sin(degrees * Math.PI / 180), centre.Y - radius * Math.Cos(degrees * Math.PI / 180));
+            double startAngle = clockwise ? -span : span;
+            double endAngle = clockwise ? span : -span;
+            StreamGeometry arc = new();
+            using (StreamGeometryContext ctx = arc.Open())
+            {
+                ctx.BeginFigure(Polar(startAngle), false, false);
+                ctx.ArcTo(Polar(endAngle), new Size(radius, radius), 0, false,
+                    clockwise ? SweepDirection.Clockwise : SweepDirection.Counterclockwise, true, false);
+            }
+            arc.Freeze();
+            // Arrow head at the end of the arc, pointing along the turn.
+            double a = endAngle * Math.PI / 180;
+            Vector along = clockwise ? new Vector(Math.Cos(a), Math.Sin(a)) : new Vector(-Math.Cos(a), -Math.Sin(a));
+            Vector outward = new(Math.Sin(a), -Math.Cos(a));
+            Point end = Polar(endAngle);
+            Point tip = end + along * 5;
+            StreamGeometry head = new();
+            using (StreamGeometryContext ctx = head.Open())
+            {
+                ctx.BeginFigure(tip, true, true);
+                ctx.LineTo(end - along * 1.5 + outward * 4.5, true, false);
+                ctx.LineTo(end - along * 1.5 - outward * 4.5, true, false);
+            }
+            head.Freeze();
+            DrawingVisual visual = new();
+            using (DrawingContext dc = visual.RenderOpen())
+            {
+                Pen outline = new(Brushes.Black, 4.5) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+                Pen line = new(Brushes.White, 2) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+                dc.DrawGeometry(null, outline, arc);
+                dc.DrawGeometry(Brushes.Black, new Pen(Brushes.Black, 2.5), head);
+                dc.DrawGeometry(null, line, arc);
+                dc.DrawGeometry(Brushes.White, null, head);
+                // Point of the click.
+                dc.DrawEllipse(Brushes.White, new Pen(Brushes.Black, 1), new Point(Pixels / 2.0, Pixels / 2.0 + 2), 1.8, 1.8);
+            }
+            System.Windows.Media.Imaging.RenderTargetBitmap bitmap = new(Pixels, Pixels, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            System.Windows.Media.Imaging.FormatConvertedBitmap straight = new(bitmap, PixelFormats.Bgra32, null, 0);
+            byte[] pixels = new byte[Pixels * Pixels * 4];
+            straight.CopyPixels(pixels, Pixels * 4, 0);
+            return pixels;
+        }
+
+        /// <summary>Windows .cur file with one 32x32 32-bit image (top-down BGRA pixels given).</summary>
+        private static byte[] CursorFile(byte[] pixels, int hotX, int hotY)
+        {
+            int maskSize = Pixels * 4; // 1 bit per pixel, rows of 32 bits
+            int imageSize = 40 + pixels.Length + maskSize;
+            using System.IO.MemoryStream stream = new();
+            using System.IO.BinaryWriter w = new(stream);
+            // Header: reserved, type 2 (cursor), one image.
+            w.Write((short)0); w.Write((short)2); w.Write((short)1);
+            // Directory entry.
+            w.Write((byte)Pixels); w.Write((byte)Pixels); w.Write((byte)0); w.Write((byte)0);
+            w.Write((short)hotX); w.Write((short)hotY);
+            w.Write(imageSize); w.Write(6 + 16);
+            // BITMAPINFOHEADER (height doubled: colour image + mask).
+            w.Write(40); w.Write(Pixels); w.Write(Pixels * 2); w.Write((short)1); w.Write((short)32);
+            w.Write(0); w.Write(pixels.Length + maskSize); w.Write(0); w.Write(0); w.Write(0); w.Write(0);
+            // Pixels bottom-up.
+            for (int y = Pixels - 1; y >= 0; y--) w.Write(pixels, y * Pixels * 4, Pixels * 4);
+            // Mask: all zero, the transparency is in the alpha channel.
+            w.Write(new byte[maskSize]);
+            w.Flush();
+            return stream.ToArray();
         }
     }
 }

@@ -166,6 +166,12 @@ namespace AuroraPAR
         /// <summary>Antenna tilt step and maximum.</summary>
         public double TiltStep { get; set; } = 2;
         public double TiltMax { get; set; } = 10;
+        /// <summary>
+        /// Azimuth tilt left/right swapped: false (default) = left/right as seen by the pilot flying the approach;
+        /// true = as seen from the runway looking at the approach (controller's view). Applies to the AZ TILT knob,
+        /// the arrow keys, the buttons and the L/R readouts; the antenna itself is the same.
+        /// </summary>
+        public bool AzimuthTiltSwapped { get; set; }
 
         // Units and references.
         public PressureReference PressureReference { get; set; } = PressureReference.QNH;
@@ -306,6 +312,11 @@ namespace AuroraPAR
         /// Display range (NM) used when the program was closed, restored together with the runway.
         /// </summary>
         public double? LastRange { get; set; }
+        /// <summary>
+        /// Glide path angle of the approach in use when the program was closed (runways with several approaches in
+        /// runways.par); only a published one is restored.
+        /// </summary>
+        public double? LastGlideSlope { get; set; }
         /// <summary>
         /// Size and position of the main window when the program was closed, restored at start.
         /// </summary>

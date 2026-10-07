@@ -483,6 +483,22 @@ namespace AuroraPAR
             AddHeader("Antenna tilt");
             AddNumberField("Step", p => p.TiltStep, (p, v) => p.TiltStep = v, 0.5, 10);
             AddNumberField("Maximum", p => p.TiltMax, (p, v) => p.TiltMax = v, 0, 45);
+            int row = RadarGrid.RowDefinitions.Count;
+            RadarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            CheckBox swap = new()
+            {
+                Content = "Azimuth: swap left and right (as seen from the runway)",
+                Margin = new Thickness(0, 6, 0, 0),
+                ToolTip = "Not ticked: L/R of the azimuth tilt as seen by the pilot flying the approach (default).\n"
+                    + "Ticked: as seen from the runway looking at the approach (controller's view): R is the pilot's left.\n"
+                    + "Applies to the AZ TILT knob, the arrow keys, the AZ buttons and the L/R readouts."
+            };
+            swap.Checked += (s, e) => SetProfileValue(p => p.AzimuthTiltSwapped, p => p.AzimuthTiltSwapped = true);
+            swap.Unchecked += (s, e) => SetProfileValue(p => !p.AzimuthTiltSwapped, p => p.AzimuthTiltSwapped = false);
+            refreshers.Add(() => swap.IsChecked = Active.AzimuthTiltSwapped);
+            Grid.SetRow(swap, row);
+            Grid.SetColumnSpan(swap, 3);
+            RadarGrid.Children.Add(swap);
         }
 
         private void AddHeader(string text)
