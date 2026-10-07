@@ -217,7 +217,7 @@ The tilt moves the **beam** inside the scan limits; the glide path, centreline a
 - Buttons **EL ▲ / EL ▼ / AZ L / AZ R / Neutral**, or the arrow keys and Home.
 - Step **2°** by default (*Settings → Radar*). The beam stops where it reaches a scan limit: the narrower the beam, the more it can be tilted; a beam as wide as the scan limits cannot be tilted at all. The range can differ up and down (and left and right): the EL/AZ TILT knobs have their 0 where the neutral position is.
 - The neutral position is the beam centre set in the profile (*Elevation / Azimuth centre in neutral*). The elevation centre is **automatic** by default: the glide path angle of the approach in use (published or free), so the beam is centred on the glide path by itself, also when the approach changes. (The glide path starts at the touchdown point and the beam at the antenna, so seen from the antenna the glide path is a little steeper near the runway; the GP angle is a good centre for the whole approach.)
-- Profiles from older versions are converted with the same picture: scan limits = the old ones widened by the old maximum tilt, beam = the old scan sector, same neutral position. Narrow the beam to work like an old PAR.
+- Profiles from older versions keep their scan limits (the old ones; the old tilt is gone) with the beam off; turn the beam on to use the tilt.
 - While tilted, an orange reminder is shown (`EL TILT 2.0 UP`, `AZ TILT 2.0 L`).
 - Left/right of the azimuth tilt are **as seen by the pilot** flying the approach. *Settings → Radar → Azimuth: swap left and right* makes them **as seen from the runway** looking at the approach (R = the pilot's left): AZ buttons, ← / → keys, AZ TILT knob and the L/R readouts all follow it.
 - The tilt goes back to neutral when the runway changes, and is never saved.
@@ -390,7 +390,7 @@ Set once for your radar type:
 | Antenna tilt | step; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / not ticked |
 | Coasting tracks | seconds a track out of the beam is still shown at its estimated position (modern display; 0 = none) | 8 |
 
-Profiles of the versions before the antenna beam are converted with the same picture: scan limits = the old ones widened by the old maximum tilt (e.g. 18 / −11 / 20 / 20), beam on = the old sector (9° / 20°, centre 3.5° / 0). The scale of the views does not change with the scan limits or the beam: they move the lines, the rest keeps its size.
+Profiles of the versions before the antenna beam keep their scan limits (e.g. 8 / −1 / 10 / 10), with the beam off; profiles converted by the first test builds with the beam go back to their old scan limits (or to the defaults above when they cannot be found). The scale of the views does not change with the scan limits or the beam: they move the lines, the rest keeps its size.
 
 ### 10.5 Units and references
 

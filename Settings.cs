@@ -172,8 +172,13 @@ namespace AuroraPAR
         public double TiltStep { get; set; } = 2;
         /// <summary>Old maximum tilt: only read to convert the profiles of model 0 (the tilt range now follows from the beam).</summary>
         public double TiltMax { get; set; } = 10;
-        /// <summary>0: scan limits of the old model (beam = scan limits, moved by the tilt); 1: scan limits + antenna beam.</summary>
+        /// <summary>
+        /// 0: scan limits of the old model (beam = scan limits, moved by the tilt); 1: scan limits + antenna beam,
+        /// converted with the scan limits widened by the old maximum tilt and the beam on (builds of October 2026);
+        /// 2: scan limits + antenna beam, beam off by default. See <see cref="MigrateScanModel"/>.
+        /// </summary>
         public int ScanModel { get; set; }
+        public const int CurrentScanModel = 2;
         /// <summary>Antenna beam: width (degrees) and centre in neutral position (EL up from the horizon, AZ right of the centreline).</summary>
         public double BeamElevation { get; set; } = 9;
         public double BeamAzimuth { get; set; } = 20;
@@ -182,10 +187,10 @@ namespace AuroraPAR
         /// <summary>Draw the edges of the antenna beam (off: the beam is shown only by the thicker range marks).</summary>
         public bool ShowBeamEdges { get; set; }
         /// <summary>
-        /// Narrow antenna beam moved by the tilt (an advanced function). Off: the beam is the scan limits, no tilt.
-        /// On in the profiles of the earlier versions (same picture), off in a new profile (<see cref="CreateNew"/>).
+        /// Narrow antenna beam moved by the tilt (an advanced function, off by default). Off: the beam is the scan
+        /// limits, no tilt.
         /// </summary>
-        public bool BeamEnabled { get; set; } = true;
+        public bool BeamEnabled { get; set; }
         /// <summary>
         /// Elevation centre of the beam in neutral = the glide path angle in use (instead of
         /// <see cref="BeamElevationNeutral"/>). On by default.
@@ -331,7 +336,7 @@ namespace AuroraPAR
         {
             Profile profile = new()
             {
-                ScanModel = 1,
+                ScanModel = CurrentScanModel,
                 ScanUp = 10,
                 ScanDown = -1,
                 ScanLeft = 15,
@@ -363,27 +368,55 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// Converts a profile of the old scan model (scan limits moved by the tilt up to TiltMax) to the scan limits
-        /// + antenna beam model, with the same picture: the scan limits become the old ones widened by the maximum
-        /// tilt, the beam is the old sector and its neutral position the old neutral sector. Done once.
+        /// Brings a profile of an earlier scan model to the current one, once. The antenna beam (an advanced function)
+        /// is then off, and the scan limits are those the profile showed before the antenna beam existed:
+        /// - model 0 (version 1): the old scan limits stay as they are (the old tilt is no longer there);
+        /// - model 1 (converted by the first builds with the beam: scan limits widened by the old maximum tilt, beam =
+        ///   the old sector): the scan limits go back to the old sector, when the values show it (all four widened by
+        ///   the same tilt); otherwise the defaults of a new profile.
+        /// The beam values are set a few degrees narrower than the scan limits, ready for when it is turned on.
         /// </summary>
         public void MigrateScanModel()
         {
-            if (ScanModel >= 1) return;
-            // Old values not valid: the old defaults first.
-            if (double.IsNaN(ScanUp) || double.IsNaN(ScanDown) || ScanUp <= ScanDown) { ScanUp = 8; ScanDown = -1; }
-            if (double.IsNaN(ScanLeft) || ScanLeft <= 0) ScanLeft = 10;
-            if (double.IsNaN(ScanRight) || ScanRight <= 0) ScanRight = 10;
-            double tilt = double.IsNaN(TiltMax) ? 0 : Math.Clamp(TiltMax, 0, 45);
-            BeamElevation = Math.Max(0.1, ScanUp - ScanDown);
-            BeamAzimuth = Math.Max(0.1, ScanLeft + ScanRight);
-            BeamElevationNeutral = (ScanUp + ScanDown) / 2;
-            BeamAzimuthNeutral = (ScanRight - ScanLeft) / 2;
-            ScanUp += tilt;
-            ScanDown -= tilt;
-            ScanLeft += tilt;
-            ScanRight += tilt;
-            ScanModel = 1;
+            if (ScanModel >= CurrentScanModel) return;
+            if (ScanModel <= 0)
+            {
+                // Old values not valid: the old defaults.
+                if (double.IsNaN(ScanUp) || double.IsNaN(ScanDown) || ScanUp <= ScanDown) { ScanUp = 8; ScanDown = -1; }
+                if (double.IsNaN(ScanLeft) || ScanLeft <= 0) ScanLeft = 10;
+                if (double.IsNaN(ScanRight) || ScanRight <= 0) ScanRight = 10;
+            }
+            else
+            {
+                // The old sector is the beam in neutral position; the scan limits around it all widened by the same tilt.
+                double up = BeamElevationNeutral + BeamElevation / 2;
+                double down = BeamElevationNeutral - BeamElevation / 2;
+                double right = BeamAzimuthNeutral + BeamAzimuth / 2;
+                double left = BeamAzimuth / 2 - BeamAzimuthNeutral;
+                double tilt = ScanUp - up;
+                bool oldSector = !double.IsNaN(tilt) && tilt >= -0.01
+                    && Math.Abs(down - ScanDown - tilt) < 0.01
+                    && Math.Abs(ScanLeft - left - tilt) < 0.01
+                    && Math.Abs(ScanRight - right - tilt) < 0.01
+                    && up > down && left > 0 && right > 0;
+                if (oldSector)
+                {
+                    ScanUp = up;
+                    ScanDown = down;
+                    ScanLeft = left;
+                    ScanRight = right;
+                }
+                else
+                {
+                    ScanUp = 10;
+                    ScanDown = -1;
+                    ScanLeft = 15;
+                    ScanRight = 15;
+                }
+            }
+            BeamEnabled = false;
+            NarrowBeam();
+            ScanModel = CurrentScanModel;
         }
 
         private static SymbolSetting NormalizeSymbol(SymbolSetting? symbol, SymbolSetting fallback)
