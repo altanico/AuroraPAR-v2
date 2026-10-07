@@ -4,6 +4,8 @@
 
 - **Distance text with fractions is hard to read** (*Display style → Range marks → Fractions*): the ¼ ½ ¾ characters are too small on the radar. Proposal: fractions with normal digits (`1 1/4NM`, `3/4NM`) and an adjustable size of the distance text (e.g. 10–16 px).
 
+- **Brightness above 100% (up to 150%)** for dim or old secondary monitors: above 100% the faint elements (in Analog the range marks, altitude scale, limits, DH at 30–60%) move towards full intensity and the colours lighten a little towards white. Same BRT knob/buttons, saved in the profile as now.
+
 ## To verify with live traffic
 
 - Labels, colours (plots / tracks inside and outside the limits), history dots at 2–3 s, only inside the scan.
