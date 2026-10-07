@@ -200,6 +200,7 @@ A label with no fields shows only the track symbol.
 | Home | Antenna back to neutral |
 | L | Hide / show all labels |
 | A | Modern / Analog display |
+| P / Shift+P | Next / previous profile (its name is shown for 2 s; runway and traffic stay, the antenna goes back to neutral) |
 
 Keys are ignored while you are typing in a text box (e.g. the DH box).
 
@@ -541,6 +542,6 @@ All profiles and options are in one file:
 | DH | − / + · type in the box · DH knob (double click on the centre = runway value) |
 | Glide path | GP box: published angles, or type an angle + Enter (unpublished, orange) · GP DEG keys (analog) |
 | Labels | L = all · drag = move · double click = back · right click = hide |
-| Display | A = Modern / Analog |
+| Display | A = Modern / Analog · P / Shift+P = next / previous profile |
 | Distances | Always from the **touchdown point** |
 | Colours | Green inside the approach limits, red outside |

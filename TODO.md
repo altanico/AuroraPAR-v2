@@ -8,6 +8,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Profile keys:** P = next profile, Shift+P = previous (in a circle), name shown for 2 s; one profile: "ONLY ONE PROFILE". Check: not active while typing in ICAO / GP / APT, mode change when the profiles differ.
 - **Show / hide each line** (Display style → Colours & lines, columns Modern and Analog; not the range marks). Check: hide the approach limits on the analog scope only; altitude scale hidden also hides its values.
 - **Analog echo:** brightens as the beam arrives (rise time about a tenth of the sweep), brightest at the centre, then fades; same for the dots.
 - **Tracks moved at every screen frame** (Modern): smoothed and coasting tracks glide. Check: smoothness, CPU use with many aircraft, dragging labels.

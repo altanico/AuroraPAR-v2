@@ -583,6 +583,73 @@ namespace AuroraPAR
         /// <summary>
         /// Modern display or analog scope: switched with the button or the A key, saved in the profile.
         /// </summary>
+        /// <summary>
+        /// Key P / Shift+P: next / previous profile of the list (in a circle), without opening the settings. The
+        /// runway and the traffic stay; the antenna goes back to neutral (the beam of the other profile may differ).
+        /// </summary>
+        private void SwitchProfile(int direction)
+        {
+            List<Profile> profiles = settings.Profiles;
+            if (profiles.Count < 2)
+            {
+                ShowBanner("ONLY ONE PROFILE");
+                return;
+            }
+            int index = profiles.IndexOf(settings.Active);
+            Profile next = profiles[((index + direction) % profiles.Count + profiles.Count) % profiles.Count];
+            settings.ActiveProfile = next.Name;
+            SettingsStore.Save(settings);
+            radar.Neutral();
+            ApplyProfile();
+            UpdateKnobs();
+            ShowBanner($"PROFILE: {next.Name.ToUpperInvariant()}");
+        }
+
+        private Border? banner;
+        private System.Windows.Threading.DispatcherTimer? bannerTimer;
+
+        /// <summary>A short message in the middle of the views for two seconds (e.g. the profile chosen with P).</summary>
+        private void ShowBanner(string text)
+        {
+            if (banner == null)
+            {
+                banner = new Border
+                {
+                    Padding = new Thickness(14, 8, 14, 8),
+                    CornerRadius = new CornerRadius(4),
+                    BorderThickness = new Thickness(1),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    IsHitTestVisible = false,
+                    Visibility = Visibility.Collapsed,
+                    Child = new TextBlock { FontSize = 18, FontWeight = FontWeights.Bold }
+                };
+                Panel.SetZIndex(banner, 1000);
+                if (Content is Grid root)
+                {
+                    Grid.SetColumn(banner, 0);
+                    root.Children.Add(banner);
+                }
+                bannerTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                bannerTimer.Tick += (s, e) =>
+                {
+                    bannerTimer.Stop();
+                    banner.Visibility = Visibility.Collapsed;
+                };
+            }
+            TextBlock label = (TextBlock)banner.Child;
+            label.Text = text;
+            bool analog = viewOptions.Analog;
+            // Analog: amber on dark, as the console readouts; modern: white on dark.
+            banner.Background = CreateFrozenBrush(Color.FromArgb(0xE0, 0x14, 0x15, 0x12));
+            banner.BorderBrush = CreateFrozenBrush(analog ? Color.FromRgb(0x5A, 0x5C, 0x56) : Color.FromRgb(0x80, 0x80, 0x80));
+            label.Foreground = CreateFrozenBrush(analog ? Color.FromRgb(0xFF, 0xB8, 0x40) : System.Windows.Media.Colors.White);
+            label.FontFamily = analog ? new FontFamily(new Uri("pack://application:,,,/"), "./Fonts/#B612") : new FontFamily("Segoe UI");
+            banner.Visibility = Visibility.Visible;
+            bannerTimer!.Stop();
+            bannerTimer.Start();
+        }
+
         private void ToggleDisplayMode()
         {
             Profile profile = settings.Active;
@@ -1328,6 +1395,7 @@ namespace AuroraPAR
                 case Key.Home: NeutralAntenna(); break;
                 case Key.L: ToggleLabels(); break;
                 case Key.A: ToggleDisplayMode(); break;
+                case Key.P: SwitchProfile(Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? -1 : 1); break;
                 default: return;
             }
             e.Handled = true;
