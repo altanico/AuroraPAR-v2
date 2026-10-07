@@ -49,6 +49,17 @@ Review done: no open ports, only the state of the lights travels (no personal da
 - Public relays (emqx, hivemq): free, best-effort, they see the IP address; a private relay is not worth it for this use.
 - Hosting address of the phone page: now `altanico.github.io/AuroraPAR-v2/coord/` (appears in `Coordination.cs` `PhonePanelUrl`, manual, README). Options if it must not be on the personal GitHub: a neutral GitHub organization, Cloudflare Pages / Netlify, or an own domain. Undecided.
 
+## Dedicated home for the project — to do at the end, as one block (decided: yes)
+
+Move the project from the personal account (`altanico`) to a **GitHub organization with a neutral name** (not "IVAO", not confusable with the official project; the site says it is an unofficial add-on for Aurora). Development continues on GitHub there; downloads and the phone link live on the organization's site.
+
+- Choose the name and create the organization (user), then transfer the repository (Settings → Transfer; history is kept, the project stays linked to bornac1's as a fork, so a pull request stays possible).
+- **Site** (GitHub Pages of the organization, `name.github.io`): home page with the Download button, the manual, a few images and the link to the phone panel (`/coord/`). Do it before the old address spreads: the old Pages address does not redirect after the transfer.
+- **Downloads as GitHub Releases** instead of Actions artifacts (public, permanent, no GitHub account needed, they do not expire): the workflow creates a Release for each version, with AuroraPAR and AuroraCoord.
+- Change `PhonePanelUrl` in `Coordination.cs`, the manual and the README to the new address (the address is inside the programs: old versions keep the old QR link, so keep the old address working as long as possible).
+- A custom domain (about 10 €/year) can be added later: GitHub then redirects the `github.io` address to it.
+- Pull request to bornac1: separate and optional, when he wants to follow the development (ask him: one big pull request or smaller ones by topic; whether he wants the phone page in his project).
+
 ## Maintenance
 
 - GitHub Actions: update the actions (Node 20 is deprecated).
