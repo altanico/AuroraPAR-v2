@@ -2,6 +2,7 @@
 
 ## Next update
 
+- **Antenna beam on/off (the tilt is an advanced function).** Settings → Radar: a switch *Antenna beam* (narrow beam moved by the tilt). Off: the beam is the scan limits (only the scan limits are set), no tilt, normal range marks. **Default of a new profile (no settings file yet): off, with wide scan limits that work at once, also for newcomers.** Existing profiles keep what they have (converted ones: on, same picture). To settle in the plan: the default angles, and what the tilt controls do when the beam is off (hidden / greyed / knobs fixed at 0).
 - **Elevation centre in neutral: manual or automatic.** Settings → Radar → Antenna beam: a choice *Manual* (degrees, as now) or *Automatic: as the glide path in use*: the neutral elevation centre of the beam is the GP angle of the approach selected (published or free), so the beam is centred on the glide path by itself, also when the runway or the approach changes. Default for existing profiles: Manual (same picture). Note for the plan: the glide path starts at the touchdown point, the beam at the antenna (half the runway length back), so seen from the antenna the glide path is not exactly at the GP angle; the GP angle is a good centre (decide whether to correct it).
 
 ## Done, to be tested
