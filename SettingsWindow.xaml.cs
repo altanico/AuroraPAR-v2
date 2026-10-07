@@ -351,6 +351,7 @@ namespace AuroraPAR
         {
             SymbolShape[] all = Enum.GetValues<SymbolShape>();
             AddSymbolRow("Track", p => p.TrackSymbol, all.Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray());
+            AddSymbolRow("Coasting track", p => p.CoastSymbol, all.Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray());
             AddSymbolRow("History dots", p => p.HistorySymbol, all.Where(s => s != SymbolShape.None).ToArray());
             AddSymbolRow("Threshold", p => p.ThresholdSymbol, all);
             AddSymbolRow("Touchdown point", p => p.TouchdownSymbol, all);
@@ -480,14 +481,20 @@ namespace AuroraPAR
             AddNumberField("Below the glide path", p => p.ApproachBelow, (p, v) => p.ApproachBelow = v, 0.1, 5);
             AddNumberField("Left of the centreline", p => p.ApproachLeft, (p, v) => p.ApproachLeft = v, 0.1, 10);
             AddNumberField("Right of the centreline", p => p.ApproachRight, (p, v) => p.ApproachRight = v, 0.1, 10);
-            AddHeader("Scan limits from the antenna (neutral position)");
-            AddNumberField("Up", p => p.ScanUp, (p, v) => p.ScanUp = v, 1, 30, (p, v) => v > p.ScanDown);
-            AddNumberField("Down (negative = below the horizon)", p => p.ScanDown, (p, v) => p.ScanDown = v, -10, 10, (p, v) => v < p.ScanUp);
-            AddNumberField("Left", p => p.ScanLeft, (p, v) => p.ScanLeft = v, 1, 45);
-            AddNumberField("Right", p => p.ScanRight, (p, v) => p.ScanRight = v, 1, 45);
-            AddHeader("Antenna tilt");
+            AddHeader("Scan limits from the antenna (physical limits, fixed)");
+            AddNumberField("Up", p => p.ScanUp, (p, v) => p.ScanUp = v, 1, 60, (p, v) => v > p.ScanDown);
+            AddNumberField("Down (negative = below the horizon)", p => p.ScanDown, (p, v) => p.ScanDown = v, -30, 30, (p, v) => v < p.ScanUp);
+            AddNumberField("Left", p => p.ScanLeft, (p, v) => p.ScanLeft = v, 1, 90);
+            AddNumberField("Right", p => p.ScanRight, (p, v) => p.ScanRight = v, 1, 90);
+            AddHeader("Antenna beam (only the traffic inside the beam is seen)");
+            AddNumberField("Elevation width", p => p.BeamElevation, (p, v) => p.BeamElevation = v, 0.5, 90);
+            AddNumberField("Azimuth width", p => p.BeamAzimuth, (p, v) => p.BeamAzimuth = v, 0.5, 180);
+            AddNumberField("Elevation centre in neutral", p => p.BeamElevationNeutral, (p, v) => p.BeamElevationNeutral = v, -30, 60);
+            AddNumberField("Azimuth centre in neutral (+ right)", p => p.BeamAzimuthNeutral, (p, v) => p.BeamAzimuthNeutral = v, -90, 90);
+            AddHeader("Antenna tilt (moves the beam inside the scan limits)");
             AddNumberField("Step", p => p.TiltStep, (p, v) => p.TiltStep = v, 0.5, 10);
-            AddNumberField("Maximum", p => p.TiltMax, (p, v) => p.TiltMax = v, 0, 45);
+            AddHeader("Coasting tracks (modern display)");
+            AddNumberField("Seconds shown out of the beam (0 = none)", p => p.CoastSeconds, (p, v) => p.CoastSeconds = v, 0, Profile.MaxCoastSeconds, unitText: "s");
             int row = RadarGrid.RowDefinitions.Count;
             RadarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             CheckBox swap = new()
@@ -526,7 +533,7 @@ namespace AuroraPAR
         /// an invalid value is refused (the previous one comes back).
         /// </summary>
         private void AddNumberField(string label, Func<Profile, double> get, Action<Profile, double> set, double min, double max,
-                                    Func<Profile, double, bool>? isValid = null)
+                                    Func<Profile, double, bool>? isValid = null, string unitText = "°")
         {
             int row = RadarGrid.RowDefinitions.Count;
             RadarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -547,7 +554,7 @@ namespace AuroraPAR
             };
             TextBlock unit = new()
             {
-                Text = "°",
+                Text = unitText,
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetRow(text, row);

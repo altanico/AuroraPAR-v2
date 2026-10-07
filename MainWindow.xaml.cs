@@ -225,13 +225,7 @@ namespace AuroraPAR
             };
             DhTextBox.LostFocus += (s, e) => ApplyDecisionHeightText();
             DhTextBox.Text = FormatHeight(runway.MDH);
-            GlidePathComboBox.SelectionChanged += (s, e) =>
-            {
-                if (updatingGlidePath || GlidePathComboBox.SelectedIndex < 0 || GlidePathComboBox.SelectedIndex >= approaches.Length) return;
-                // Back from an unpublished angle the DH in use is kept (it does not depend on the angle).
-                SelectApproach(approaches[GlidePathComboBox.SelectedIndex], keepDecisionHeight: runway.IsUnpublished);
-            };
-            GlidePathComboBox.PreviewKeyDown += (s, e) =>
+            GlidePathTextBox.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Enter)
                 {
@@ -246,10 +240,7 @@ namespace AuroraPAR
                     e.Handled = true;
                 }
             };
-            GlidePathComboBox.LostKeyboardFocus += (s, e) =>
-            {
-                if (!GlidePathComboBox.IsKeyboardFocusWithin) ApplyGlidePathText();
-            };
+            GlidePathTextBox.LostKeyboardFocus += (s, e) => ApplyGlidePathText();
             ApplyProfile();
             // Antenna scan effect: redrawn at every frame of the screen (graphic only, independent of the traffic refresh).
             CompositionTarget.Rendering += (s, e) => RenderSweep();
@@ -337,22 +328,35 @@ namespace AuroraPAR
         /// <summary>
         /// Puts the knobs in the position of the current range and tilt (also changed with keyboard and mouse wheel).
         /// </summary>
+        /// <summary>Steps of each tilt knob below and above the neutral position, as last drawn.</summary>
+        private readonly Dictionary<Knob, (int Down, int Up)> knobLayouts = [];
+
         private void UpdateKnobs()
         {
-            int steps = radar.TiltSteps;
-            foreach ((Knob knob, double tilt, string low, string high) in new[]
+            // The tilt range follows from the beam and the scan limits: the steps on the two sides of the neutral
+            // position (0) may differ. Azimuth as shown (left/right possibly swapped).
+            bool swapped = AzimuthSign < 0;
+            foreach ((Knob knob, double tilt, double min, double max, int down, int up, string low, string high) in new[]
             {
-                (elevationKnob, radar.TiltElevation, "DN", "UP"),
-                (azimuthKnob, radar.TiltAzimuth * AzimuthSign, "L", "R")
+                (elevationKnob, radar.TiltElevation, radar.TiltElevationMin, radar.TiltElevationMax,
+                    radar.ElevationStepsDown, radar.ElevationStepsUp, "DN", "UP"),
+                (azimuthKnob, radar.TiltAzimuth * AzimuthSign,
+                    swapped ? -radar.TiltAzimuthMax : radar.TiltAzimuthMin, swapped ? -radar.TiltAzimuthMin : radar.TiltAzimuthMax,
+                    swapped ? radar.AzimuthStepsRight : radar.AzimuthStepsLeft, swapped ? radar.AzimuthStepsLeft : radar.AzimuthStepsRight, "L", "R")
             })
             {
-                if (knob.Positions != 2 * steps + 1)
+                if (!knobLayouts.TryGetValue(knob, out (int Down, int Up) layout) || layout != (down, up))
                 {
-                    knob.Positions = 2 * steps + 1;
-                    knob.LabelFor = i => i == 0 ? low : i == steps ? "0" : i == 2 * steps ? high : null;
+                    knobLayouts[knob] = (down, up);
+                    knob.Positions = down + up + 1;
+                    knob.LabelFor = i => i == 0 && down > 0 ? low : i == down ? "0" : i == down + up && up > 0 ? high : null;
                     knob.InvalidateVisual();
                 }
-                knob.Index = steps + (radar.TiltStep > 0 ? (int)Math.Round(tilt / radar.TiltStep) : 0);
+                // At the end of the range (possibly a shorter last step) the knob is on its last position.
+                int offset = tilt >= max - 0.001 ? up
+                    : tilt <= min + 0.001 ? -down
+                    : radar.TiltStep > 0 ? (int)Math.Round(tilt / radar.TiltStep, MidpointRounding.AwayFromZero) : 0;
+                knob.Index = Math.Clamp(down + offset, 0, down + up);
             }
             rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
         }
@@ -1101,7 +1105,7 @@ namespace AuroraPAR
         private void ApplyGlidePathText()
         {
             if (updatingGlidePath) return;
-            string text = GlidePathComboBox.Text.Trim().Replace(',', '.').TrimEnd('°').Trim();
+            string text = GlidePathTextBox.Text.Trim().Replace(',', '.').TrimEnd('°').Trim();
             if (!double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double degrees)
                 || degrees < MinGlideSlope || degrees > MaxGlideSlope)
             {
@@ -1128,33 +1132,28 @@ namespace AuroraPAR
             }
         }
 
-        /// <summary>Fills the GP box (published angles) and shows the angle in use, orange when unpublished.</summary>
+        /// <summary>Shows the angle in use in the GP box, orange when unpublished (the published angles are the GP keys).</summary>
         private void UpdateGlidePathSelector()
         {
             updatingGlidePath = true;
             try
             {
                 List<string> items = approaches.Select(a => Runway.FormatGlideSlope(a.GlideSlope)).ToList();
-                if (GlidePathComboBox.ItemsSource is not List<string> current || !current.SequenceEqual(items))
-                {
-                    GlidePathComboBox.ItemsSource = items;
-                }
-                GlidePathComboBox.SelectedIndex = runway.IsUnpublished ? -1 : Array.IndexOf(approaches, runway);
-                GlidePathComboBox.Text = Runway.FormatGlideSlope(runway.GlideSlope);
+                GlidePathTextBox.Text = Runway.FormatGlideSlope(runway.GlideSlope);
                 if (runway.IsUnpublished)
                 {
-                    GlidePathComboBox.Foreground = Brushes.DarkOrange;
-                    GlidePathComboBox.FontWeight = FontWeights.Bold;
+                    GlidePathTextBox.Foreground = Brushes.DarkOrange;
+                    GlidePathTextBox.FontWeight = FontWeights.Bold;
                     GlidePathLabel.Text = "GP (°) UNPUBL.";
                 }
                 else
                 {
-                    GlidePathComboBox.ClearValue(Control.ForegroundProperty);
-                    GlidePathComboBox.ClearValue(Control.FontWeightProperty);
+                    GlidePathTextBox.ClearValue(Control.ForegroundProperty);
+                    GlidePathTextBox.ClearValue(Control.FontWeightProperty);
                     GlidePathLabel.Text = "GP (°)";
                 }
                 GlidePathPanel.ToolTip = (approaches.Length > 1
-                        ? $"Glide path: {approaches.Length} published approaches for this runway in runways.par ({string.Join(", ", items)}°): choose one in the list."
+                        ? $"Glide path: {approaches.Length} published approaches for this runway in runways.par ({string.Join(", ", items)}°): choose one with the keys."
                         : "Glide path of this runway in runways.par.")
                     + $"\nAnother angle ({MinGlideSlope:0.0} to {MaxGlideSlope:0.0}) can be typed and confirmed with Enter: it is an UNPUBLISHED APPROACH (shown in orange)."
                     + "\nThe DH stays the same; the missed approach point (MAPt DIST) moves with the angle."
@@ -1354,6 +1353,8 @@ namespace AuroraPAR
             viewOptions.TouchdownSymbol = profile.TouchdownSymbol;
             viewOptions.AntennaSymbol = profile.AntennaSymbol;
             viewOptions.HistorySymbol = profile.HistorySymbol;
+            viewOptions.CoastSymbol = profile.CoastSymbol;
+            viewOptions.CoastSeconds = profile.CoastSeconds;
             viewOptions.ElevationLabel = profile.ElevationLabel;
             viewOptions.Identities.RandomEnabled = profile.RandomTrackIds;
             viewOptions.AzimuthLabel = profile.AzimuthLabel;

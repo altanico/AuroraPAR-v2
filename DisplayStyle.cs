@@ -205,6 +205,8 @@ namespace AuroraPAR
         Centerline,
         ApproachLimits,
         ScanLimits,
+        /// <summary>Edges of the antenna beam (moved by the tilt inside the scan limits).</summary>
+        AntennaBeam,
         /// <summary>Antenna symbol (added later: older profiles get the colour of the scan limits).</summary>
         Antenna,
         DecisionHeight,
@@ -219,6 +221,8 @@ namespace AuroraPAR
         PlotOutside,
         TrackInside,
         TrackOutside,
+        /// <summary>Coasting track: estimated position of a track out of the beam (modern display).</summary>
+        TrackCoasting,
         LabelText
     }
 
@@ -244,7 +248,8 @@ namespace AuroraPAR
         public static bool IsLine(StyleElement element) => element switch
         {
             StyleElement.RangeText or StyleElement.Background or StyleElement.PlotInside or StyleElement.PlotOutside
-                or StyleElement.Antenna or StyleElement.TrackInside or StyleElement.TrackOutside or StyleElement.LabelText => false,
+                or StyleElement.Antenna or StyleElement.TrackInside or StyleElement.TrackOutside or StyleElement.TrackCoasting
+                or StyleElement.LabelText => false,
             _ => true
         };
 
@@ -260,6 +265,7 @@ namespace AuroraPAR
             StyleElement.Centerline => "Centreline",
             StyleElement.ApproachLimits => "Approach limits",
             StyleElement.ScanLimits => "Scan limits",
+            StyleElement.AntennaBeam => "Antenna beam",
             StyleElement.Antenna => "Antenna",
             StyleElement.DecisionHeight => "Decision height",
             StyleElement.Runway => "Runway and threshold",
@@ -272,6 +278,7 @@ namespace AuroraPAR
             StyleElement.PlotOutside => "Plots outside limits (history)",
             StyleElement.TrackInside => "Tracks inside limits",
             StyleElement.TrackOutside => "Tracks outside limits",
+            StyleElement.TrackCoasting => "Coasting tracks (estimated position)",
             StyleElement.LabelText => "Label text",
             _ => element.ToString()
         };
@@ -285,6 +292,7 @@ namespace AuroraPAR
             StyleElement.Centerline => new() { Color = "#FFFF00", Width = 2 },
             StyleElement.ApproachLimits => new() { Color = "#FF0000", Width = 1 },
             StyleElement.ScanLimits => new() { Color = "#5F9EA0", Width = 3 },
+            StyleElement.AntennaBeam => new() { Color = "#40E0D0", Width = 2 },
             StyleElement.Antenna => new() { Color = "#5F9EA0" },
             StyleElement.DecisionHeight => new() { Color = "#FF0000", Width = 2 },
             StyleElement.Runway => new() { Color = "#008000", Width = 3 },
@@ -297,6 +305,7 @@ namespace AuroraPAR
             StyleElement.PlotOutside => new() { Color = "#FF0000" },
             StyleElement.TrackInside => new() { Color = "#008000" },
             StyleElement.TrackOutside => new() { Color = "#FF0000" },
+            StyleElement.TrackCoasting => new() { Color = "#008000" },
             StyleElement.LabelText => new() { Color = "#FFFFFF" },
             _ => new()
         };

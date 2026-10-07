@@ -52,8 +52,11 @@ namespace AuroraPAR
             double range = Runway.Distance;
             double end = length + range;
             double cy = CenterY;
-            double left = Radar.AzimuthLeftEdge;
-            double right = Radar.AzimuthRightEdge;
+            // Scan limits (physical, fixed) and antenna beam (moved by the tilt inside them).
+            double left = Radar.ScanLeftEdge;
+            double right = Radar.ScanRightEdge;
+            double beamLeft = Radar.AzimuthLeftEdge;
+            double beamRight = Radar.AzimuthRightEdge;
             // Runway and threshold (a line across the runway, or a symbol).
             AddLine(0, cy, length * xscale, cy, StyleElement.Runway);
             if (Options.ThresholdSymbol.Shape == SymbolShape.Line)
@@ -64,9 +67,11 @@ namespace AuroraPAR
             {
                 AddSymbol(Options.ThresholdSymbol, length * xscale, cy, Brush(StyleElement.Runway));
             }
-            // Scan limits, from the antenna.
+            // Scan limits and beam edges, from the antenna.
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, left), StyleElement.ScanLimits);
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, right), StyleElement.ScanLimits);
+            AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamLeft), StyleElement.AntennaBeam);
+            AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamRight), StyleElement.AntennaBeam);
             AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, cy, Brush(StyleElement.Antenna));
             // Extended centreline and its approach limits, all starting at the touchdown point:
             // dashed between touchdown and threshold, solid beyond the threshold.
@@ -106,6 +111,8 @@ namespace AuroraPAR
                 if (HasReminderLine(reminders, distance)) continue;
                 double markNM = distance - Runway.TouchdownNM + length;
                 AddLine(markNM * xscale, ScanY(markNM, left), markNM * xscale, ScanY(markNM, right), element);
+                // Thicker where the antenna beam looks.
+                AddLine(markNM * xscale, ScanY(markNM, beamLeft), markNM * xscale, ScanY(markNM, beamRight), element, extraWidth: InBeamExtraWidth);
             }
             // Distance reminders: only the line in this view (the markers are in the elevation view).
             foreach (DistanceReminder reminder in reminders.Where(r => r.HasLine))

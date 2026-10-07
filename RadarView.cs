@@ -34,6 +34,9 @@ namespace AuroraPAR
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
+        /// <summary>Coasting tracks (modern display): symbol, and seconds shown out of the beam (0 = none).</summary>
+        public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);
+        public double CoastSeconds { get; set; } = 8;
         public LabelLayout ElevationLabel { get; set; } = LabelLayout.DefaultElevation();
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
         /// <summary>Analog scope: monochrome phosphor, echoes lit by the beam, no labels.</summary>
@@ -150,6 +153,11 @@ namespace AuroraPAR
             /// <summary>Colour of the history dots (plots), inside or outside the approach limits like the track.</summary>
             public Brush PlotColor = Brushes.Green;
             public string Callsign = "";
+            /// <summary>Last state seen inside the antenna beam, and when (history clock), for the coasting track.</summary>
+            public Aircraft? BeamFix;
+            public double BeamFixTime;
+            /// <summary>The symbol is the one of a coasting track.</summary>
+            public bool SymbolCoasting;
 
             public IEnumerable<UIElement> Elements()
             {
@@ -466,31 +474,92 @@ namespace AuroraPAR
             }
             track.LastWorld = (along, value, inside);
 
+            bool coasting = false;
+            if (inside)
+            {
+                track.BeamFix = Copy(aircraft);
+                track.BeamFixTime = now;
+            }
+            else if (Options.Analog)
+            {
+                // Out of the beam the echo is no longer lit: it goes dark, its afterglow and the dots fade.
+                track.Symbol.Visibility = Visibility.Collapsed;
+                track.Label.Visibility = Visibility.Collapsed;
+                track.Leader.Visibility = Visibility.Collapsed;
+                UpdateGhosts(track, now);
+                UpdateHistory(track);
+                return;
+            }
+            else if (track.BeamFix is Aircraft fix && Options.CoastSeconds > 0 && now - track.BeamFixTime <= Options.CoastSeconds)
+            {
+                // Coasting track: the radar computer estimates the position from the last one seen in the beam
+                // (straight on, same ground speed and vertical speed). The real position is not used.
+                aircraft = Predict(fix, now - track.BeamFixTime);
+                (along, value) = ToWorld(aircraft);
+                coasting = true;
+            }
+            else
+            {
+                SetTrackVisible(track, false);
+                return;
+            }
+
             Point logical = WorldToLogical(along, value);
-            if (!inside || !IsDrawable(logical))
+            if (!IsDrawable(logical))
             {
                 SetTrackVisible(track, false);
                 return;
             }
             bool within = IsWithinLimits(aircraft);
-            track.Color = Options.Theme.Brush(within ? StyleElement.TrackInside : StyleElement.TrackOutside);
+            track.Color = Options.Theme.Brush(coasting ? StyleElement.TrackCoasting : within ? StyleElement.TrackInside : StyleElement.TrackOutside);
             track.PlotColor = Options.Theme.Brush(within ? StyleElement.PlotInside : StyleElement.PlotOutside);
             track.Logical = logical;
             track.Position = new Point(ToScreenX(logical.X), ToScreenY(logical.Y));
             // Track symbol.
-            if (track.SymbolVersion != Options.Version)
+            SymbolSetting symbol = coasting ? Options.CoastSymbol : Options.TrackSymbol;
+            if (track.SymbolVersion != Options.Version || track.SymbolCoasting != coasting)
             {
-                track.Symbol.Data = Options.Analog ? EchoGeometry : Symbols.Create(Options.TrackSymbol.Shape, Options.TrackSymbol.Size);
+                track.Symbol.Data = Options.Analog ? EchoGeometry : Symbols.Create(symbol.Shape, symbol.Size);
                 track.SymbolVersion = Options.Version;
+                track.SymbolCoasting = coasting;
             }
             track.Symbol.Stroke = track.Color;
-            track.Symbol.Fill = Options.Analog || Symbols.IsFilled(Options.TrackSymbol.Shape) ? track.Color : Brushes.Transparent;
+            track.Symbol.Fill = Options.Analog || Symbols.IsFilled(symbol.Shape) ? track.Color : Brushes.Transparent;
             Canvas.SetLeft(track.Symbol, track.Position.X);
             Canvas.SetTop(track.Symbol, track.Position.Y);
             track.Symbol.Visibility = Visibility.Visible;
             UpdateGhosts(track, now);
             UpdateHistory(track);
             UpdateLabel(track, aircraft);
+        }
+
+        /// <summary>Copy of the data of an aircraft (the last one seen in the beam).</summary>
+        private static Aircraft Copy(Aircraft a) => new()
+        {
+            Callsign = a.Callsign,
+            Latitude = a.Latitude,
+            Longitude = a.Longitude,
+            Altitude = a.Altitude,
+            Track = a.Track,
+            Speed = a.Speed,
+            VerticalSpeedFpm = a.VerticalSpeedFpm,
+            Squawk = a.Squawk
+        };
+
+        /// <summary>
+        /// Estimated position after <paramref name="seconds"/>: straight on along the track, at the same ground
+        /// speed and vertical speed.
+        /// </summary>
+        private static Aircraft Predict(Aircraft fix, double seconds)
+        {
+            Aircraft estimate = Copy(fix);
+            double nm = fix.Speed * seconds / 3600;
+            double track = fix.Track * Math.PI / 180;
+            double cosLatitude = Math.Max(0.01, Math.Cos(fix.Latitude * Math.PI / 180));
+            estimate.Latitude = fix.Latitude + nm * Math.Cos(track) / 60;
+            estimate.Longitude = fix.Longitude + nm * Math.Sin(track) / (60 * cosLatitude);
+            estimate.Altitude = fix.Altitude + (fix.VerticalSpeedFpm ?? 0) * seconds / 60;
+            return estimate;
         }
 
         private void SetTrackVisible(Track track, bool visible)
@@ -890,7 +959,11 @@ namespace AuroraPAR
         /// Adds a static line with the colour, width and dash style of an element; <paramref name="dashed"/> forces a
         /// dashed line (e.g. glide path between touchdown and threshold).
         /// </summary>
-        protected void AddLine(double x1, double y1, double x2, double y2, StyleElement element, bool dashed = false)
+        /// <summary>Pixels added to the width of a range mark where it is inside the antenna beam.</summary>
+        protected const double InBeamExtraWidth = 2;
+
+        /// <summary><paramref name="extraWidth"/>: pixels added to the width of the element (range marks inside the beam).</summary>
+        protected void AddLine(double x1, double y1, double x2, double y2, StyleElement element, bool dashed = false, double extraWidth = 0)
         {
             Line line = new()
             {
@@ -899,7 +972,7 @@ namespace AuroraPAR
                 X2 = ToScreenX(x2),
                 Y2 = ToScreenY(y2),
                 Stroke = Options.Theme.Brush(element),
-                StrokeThickness = Options.Theme.Width(element),
+                StrokeThickness = Options.Theme.Width(element) + extraWidth,
                 StrokeDashArray = Theme.DashArray(dashed ? LineDash.Dashed : Options.Theme.Dash(element)),
                 IsHitTestVisible = false
             };

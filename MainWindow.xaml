@@ -166,7 +166,8 @@
                 </StackPanel>
                 <StackPanel Name="GlidePathPanel" Margin="0,10,0,0">
                     <TextBlock Name="GlidePathLabel" Text="GP (°)" Margin="2,0,0,2"/>
-                    <ComboBox Name="GlidePathComboBox" Height="26" IsEditable="True" IsTextSearchEnabled="False"/>
+                    <!-- Angle in use; another angle typed here (Enter) is an unpublished approach. The published ones are the keys above. -->
+                    <TextBox Name="GlidePathTextBox" Height="26" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Name="DhPanel" Margin="0,10,0,0"
                             ToolTip="Decision height for this session only: not saved, reset when the runway changes.">

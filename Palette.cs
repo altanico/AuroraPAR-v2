@@ -105,6 +105,7 @@ namespace AuroraPAR
             StyleElement.Runway => 0.95,
             StyleElement.GlidePath or StyleElement.Centerline or StyleElement.Touchdown => 0.9,
             StyleElement.Ground or StyleElement.DecisionHeight => 0.6,
+            StyleElement.AntennaBeam => 0.75,
             StyleElement.ScanLimits or StyleElement.Antenna or StyleElement.RangeText => 0.55,
             StyleElement.MarkFive or StyleElement.MarkTwo or StyleElement.MarkOne or StyleElement.AltitudeScale => 0.5,
             StyleElement.ApproachLimits or StyleElement.MarkQuarter => 0.45,

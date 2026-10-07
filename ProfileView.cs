@@ -75,8 +75,11 @@ namespace AuroraPAR
             double length = Runway.LengthNM;
             double range = Runway.Distance;
             double end = length + range;
-            double upper = Radar.ElevationUpper;
-            double lower = Radar.ElevationLower;
+            // Scan limits (physical, fixed) and antenna beam (moved by the tilt inside them).
+            double upper = Radar.ScanUp;
+            double lower = Radar.ScanDown;
+            double beamUpper = Radar.ElevationUpper;
+            double beamLower = Radar.ElevationLower;
             if (Options.ShowAltitudeLines) DrawAltitudeLines(end, upper, lower);
             // Ground beyond the threshold.
             AddLine(length * xscale, H, end * xscale, H, StyleElement.Ground);
@@ -91,11 +94,16 @@ namespace AuroraPAR
             {
                 AddSymbol(Options.ThresholdSymbol, length * xscale, H - Options.ThresholdSymbol.Size / 2, Brush(StyleElement.Runway));
             }
-            // Scan limits, from the antenna (the lower one only when above the ground).
+            // Scan limits and beam edges, from the antenna (the lower ones only when above the ground).
             AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, upper), StyleElement.ScanLimits);
             if (lower > 0)
             {
                 AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, lower), StyleElement.ScanLimits);
+            }
+            AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamUpper), StyleElement.AntennaBeam);
+            if (beamLower > 0)
+            {
+                AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamLower), StyleElement.AntennaBeam);
             }
             AddSymbol(Options.AntennaSymbol, AntennaNM * xscale, H - Options.AntennaSymbol.Size / 2, Brush(StyleElement.Antenna));
             // Glide path and its approach limits, all starting at the touchdown point.
@@ -133,6 +141,13 @@ namespace AuroraPAR
                 if (top < bottom && !HasReminderLine(reminders, distance))
                 {
                     AddLine(markNM * xscale, bottom, markNM * xscale, top, element);
+                    // Thicker where the antenna beam looks.
+                    double beamTop = ScanY(markNM, beamUpper);
+                    double beamBottom = beamLower > 0 ? ScanY(markNM, beamLower) : H;
+                    if (beamTop < beamBottom)
+                    {
+                        AddLine(markNM * xscale, beamBottom, markNM * xscale, beamTop, element, extraWidth: InBeamExtraWidth);
+                    }
                 }
                 if (text)
                 {

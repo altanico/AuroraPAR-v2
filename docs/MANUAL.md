@@ -70,7 +70,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **4** | **ICAO** and **Runway** keys | The ICAO box shows the airport in use. Type another ICAO: with the fourth letter (or **Enter**, when the letters typed fit a single airport) it is set and its first runway is selected. Red: no airport in `runways.par` starts with these letters. **Esc** or leaving the box shows the airport in use again. Below, one key per runway of the airport (two columns, the one in use in blue; none when the airport has a single runway); the approaches of the same runway are one key. When you connect with a callsign of an airport in the file (LIPC_APP → LIPC) that airport is set at the connection; without such a callsign the last runway stays. There is no drop-down list of the runways. |
 | **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
-| | **GP (°)** | Glide path of the approach: one key per published angle of the runway (when it has more than one), and below the box for a free angle (unpublished approach) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
+| | **GP (°)** | Glide path of the approach: one key per published angle of the runway (when it has more than one), and below a box with the angle in use, where a free angle can be typed (Enter; unpublished approach, orange) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
 | | **BRT** with **−** / **+** | Brightness of the radar picture, 10–150% (also with the mouse wheel over it); saved in the profile. Up to 100% the picture is dimmed; above 100% the colours are made brighter and lighter, for dim monitors. |
 | **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
@@ -89,7 +89,8 @@ Both views are drawn as seen from the side of the runway, with the **antenna** (
 
 - **Touchdown point** (small yellow mark on the runway): all distances are measured **from the touchdown point**, as controllers give them on final. It is where the glide path meets the runway (about 290 m from the threshold for 50 ft TCH and 3°), or a value set for the runway.
 - **Range marks**: vertical lines at fixed distances from touchdown, with the distance written below them in the elevation view. Which marks are drawn at each range is configurable ([section 11.1](#111-range-marks)).
-- **Scan limits** (blue lines from the antenna): the area the radar sees. A track is shown only inside them.
+- **Scan limits** (blue lines from the antenna): the physical limits of the antenna, fixed.
+- **Antenna beam** (turquoise lines from the antenna): the part the antenna is looking at now, moved by the antenna tilt inside the scan limits. **A track is seen only inside the beam.** The range marks are thicker inside the beam ([section 7](#7-antenna-tilt)).
 - **Approach limits** (red lines from the touchdown point): the tolerance around the glide path / centreline. Inside them a track is **green**, outside **red**.
 - Between touchdown and threshold the glide path, centreline and approach limits are **dashed**; beyond the threshold they are solid.
 
@@ -148,11 +149,13 @@ In the top corner of the elevation view, on the runway side:
 
 ### 5.1 Tracks and plots
 
-Each aircraft inside the scan limits is shown with a **track symbol** (default: circle with cross), green inside the approach limits and red outside. Behind it the **history tail** (the "plots") shows its previous positions:
+Each aircraft inside the antenna beam is shown with a **track symbol** (default: circle with cross), green inside the approach limits and red outside. Behind it the **history tail** (the "plots") shows its previous positions:
 
 - one dot every **2 s** by default (0.5–10 s), up to **50 dots** (3–100);
-- dots only where the aircraft was inside the scan limits;
+- dots only where the aircraft was inside the beam;
 - colours of tracks and plots, inside and outside the limits, are configurable.
+
+**Coasting track** (modern display). When an aircraft leaves the beam, the radar computer keeps it for a few seconds at an **estimated position**: straight on from the last position seen in the beam, at the same ground speed and vertical speed (the real position is not used). The symbol changes to the **coasting symbol** (default: diamond) so you know it is no longer seen; the label stays, with the estimated values; no new history dots. After **8 s** by default (*Settings → Radar → Coasting tracks*, 0–30 s, 0 = hidden at once) track, label and tail disappear. If the aircraft comes back into the beam it is shown again at its real position (it may jump a little). Symbol and colour of the coasting track: *Settings → Symbols* and *Display style → Coasting tracks*. On the analog scope there is no estimate: out of the beam the echo goes dark and its afterglow fades.
 
 > Aurora interpolates the horizontal position between real network updates but the altitude changes only when a real update arrives (every few seconds). In the elevation view this can make the tail look like steps. A dot interval of about 3 s makes it less visible.
 
@@ -202,10 +205,17 @@ Keys are ignored while you are typing in a text box (e.g. the DH box).
 
 ## 7. Antenna tilt
 
-As on a real PAR, the antenna can be tilted to look higher/lower or more left/right. The **scan limits** move; the glide path, centreline and approach limits do not.
+On the old PAR the antenna beam was narrow, and the antenna was tilted to point it where the aircraft was. AuroraPAR has two sets of lines:
+
+- the **scan limits**: the physical limits, as far as the antenna can look; they never move;
+- the **antenna beam**: what the antenna looks at now, with its own width in elevation and azimuth (*Settings → Radar → Antenna beam*). Only the traffic inside the beam is seen, and the range marks are thicker inside it (as on the real scopes).
+
+The tilt moves the **beam** inside the scan limits; the glide path, centreline and approach limits do not move.
 
 - Buttons **EL ▲ / EL ▼ / AZ L / AZ R / Neutral**, or the arrow keys and Home.
-- Step **2°**, up to **10°** each way by default (*Settings → Radar*).
+- Step **2°** by default (*Settings → Radar*). The beam stops where it reaches a scan limit: the narrower the beam, the more it can be tilted; a beam as wide as the scan limits cannot be tilted at all. The range can differ up and down (and left and right): the EL/AZ TILT knobs have their 0 where the neutral position is.
+- The neutral position is the beam centre set in the profile (*Elevation / Azimuth centre in neutral*).
+- Profiles from older versions are converted with the same picture: scan limits = the old ones widened by the old maximum tilt, beam = the old scan sector, same neutral position. Narrow the beam to work like an old PAR.
 - While tilted, an orange reminder is shown (`EL TILT 2.0 UP`, `AZ TILT 2.0 L`).
 - Left/right of the azimuth tilt are **as seen by the pilot** flying the approach. *Settings → Radar → Azimuth: swap left and right* makes them **as seen from the runway** looking at the approach (R = the pilot's left): AZ buttons, ← / → keys, AZ TILT knob and the L/R readouts all follow it.
 - The tilt goes back to neutral when the runway changes, and is never saved.
@@ -222,7 +232,7 @@ The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and re
 
 ## 8b. Glide path: several approaches and unpublished angle
 
-Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). The designator may also end with the angle, e.g. `LIPC;11 2.8;…` and `LIPC;11 2.5;…`: both are runway `LIPC 11`. AuroraPAR groups them: the runway has **one** key, and **GP (°)** has a key for each published angle (the box below lists them too). Choosing one changes only the approach: range, antenna tilt and traffic history stay.
+Some runways have approaches with different glide path angles. In `runways.par` simply write **one line per approach**, with the same airport and designator and its own angle (and its own DH, touchdown…). The designator may also end with the angle, e.g. `LIPC;11 2.8;…` and `LIPC;11 2.5;…`: both are runway `LIPC 11`. AuroraPAR groups them: the runway has **one** key, and **GP (°)** has a key for each published angle (the box below shows the angle in use and takes a free angle). Choosing one changes only the approach: range, antenna tilt and traffic history stay.
 
 - **Modern display:** besides the published angles, any angle from 1.0° to 7.0° can be **typed** in the GP box and confirmed with **Enter** (Esc: back). It is an **unpublished approach**: the angle and `UNPUBLISHED APPROACH` are shown in orange. The **DH does not change** (it comes from the obstacles); the **missed approach point** moves with the angle, and the new **MAPt DIST** is shown in orange next to the warning. Not saved: selecting the runway again goes back to the file.
 - **Analog mode:** only the published approaches, as keys with a lamp under **GP DEG** (shown when the runway has more than one) — see [9.4](#94-airport-runway-and-approach-keys).
@@ -371,10 +381,12 @@ Set once for your radar type:
 | Group | Fields | Default |
 |---|---|---|
 | Approach limits | above / below the glide path, left / right of the centreline | 0.5 / 0.5 / 1.5 / 1.5 |
-| Scan limits | up, down (negative = below the horizon), left, right | 8 / −1 / 10 / 10 |
-| Antenna tilt | step, maximum; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / 10 / not ticked |
+| Scan limits (physical) | up, down (negative = below the horizon), left, right | 18 / −11 / 20 / 20 |
+| Antenna beam | elevation width, azimuth width, elevation centre in neutral, azimuth centre in neutral (+ right) | 9 / 20 / 3.5 / 0 |
+| Antenna tilt | step; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / not ticked |
+| Coasting tracks | seconds a track out of the beam is still shown at its estimated position (modern display; 0 = none) | 8 |
 
-The scale of the views does not change with the scan limits: wider limits or a tilt move the blue lines, the rest keeps its size.
+The defaults give the same picture as the versions before the antenna beam (the old 8 / −1 / 10 / 10 sector tilted up to 10°). The scale of the views does not change with the scan limits or the beam: they move the lines, the rest keeps its size.
 
 ### 10.5 Units and references
 
@@ -414,7 +426,7 @@ For every element of the **Modern** display:
 - **width**: 1–6 px;
 - a **preview**.
 
-Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits, antenna (symbol; profiles from older versions start with the colour of the scan limits), decision height, runway and threshold, ground, touchdown point, altitude scale, altitude lines, background; and the colours of **plots** (history) and **tracks** inside / outside the limits and of the label text.
+Elements: each type of range mark, range text, glide path, centreline, approach limits, scan limits, antenna beam, antenna (symbol; profiles from older versions start with the colour of the scan limits), decision height, runway and threshold, ground, touchdown point, altitude scale, altitude lines, background; and the colours of **plots** (history) and **tracks** inside / outside the limits, of the **coasting tracks** and of the label text.
 
 **Analog scope**: the analog display has a fixed theme. Only the **phosphor** colour is chosen — yellow-green (P39), amber/yellow, green (P1), orange, blue-white or any colour — and all elements use it with different brightness.
 
@@ -506,7 +518,7 @@ All profiles and options are in one file:
 |---|---|
 | `STS FAIL` / red STS lamp | Aurora is not running or not connected. AuroraPAR reconnects by itself. |
 | Tracks move in jumps, red `DATA` or flashing **ANT. R/R** | In Aurora set the traffic refresh rate to **0.5 s**. |
-| An aircraft is not shown | It is outside the scan limits: tilt the antenna, widen the scan limits or increase the range. |
+| An aircraft is not shown | It is outside the antenna beam: tilt the antenna, widen the beam (or the scan limits) or increase the range. |
 | No QNH (`----`) | Aurora has no METAR for the airport yet; it is requested every minute. |
 | "Cannot read the runway file" or "No valid runway found" | Keep `runways.par` in the same folder as `AuroraPAR.exe` and check its lines (or use **Settings... → Edit the runways file**). |
 | The final course differs from the chart | Check the runway heading (true) and the magnetic variation of the runway. |

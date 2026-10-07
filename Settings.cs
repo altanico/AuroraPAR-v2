@@ -158,14 +158,33 @@ namespace AuroraPAR
         public double ApproachBelow { get; set; } = 0.5;
         public double ApproachLeft { get; set; } = 1.5;
         public double ApproachRight { get; set; } = 1.5;
-        /// <summary>Scan limits from the antenna, in neutral position.</summary>
+        /// <summary>
+        /// Scan limits from the antenna. Since <see cref="ScanModel"/> 1: the physical limits of the antenna (fixed).
+        /// In older profiles (model 0): the limits of the old beam in neutral position, moved by the tilt up to
+        /// <see cref="TiltMax"/> (converted by <see cref="MigrateScanModel"/>). The defaults are the old ones, so a
+        /// new profile is converted in the same way.
+        /// </summary>
         public double ScanUp { get; set; } = 8;
         public double ScanDown { get; set; } = -1;
         public double ScanLeft { get; set; } = 10;
         public double ScanRight { get; set; } = 10;
-        /// <summary>Antenna tilt step and maximum.</summary>
+        /// <summary>Antenna tilt step.</summary>
         public double TiltStep { get; set; } = 2;
+        /// <summary>Old maximum tilt: only read to convert the profiles of model 0 (the tilt range now follows from the beam).</summary>
         public double TiltMax { get; set; } = 10;
+        /// <summary>0: scan limits of the old model (beam = scan limits, moved by the tilt); 1: scan limits + antenna beam.</summary>
+        public int ScanModel { get; set; }
+        /// <summary>Antenna beam: width (degrees) and centre in neutral position (EL up from the horizon, AZ right of the centreline).</summary>
+        public double BeamElevation { get; set; } = 9;
+        public double BeamAzimuth { get; set; } = 20;
+        public double BeamElevationNeutral { get; set; } = 3.5;
+        public double BeamAzimuthNeutral { get; set; }
+        /// <summary>
+        /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
+        /// position (0 = hidden at once).
+        /// </summary>
+        public double CoastSeconds { get; set; } = 8;
+        public const double MaxCoastSeconds = 30;
         /// <summary>
         /// Azimuth tilt left/right swapped: false (default) = left/right as seen by the pilot flying the approach;
         /// true = as seen from the runway looking at the approach (controller's view). Applies to the AZ TILT knob,
@@ -203,6 +222,8 @@ namespace AuroraPAR
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
+        /// <summary>Symbol of a coasting track (estimated position, out of the beam).</summary>
+        public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);
 
         /// <summary>Antenna scan effect: a sweeping beam drawn over the views, graphic only (no effect on the data).</summary>
         public bool ScanEffect { get; set; } = true;
@@ -269,6 +290,37 @@ namespace AuroraPAR
             TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));
             AntennaSymbol = NormalizeSymbol(AntennaSymbol, new(SymbolShape.Square, 8));
             HistorySymbol = NormalizeSymbol(HistorySymbol, new(SymbolShape.FilledCircle, 3));
+            CoastSymbol = NormalizeSymbol(CoastSymbol, new(SymbolShape.Diamond, 12));
+            CoastSeconds = double.IsNaN(CoastSeconds) ? 8 : Math.Clamp(CoastSeconds, 0, MaxCoastSeconds);
+            MigrateScanModel();
+            if (double.IsNaN(TiltStep) || TiltStep <= 0) TiltStep = 2;
+            if (double.IsNaN(ScanUp) || double.IsNaN(ScanDown) || ScanUp <= ScanDown) { ScanUp = 18; ScanDown = -11; }
+            if (double.IsNaN(ScanLeft) || ScanLeft <= 0) ScanLeft = 20;
+            if (double.IsNaN(ScanRight) || ScanRight <= 0) ScanRight = 20;
+            BeamElevation = double.IsNaN(BeamElevation) ? 9 : Math.Clamp(BeamElevation, 0.1, 90);
+            BeamAzimuth = double.IsNaN(BeamAzimuth) ? 20 : Math.Clamp(BeamAzimuth, 0.1, 180);
+            if (double.IsNaN(BeamElevationNeutral)) BeamElevationNeutral = (ScanUp + ScanDown) / 2;
+            if (double.IsNaN(BeamAzimuthNeutral)) BeamAzimuthNeutral = 0;
+        }
+
+        /// <summary>
+        /// Converts a profile of the old scan model (scan limits moved by the tilt up to TiltMax) to the scan limits
+        /// + antenna beam model, with the same picture: the scan limits become the old ones widened by the maximum
+        /// tilt, the beam is the old sector and its neutral position the old neutral sector. Done once.
+        /// </summary>
+        public void MigrateScanModel()
+        {
+            if (ScanModel >= 1) return;
+            double tilt = double.IsNaN(TiltMax) ? 0 : Math.Max(0, TiltMax);
+            BeamElevation = Math.Max(0.1, ScanUp - ScanDown);
+            BeamAzimuth = Math.Max(0.1, ScanLeft + ScanRight);
+            BeamElevationNeutral = (ScanUp + ScanDown) / 2;
+            BeamAzimuthNeutral = (ScanRight - ScanLeft) / 2;
+            ScanUp += tilt;
+            ScanDown -= tilt;
+            ScanLeft += tilt;
+            ScanRight += tilt;
+            ScanModel = 1;
         }
 
         private static SymbolSetting NormalizeSymbol(SymbolSetting? symbol, SymbolSetting fallback)
@@ -389,7 +441,9 @@ namespace AuroraPAR
             }
             if (Profiles.Count == 0)
             {
-                Profiles.Add(new Profile());
+                Profile profile = new();
+                profile.Normalize();
+                Profiles.Add(profile);
             }
             if (!Profiles.Any(p => p.Name == ActiveProfile))
             {
