@@ -2,6 +2,7 @@
 
 ## Next update
 
+- **Analog: slight "afterglow" trail on the track (echo) and on the history dots only**, for a more vintage look (phosphor persistence). Only if it turns out to be easy; keep it light, as the earlier stronger trail effect looked like a grid. Analog mode only.
 - **Antenna colour separate from the scan limits.** Today the antenna symbol uses the "Scan limits and antenna" style. Add an **Antenna** element in *Display style → Colours & lines* (colour, same table as the others) used for the symbol in both views; the scan limits keep their own. Existing profiles start with the same colour as the scan limits, so nothing changes until it is edited. Analog: fixed theme, same brightness for both.
 - **Azimuth tilt: option to swap left and right.** Today left/right is as seen by the pilot (relative to the traffic). Depending on where the controller "looks" it can be more intuitive to have right = the side where the controller looks. Setting in the profile (default: as now), applied to the AZ TILT knob, the keyboard arrows, the readout (L/R on the console panel and on the screen) and, later, the external knob.
 
