@@ -94,6 +94,15 @@ namespace AuroraPAR
                             state.RawTime = now;
                         }
                     }
+                    else if ((now - state.RawTime).TotalSeconds > MaxPredictSeconds)
+                    {
+                        // No new position for a while (simulator paused, data stopped): back onto the last real one.
+                        state.Latitude += 0.2 * (aircraft.Latitude - state.Latitude);
+                        state.Longitude += 0.2 * (aircraft.Longitude - state.Longitude);
+                        state.Altitude += 0.2 * (aircraft.Altitude - state.Altitude);
+                    }
+                    // Vertical speed not known yet (first seconds of a track): the real altitude.
+                    if (aircraft.VerticalSpeedFpm == null) state.Altitude = aircraft.Altitude;
                 }
                 Aircraft filtered = aircraft.Copy();
                 filtered.Latitude = state.Latitude;

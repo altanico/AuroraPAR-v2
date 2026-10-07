@@ -513,7 +513,7 @@ namespace AuroraPAR
             {
                 // Modern display with the track filter: symbol and label at the smoothed position (the history
                 // dots above stay at the real positions, as the plots of a radar).
-                if (!Options.Analog && aircraft.Filtered is Aircraft smooth)
+                if (!Options.Analog && aircraft.Filtered is Aircraft smooth && smooth.Altitude > Runway.Elevation)
                 {
                     aircraft = smooth;
                     (along, value) = ToWorld(aircraft);
@@ -989,20 +989,16 @@ namespace AuroraPAR
             return RunwayOnRight && FlipVertically ? Canvas.ActualHeight - y : y;
         }
 
-        /// <summary>
-        /// Adds a static line. Coordinates are logical (see class description).
-        /// </summary>
-        /// <summary>
-        /// Adds a static line with the colour, width and dash style of an element; <paramref name="dashed"/> forces a
-        /// dashed line (e.g. glide path between touchdown and threshold).
-        /// </summary>
         /// <summary>Analog scope: width of the soft edge of the beam, in degrees (the echo gets weaker there).</summary>
         private const double SoftEdgeDegrees = 0.5;
 
         /// <summary>Pixels added to the width of a range mark where it is inside the antenna beam.</summary>
         protected const double InBeamExtraWidth = 2;
 
-        /// <summary><paramref name="extraWidth"/>: pixels added to the width of the element (range marks inside the beam).</summary>
+        /// <summary>
+        /// Adds a static line (logical coordinates, see class description) with the colour, width and dash style of
+        /// an element; <paramref name="dashed"/> forces a dashed line (e.g. glide path between touchdown and threshold).
+        /// <paramref name="extraWidth"/>: pixels added to the width of the element (range marks inside the beam).</summary>
         protected void AddLine(double x1, double y1, double x2, double y2, StyleElement element, bool dashed = false, double extraWidth = 0)
         {
             Line line = new()

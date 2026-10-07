@@ -499,8 +499,9 @@ namespace AuroraPAR
                 p => p.BeamEnabled, (p, v) =>
                 {
                     p.BeamEnabled = v;
-                    // Turned on: a beam a few degrees narrower than the scan limits, so the tilt works at once.
-                    if (v) p.NarrowBeam();
+                    // Turned on with a beam as wide as the scan limits (no room for the tilt): a few degrees
+                    // narrower, so the tilt works at once. A beam already set is kept.
+                    if (v) p.NarrowBeam(onlyWhereFull: true);
                 });
             AddNumberField("Elevation width", p => p.BeamElevation, (p, v) => p.BeamElevation = v, 0.5, 90);
             AddNumberField("Azimuth width", p => p.BeamAzimuth, (p, v) => p.BeamAzimuth = v, 0.5, 180);

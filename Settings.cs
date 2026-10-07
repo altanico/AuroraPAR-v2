@@ -344,12 +344,19 @@ namespace AuroraPAR
         /// Beam a few degrees narrower than the scan limits, centred: set when the antenna beam is turned on, so the
         /// tilt has some room at once and the user sees how it works.
         /// </summary>
-        public void NarrowBeam()
+        /// <param name="onlyWhereFull">Only an axis whose beam is as wide as the scan limits (a beam already set is kept).</param>
+        public void NarrowBeam(bool onlyWhereFull = false)
         {
-            BeamElevation = Math.Max(1, ScanUp - ScanDown - 4);
-            BeamAzimuth = Math.Max(1, ScanLeft + ScanRight - 6);
-            BeamElevationNeutral = (ScanUp + ScanDown) / 2;
-            BeamAzimuthNeutral = (ScanRight - ScanLeft) / 2;
+            if (!onlyWhereFull || BeamElevation >= ScanUp - ScanDown - 0.01)
+            {
+                BeamElevation = Math.Max(1, ScanUp - ScanDown - 4);
+                BeamElevationNeutral = (ScanUp + ScanDown) / 2;
+            }
+            if (!onlyWhereFull || BeamAzimuth >= ScanLeft + ScanRight - 0.01)
+            {
+                BeamAzimuth = Math.Max(1, ScanLeft + ScanRight - 6);
+                BeamAzimuthNeutral = (ScanRight - ScanLeft) / 2;
+            }
         }
 
         /// <summary>
