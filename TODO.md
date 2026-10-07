@@ -6,6 +6,8 @@
 
 - **Brightness above 100% (up to 150%)** for dim or old secondary monitors: above 100% the faint elements (in Analog the range marks, altitude scale, limits, DH at 30–60%) move towards full intensity and the colours lighten a little towards white. Same BRT knob/buttons, saved in the profile as now.
 
+- **Visual colour picker** (choice B): a swatch button next to the #RRGGBB box opens a small window with a hue/saturation square, a brightness bar, before/after preview and recently used colours; live preview on the radar while dragging. The list of standard colours and the hex box stay. One shared picker → works everywhere (display style, phosphor, reminders, coordination panel colours).
+
 ## To verify with live traffic
 
 - Labels, colours (plots / tracks inside and outside the limits), history dots at 2–3 s, only inside the scan.
