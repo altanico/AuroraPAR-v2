@@ -2,7 +2,7 @@
 
 ## Next update
 
-- (nothing pending)
+- **Azimuth tilt: option to swap left and right.** Today left/right is as seen by the pilot (relative to the traffic). Depending on where the controller "looks" it can be more intuitive to have right = the side where the controller looks. Setting in the profile (default: as now), applied to the AZ TILT knob, the keyboard arrows, the readout (L/R on the console panel and on the screen) and, later, the external knob.
 
 ## To verify with live traffic
 
