@@ -121,12 +121,28 @@ namespace AuroraPAR
         /// </summary>
         public bool Tilt(int elevationSteps, int azimuthSteps)
         {
-            double elevation = Math.Clamp(Math.Round(TiltElevation + elevationSteps * TiltStep, 3), TiltElevationMin, TiltElevationMax);
-            double azimuth = Math.Clamp(Math.Round(TiltAzimuth + azimuthSteps * TiltStep, 3), TiltAzimuthMin, TiltAzimuthMax);
+            double elevation = StepTilt(TiltElevation, elevationSteps, TiltElevationMin, TiltElevationMax, ElevationStepsDown, ElevationStepsUp);
+            double azimuth = StepTilt(TiltAzimuth, azimuthSteps, TiltAzimuthMin, TiltAzimuthMax, AzimuthStepsLeft, AzimuthStepsRight);
             bool moved = elevation != TiltElevation || azimuth != TiltAzimuth;
             TiltElevation = elevation;
             TiltAzimuth = azimuth;
             return moved;
+        }
+
+        /// <summary>
+        /// Tilt after some steps, always on the grid of the steps from neutral (k × step), the ends of the range
+        /// included (the last step to an end may be shorter): coming back from an end returns to the grid.
+        /// </summary>
+        private double StepTilt(double current, int steps, double min, double max, int down, int up)
+        {
+            if (steps == 0 || TiltStep <= 0) return current;
+            int k = current >= max - 0.001 ? up
+                : current <= min + 0.001 ? -down
+                : (int)Math.Round(current / TiltStep, MidpointRounding.AwayFromZero);
+            k = Math.Clamp(k + steps, -down, up);
+            if (k == up) return max;
+            if (k == -down) return min;
+            return Math.Round(k * TiltStep, 3);
         }
 
         /// <summary>

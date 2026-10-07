@@ -482,10 +482,10 @@ namespace AuroraPAR
             AddNumberField("Left of the centreline", p => p.ApproachLeft, (p, v) => p.ApproachLeft = v, 0.1, 10);
             AddNumberField("Right of the centreline", p => p.ApproachRight, (p, v) => p.ApproachRight = v, 0.1, 10);
             AddHeader("Scan limits from the antenna (physical limits, fixed)");
-            AddNumberField("Up", p => p.ScanUp, (p, v) => p.ScanUp = v, 1, 60, (p, v) => v > p.ScanDown);
-            AddNumberField("Down (negative = below the horizon)", p => p.ScanDown, (p, v) => p.ScanDown = v, -30, 30, (p, v) => v < p.ScanUp);
-            AddNumberField("Left", p => p.ScanLeft, (p, v) => p.ScanLeft = v, 1, 90);
-            AddNumberField("Right", p => p.ScanRight, (p, v) => p.ScanRight = v, 1, 90);
+            AddNumberField("Up", p => p.ScanUp, (p, v) => p.ScanUp = v, 1, Profile.MaxScanAngle, (p, v) => v > p.ScanDown);
+            AddNumberField("Down (negative = below the horizon)", p => p.ScanDown, (p, v) => p.ScanDown = v, -Profile.MaxScanAngle, 30, (p, v) => v < p.ScanUp);
+            AddNumberField("Left", p => p.ScanLeft, (p, v) => p.ScanLeft = v, 1, Profile.MaxScanAngle);
+            AddNumberField("Right", p => p.ScanRight, (p, v) => p.ScanRight = v, 1, Profile.MaxScanAngle);
             AddHeader("Antenna beam (only the traffic inside the beam is seen)");
             AddNumberField("Elevation width", p => p.BeamElevation, (p, v) => p.BeamElevation = v, 0.5, 90);
             AddNumberField("Azimuth width", p => p.BeamAzimuth, (p, v) => p.BeamAzimuth = v, 0.5, 180);

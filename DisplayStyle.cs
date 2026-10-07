@@ -333,6 +333,17 @@ namespace AuroraPAR
             {
                 Elements[StyleElement.Antenna] = new LineStyle { Color = scan.Color };
             }
+            // Profiles saved before the antenna beam: the old scan limits were the beam; with a colour or line of
+            // their own they keep it on the beam (same picture). With the default style the beam gets its new one.
+            if ((!Elements.TryGetValue(StyleElement.AntennaBeam, out LineStyle? beam) || beam == null)
+                && Elements.TryGetValue(StyleElement.ScanLimits, out LineStyle? oldScan) && oldScan != null
+                && ColorText.TryParse(oldScan.Color, out _))
+            {
+                LineStyle defaults = Default(StyleElement.ScanLimits);
+                bool customised = !string.Equals(oldScan.Color, defaults.Color, StringComparison.OrdinalIgnoreCase)
+                    || oldScan.Width != defaults.Width || oldScan.Dash != defaults.Dash;
+                if (customised) Elements[StyleElement.AntennaBeam] = oldScan.Copy();
+            }
             foreach (StyleElement element in Enum.GetValues<StyleElement>())
             {
                 if (!Elements.TryGetValue(element, out LineStyle? style) || style == null)

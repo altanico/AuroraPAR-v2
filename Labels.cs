@@ -183,14 +183,15 @@ namespace AuroraPAR
     /// Fictitious identities of the tracks, for radars that receive neither the callsign nor the SSR code. A track
     /// gets a random two-digit ID (01 to 99) when it appears in the scan; the ID stays while the track is seen and
     /// is never given again in the session (only when all 99 have been used are the free ones given again). A track
-    /// that is out of the scan for <see cref="DropAfter"/> loses its ID: when it comes back it gets a new one. The
+    /// that is out of the beam for <see cref="DropAfter"/> (10 s, or the coasting time + 2 s if longer) loses its ID: when it comes back it gets a new one. The
     /// user can assign an ID of his own to a callsign, kept for the session; it wins over the random one.
     /// Session only, nothing is saved.
     /// </summary>
     internal sealed class TrackIdentities
     {
         public const int MaxLength = 7;
-        private static readonly TimeSpan DropAfter = TimeSpan.FromSeconds(10);
+        /// <summary>Time out of the scan after which a track loses its random ID (longer than the coasting time).</summary>
+        public TimeSpan DropAfter { get; set; } = TimeSpan.FromSeconds(10);
         private readonly Random random = new();
         private readonly Dictionary<string, (string Id, DateTime LastSeen)> given = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> used = [];

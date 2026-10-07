@@ -325,12 +325,12 @@ namespace AuroraPAR
             }
         }
 
-        /// <summary>
-        /// Puts the knobs in the position of the current range and tilt (also changed with keyboard and mouse wheel).
-        /// </summary>
         /// <summary>Steps of each tilt knob below and above the neutral position, as last drawn.</summary>
         private readonly Dictionary<Knob, (int Down, int Up)> knobLayouts = [];
 
+        /// <summary>
+        /// Puts the knobs in the position of the current range and tilt (also changed with keyboard and mouse wheel).
+        /// </summary>
         private void UpdateKnobs()
         {
             // The tilt range follows from the beam and the scan limits: the steps on the two sides of the neutral
@@ -1355,6 +1355,7 @@ namespace AuroraPAR
             viewOptions.HistorySymbol = profile.HistorySymbol;
             viewOptions.CoastSymbol = profile.CoastSymbol;
             viewOptions.CoastSeconds = profile.CoastSeconds;
+            viewOptions.Identities.DropAfter = TimeSpan.FromSeconds(Math.Max(10, profile.CoastSeconds + 2));
             viewOptions.ElevationLabel = profile.ElevationLabel;
             viewOptions.Identities.RandomEnabled = profile.RandomTrackIds;
             viewOptions.AzimuthLabel = profile.AzimuthLabel;

@@ -177,7 +177,7 @@ Each track has a **label** in each view. Its content is configurable (*Settings 
 
 A label with no fields shows only the track symbol.
 
-**Track ID.** With the option *give each new track a random two-digit ID* (in *Edit labels...*, on by default), a track gets a random number from 01 to 99 when it enters the scan. It keeps it while it is seen; a number is never given twice in the same session, and a track out of the scan for more than 10 seconds loses its ID (it gets a new one when it comes back). To give a track an ID of your own (up to 7 characters, e.g. `X1`): **right click on its label → Set ID...**, type it and press **Enter** (Esc cancels; an empty ID goes back to the random one; *Clear ID* too). Your IDs are kept for the session, not saved. When the label has a Track ID field, the right click on the label opens this small menu (with *Hide label*) instead of hiding it at once.
+**Track ID.** With the option *give each new track a random two-digit ID* (in *Edit labels...*, on by default), a track gets a random number from 01 to 99 when it enters the scan. It keeps it while it is seen; a number is never given twice in the same session, and a track out of the beam for more than 10 seconds (or the coasting time + 2 s, if longer) loses its ID (it gets a new one when it comes back). To give a track an ID of your own (up to 7 characters, e.g. `X1`): **right click on its label → Set ID...**, type it and press **Enter** (Esc cancels; an empty ID goes back to the random one; *Clear ID* too). Your IDs are kept for the session, not saved. When the label has a Track ID field, the right click on the label opens this small menu (with *Hide label*) instead of hiding it at once.
 
 **Moving and hiding labels:**
 

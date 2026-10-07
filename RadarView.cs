@@ -158,6 +158,8 @@ namespace AuroraPAR
             public double BeamFixTime;
             /// <summary>The symbol is the one of a coasting track.</summary>
             public bool SymbolCoasting;
+            /// <summary>Analog scope: when the echo left the beam (history clock), NaN while inside.</summary>
+            public double OutOfBeamSince = double.NaN;
 
             public IEnumerable<UIElement> Elements()
             {
@@ -378,7 +380,11 @@ namespace AuroraPAR
             }
             foreach (Track track in tracks.Values)
             {
-                if (track.Symbol.Visibility != Visibility.Visible) continue;
+                if (track.Symbol.Visibility != Visibility.Visible)
+                {
+                    if (!double.IsNaN(track.OutOfBeamSince)) FadeOutOfBeam(track);
+                    continue;
+                }
                 double age = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(track.Logical));
                 double echo = 0.18 + 0.82 * Math.Exp(-age / 0.6);
                 track.Symbol.Opacity = echo;
@@ -395,6 +401,28 @@ namespace AuroraPAR
                     double dotAge = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(logical));
                     SetOpacity(dot, track.DotBase[i] * (0.6 + 0.4 * Math.Exp(-dotAge / 0.6)));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Analog scope, echo out of the beam: its afterglow and history dots fade out in a few seconds, then are hidden.
+        /// </summary>
+        private static void FadeOutOfBeam(Track track)
+        {
+            double fade = Math.Exp(-(HistoryClock.Elapsed.TotalSeconds - track.OutOfBeamSince) / 1.2);
+            bool gone = fade < 0.03;
+            for (int k = 0; k < track.Ghosts.Length; k++)
+            {
+                if (track.GhostStrength[k] <= 0) continue;
+                if (gone) track.Ghosts[k].Visibility = Visibility.Collapsed;
+                else SetOpacity(track.Ghosts[k], track.GhostStrength[k] * 0.5 * fade);
+            }
+            for (int i = 0; i < track.Dots.Count && i < track.DotBase.Count; i++)
+            {
+                Path dot = track.Dots[i];
+                if (dot.Visibility != Visibility.Visible) continue;
+                if (gone) dot.Visibility = Visibility.Collapsed;
+                else SetOpacity(dot, track.DotBase[i] * 0.6 * fade);
             }
         }
 
@@ -479,15 +507,16 @@ namespace AuroraPAR
             {
                 track.BeamFix = Copy(aircraft);
                 track.BeamFixTime = now;
+                track.OutOfBeamSince = double.NaN;
             }
             else if (Options.Analog)
             {
-                // Out of the beam the echo is no longer lit: it goes dark, its afterglow and the dots fade.
+                // Out of the beam the echo is no longer lit: it goes dark, and its afterglow and the dots stay
+                // where they were and fade (see FadeOutOfBeam).
                 track.Symbol.Visibility = Visibility.Collapsed;
                 track.Label.Visibility = Visibility.Collapsed;
                 track.Leader.Visibility = Visibility.Collapsed;
-                UpdateGhosts(track, now);
-                UpdateHistory(track);
+                if (double.IsNaN(track.OutOfBeamSince)) track.OutOfBeamSince = now;
                 return;
             }
             else if (track.BeamFix is Aircraft fix && Options.CoastSeconds > 0 && now - track.BeamFixTime <= Options.CoastSeconds)
@@ -495,6 +524,12 @@ namespace AuroraPAR
                 // Coasting track: the radar computer estimates the position from the last one seen in the beam
                 // (straight on, same ground speed and vertical speed). The real position is not used.
                 aircraft = Predict(fix, now - track.BeamFixTime);
+                // An estimate below the ground (landing) is not shown.
+                if (aircraft.Altitude <= Runway.Elevation)
+                {
+                    SetTrackVisible(track, false);
+                    return;
+                }
                 (along, value) = ToWorld(aircraft);
                 coasting = true;
             }

@@ -185,6 +185,8 @@ namespace AuroraPAR
         /// </summary>
         public double CoastSeconds { get; set; } = 8;
         public const double MaxCoastSeconds = 30;
+        /// <summary>Largest scan limit angle (a limit near 90° would be drawn far away).</summary>
+        public const double MaxScanAngle = 80;
         /// <summary>
         /// Azimuth tilt left/right swapped: false (default) = left/right as seen by the pilot flying the approach;
         /// true = as seen from the runway looking at the approach (controller's view). Applies to the AZ TILT knob,
@@ -295,8 +297,11 @@ namespace AuroraPAR
             MigrateScanModel();
             if (double.IsNaN(TiltStep) || TiltStep <= 0) TiltStep = 2;
             if (double.IsNaN(ScanUp) || double.IsNaN(ScanDown) || ScanUp <= ScanDown) { ScanUp = 18; ScanDown = -11; }
-            if (double.IsNaN(ScanLeft) || ScanLeft <= 0) ScanLeft = 20;
-            if (double.IsNaN(ScanRight) || ScanRight <= 0) ScanRight = 20;
+            ScanUp = Math.Min(ScanUp, MaxScanAngle);
+            ScanDown = Math.Max(ScanDown, -MaxScanAngle);
+            if (ScanUp <= ScanDown) { ScanUp = 18; ScanDown = -11; }
+            ScanLeft = double.IsNaN(ScanLeft) || ScanLeft <= 0 ? 20 : Math.Min(ScanLeft, MaxScanAngle);
+            ScanRight = double.IsNaN(ScanRight) || ScanRight <= 0 ? 20 : Math.Min(ScanRight, MaxScanAngle);
             BeamElevation = double.IsNaN(BeamElevation) ? 9 : Math.Clamp(BeamElevation, 0.1, 90);
             BeamAzimuth = double.IsNaN(BeamAzimuth) ? 20 : Math.Clamp(BeamAzimuth, 0.1, 180);
             if (double.IsNaN(BeamElevationNeutral)) BeamElevationNeutral = (ScanUp + ScanDown) / 2;
@@ -311,7 +316,11 @@ namespace AuroraPAR
         public void MigrateScanModel()
         {
             if (ScanModel >= 1) return;
-            double tilt = double.IsNaN(TiltMax) ? 0 : Math.Max(0, TiltMax);
+            // Old values not valid: the old defaults first.
+            if (double.IsNaN(ScanUp) || double.IsNaN(ScanDown) || ScanUp <= ScanDown) { ScanUp = 8; ScanDown = -1; }
+            if (double.IsNaN(ScanLeft) || ScanLeft <= 0) ScanLeft = 10;
+            if (double.IsNaN(ScanRight) || ScanRight <= 0) ScanRight = 10;
+            double tilt = double.IsNaN(TiltMax) ? 0 : Math.Clamp(TiltMax, 0, 45);
             BeamElevation = Math.Max(0.1, ScanUp - ScanDown);
             BeamAzimuth = Math.Max(0.1, ScanLeft + ScanRight);
             BeamElevationNeutral = (ScanUp + ScanDown) / 2;
