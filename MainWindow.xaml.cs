@@ -147,6 +147,19 @@ namespace AuroraPAR
             infoPanel.Children.Add(infoText);
             // One entry per runway: "LIPC 11" for the lines "LIPC 11 2.8" and "LIPC 11 2.5".
             RunwayComboBox.DisplayMemberPath = nameof(Runway.DisplayName);
+            IcaoFilterBox.TextChanged += (s, e) =>
+            {
+                if (!settingFilter) ApplyRunwayFilter(userTyped: true);
+            };
+            IcaoFilterBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter && RunwayComboBox.Items.Count > 0)
+                {
+                    RunwayComboBox.Focus();
+                    RunwayComboBox.IsDropDownOpen = true;
+                    e.Handled = true;
+                }
+            };
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
             infoPanel.Children.Add(glidePathText);
             infoPanel.Children.Add(ToolTips.KeepOpen(missedApproachText));
@@ -304,7 +317,8 @@ namespace AuroraPAR
             };
             glidePathKnob.Reset += () =>
             {
-                if (RunwayComboBox.SelectedItem is Runway first && approaches.Contains(first)) SelectApproach(first);
+                Runway? first = runwayList.FirstOrDefault(r => r.RunwayKey == runway.RunwayKey);
+                if (first != null && approaches.Contains(first)) SelectApproach(first);
                 UpdateKnobs();
             };
             brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 100 / Profile.BrightnessStep - 1 ? "100" : i == Profile.MaxBrightness / Profile.BrightnessStep - 1 ? "MAX" : null;
@@ -528,7 +542,8 @@ namespace AuroraPAR
             timer.Stop();
             aurora.Close();
             // Remember runway and range for the next start.
-            if (RunwayComboBox.SelectedItem is Runway)
+            settings.RunwayFilter = IcaoFilterBox.Text.Trim();
+            if (selectedApproach != null)
             {
                 settings.LastRunway = runway.ToString();
                 settings.LastRange = runway.Distance;
@@ -605,7 +620,8 @@ namespace AuroraPAR
             {
                 runways = await DataFile.GetRunways(dataPath);
                 runwayList = GroupRunways(runways);
-                RunwayComboBox.ItemsSource = runwayList;
+                SetFilterText(settings.RunwayFilter ?? "");
+                ApplyRunwayFilter(userTyped: false);
                 if (runways.Length == 0)
                 {
                     MessageBox.Show(this, $"No valid runway found in {Path.GetFullPath(dataPath)}.", "Aurora PAR", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -624,6 +640,7 @@ namespace AuroraPAR
             if (last != null)
             {
                 restoringSession = true;
+                ShowAllIfHidden(last);
                 RunwayComboBox.SelectedItem = last;
                 restoringSession = false;
             }
@@ -644,6 +661,8 @@ namespace AuroraPAR
         {
             if (e.AddedItems.Count > 0 && e.AddedItems[0] is Runway first)
             {
+                // The list was only filtered again: the runway in use stays as it is.
+                if (filteringRunways && selectedApproach != null && first.RunwayKey == selectedApproach.RunwayKey) return;
                 Runway previous = runway;
                 approaches = ApproachesOf(first);
                 // Approach: the one of the last session or the one in use before reloading the file (same angle),
@@ -677,6 +696,83 @@ namespace AuroraPAR
                 UpdateGlidePathSelector();
                 InvalidateViews();
             }
+        }
+
+        /// <summary>True while the filter box is changed by the program.</summary>
+        private bool settingFilter;
+        /// <summary>True while the runway list is filtered again (the runway in use must not be selected again).</summary>
+        private bool filteringRunways;
+        /// <summary>Callsign whose airport has already been proposed in the filter (once per connection).</summary>
+        private string? suggestedCallsign;
+
+        private void SetFilterText(string text)
+        {
+            settingFilter = true;
+            try { IcaoFilterBox.Text = text; }
+            finally { settingFilter = false; }
+        }
+
+        /// <summary>
+        /// Shows in the runway list only the airports starting with the letters typed in the ICAO box (all when
+        /// empty). If no airport matches, the box turns red and the list is not changed. <paramref name="userTyped"/>:
+        /// an airport with a single runway is then selected at once, and with several the list opens when the ICAO is
+        /// complete.
+        /// </summary>
+        private void ApplyRunwayFilter(bool userTyped, bool keepSelection = true)
+        {
+            string text = IcaoFilterBox.Text.Trim().ToUpperInvariant();
+            Runway[] filtered = text.Length == 0 ? runwayList
+                : runwayList.Where(r => r.ICAO.StartsWith(text, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (filtered.Length == 0 && runwayList.Length > 0)
+            {
+                IcaoFilterBox.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xC8, 0xC8));
+                return;
+            }
+            IcaoFilterBox.ClearValue(Control.BackgroundProperty);
+            filteringRunways = true;
+            try
+            {
+                RunwayComboBox.ItemsSource = filtered;
+                // The runway in use stays shown if it is in the list.
+                Runway? current = selectedApproach == null || !keepSelection ? null : filtered.FirstOrDefault(r => r.RunwayKey == selectedApproach.RunwayKey);
+                RunwayComboBox.SelectedItem = current;
+            }
+            finally
+            {
+                filteringRunways = false;
+            }
+            if (!userTyped || RunwayComboBox.SelectedItem != null) return;
+            if (filtered.Length == 1)
+            {
+                RunwayComboBox.SelectedItem = filtered[0];
+            }
+            else if (text.Length == 4 && filtered.Length > 1)
+            {
+                RunwayComboBox.IsDropDownOpen = true;
+            }
+        }
+
+        /// <summary>Empties the filter if it hides the given runway (e.g. the one of the last session).</summary>
+        private void ShowAllIfHidden(Runway runwayToShow)
+        {
+            if (RunwayComboBox.ItemsSource is Runway[] shown && shown.Contains(runwayToShow)) return;
+            SetFilterText("");
+            ApplyRunwayFilter(userTyped: false);
+        }
+
+        /// <summary>
+        /// When the filter is empty, it is filled with the airport of the callsign connected in Aurora (LIPC_APP:
+        /// LIPC), if the file has it. Only once per callsign, and the runway in use is never changed.
+        /// </summary>
+        private void SuggestAirport(string? callsign)
+        {
+            if (string.IsNullOrWhiteSpace(callsign) || callsign == suggestedCallsign) return;
+            suggestedCallsign = callsign;
+            if (IcaoFilterBox.Text.Trim().Length > 0 || IcaoFilterBox.IsKeyboardFocusWithin) return;
+            string icao = callsign.Split('_', '-')[0].Trim().ToUpperInvariant();
+            if (icao.Length != 4 || !runwayList.Any(r => string.Equals(r.ICAO, icao, StringComparison.OrdinalIgnoreCase))) return;
+            SetFilterText(icao);
+            ApplyRunwayFilter(userTyped: false);
         }
 
         /// <summary>Glide path of the approach to restore at start.</summary>
@@ -864,7 +960,7 @@ namespace AuroraPAR
         /// </summary>
         private async Task ReloadRunways()
         {
-            string? currentName = (RunwayComboBox.SelectedItem as Runway)?.RunwayKey;
+            string? currentName = selectedApproach?.RunwayKey;
             double? unpublished = runway.IsUnpublished ? runway.GlideSlope : null;
             try
             {
@@ -879,10 +975,12 @@ namespace AuroraPAR
             reloadingRunways = true;
             try
             {
-                RunwayComboBox.ItemsSource = runwayList;
+                // New objects read from the file: the runway is selected again below.
+                ApplyRunwayFilter(userTyped: false, keepSelection: false);
                 Runway? same = runwayList.FirstOrDefault(r => r.RunwayKey == currentName);
                 if (same != null)
                 {
+                    ShowAllIfHidden(same);
                     RunwayComboBox.SelectedItem = same;
                     // An unpublished angle in use stays (modern display), unless the file now has it.
                     if (unpublished is double degrees && !viewOptions.Analog
@@ -1094,7 +1192,11 @@ namespace AuroraPAR
                         lastCallsignCheck = DateTime.UtcNow;
                         string? own = await aurora.GetConnectedCallsign();
                         connectedCallsign = own;
-                        _ = Dispatcher.BeginInvoke(() => coordinationWindow?.SetCallsign(own));
+                        _ = Dispatcher.BeginInvoke(() =>
+                        {
+                            coordinationWindow?.SetCallsign(own);
+                            SuggestAirport(own);
+                        });
                     }
                     string[] callsigns = await aurora.GetTrafficList();
                     foreach (string callsign in callsigns)

@@ -317,6 +317,8 @@ namespace AuroraPAR
         /// runways.par); only a published one is restored.
         /// </summary>
         public double? LastGlideSlope { get; set; }
+        /// <summary>ICAO typed in the filter above the runway list (empty: all the airports).</summary>
+        public string? RunwayFilter { get; set; }
         /// <summary>
         /// Size and position of the main window when the program was closed, restored at start.
         /// </summary>

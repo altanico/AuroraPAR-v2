@@ -67,7 +67,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 
 | | Control | Use |
 |---|---|---|
-| **4** | Runway list | Selects the runway (from `runways.par`). |
+| **4** | **ICAO** filter and runway list | Type the ICAO (or its first letters) to list only that airport's runways; an airport with one runway is selected at once, with several the list opens. Empty: all the airports. Red: no airport matches. When empty it is filled with the airport of your Aurora callsign (LIPC_APP → LIPC). One entry per runway: its approaches (glide path angles) are chosen with **GP (°)**. |
 | **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
