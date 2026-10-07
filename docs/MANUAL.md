@@ -63,14 +63,13 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **2** | Elevation view ([4.2](#42-elevation-view-top)) |
 | **3** | Azimuth view ([4.3](#43-azimuth-view-bottom)) |
 
-**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination, Settings... and Runways... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons look like the keys of an equipment (capital letters; a green lamp on ANALOG/MODERN, and on COORDINATION while the panel is open) and the text fields like readout windows:
+**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination and Settings... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons look like the keys of an equipment (capital letters; a green lamp on ANALOG/MODERN, and on COORDINATION while the panel is open) and the text fields like readout windows:
 
 | | Control | Use |
 |---|---|---|
 | **4** | **ICAO** filter and runway list | Type the ICAO (or its first letters) to list only that airport's runways; an airport with one runway is selected at once, with several the list opens. Empty: all the airports. Red: no airport matches. The filter is for the session (empty at the next start, with the last runway still selected). When you connect with a callsign of an airport in the file (LIPC_APP → LIPC) that airport has priority: it is set in the filter whatever was typed, and its first runway is selected if you were on another airport; without such a callsign nothing changes. One entry per runway: its approaches (glide path angles) are chosen with **GP (°)**. |
 | **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
-| **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |
 | | **GP (°)** | Glide path of the approach: the published angles of the runway, or a free angle (unpublished approach) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
 | | **BRT** with **−** / **+** | Brightness of the radar picture, 10–150% (also with the mouse wheel over it); saved in the profile. Up to 100% the picture is dimmed; above 100% the colours are made brighter and lighter, for dim monitors. |
@@ -431,7 +430,7 @@ Elements: each type of range mark, range text, glide path, centreline, approach 
 
 ### 12.1 Runway editor
 
-**Runways...** opens the editor of `runways.par`:
+**Settings... → Edit the runways file** opens the editor of `runways.par`:
 
 - runway list on the left; **New**, **Duplicate** (handy for the opposite end of a runway) and **Delete**;
 - fields on the right, checked while typing (wrong values turn red, with a hint);
@@ -494,7 +493,7 @@ All profiles and options are in one file:
 | Tracks move in jumps, red `DATA` or flashing **ANT. R/R** | In Aurora set the traffic refresh rate to **0.5 s**. |
 | An aircraft is not shown | It is outside the scan limits: tilt the antenna, widen the scan limits or increase the range. |
 | No QNH (`----`) | Aurora has no METAR for the airport yet; it is requested every minute. |
-| "Cannot read the runway file" or "No valid runway found" | Keep `runways.par` in the same folder as `AuroraPAR.exe` and check its lines (or use **Runways...**). |
+| "Cannot read the runway file" or "No valid runway found" | Keep `runways.par` in the same folder as `AuroraPAR.exe` and check its lines (or use **Settings... → Edit the runways file**). |
 | The final course differs from the chart | Check the runway heading (true) and the magnetic variation of the runway. |
 | Elevation tail looks like steps | Real altitude updates arrive every few seconds; set one dot every 3 s. |
 

@@ -255,7 +255,6 @@
                         ToolTip="Coordination light panel with the tower (voiceless coordination)."/>
                 <Border Height="1" Background="#55808080" Margin="0,8,0,4"/>
                 <Button Name="SettingsButton" Content="Settings..." Margin="0,4,0,0" Height="30"/>
-                <Button Name="RunwaysButton" Content="Runways..." Margin="0,4,0,0" Height="30"/>
             </StackPanel>
             </Grid>
         </Border>

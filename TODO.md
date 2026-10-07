@@ -42,6 +42,9 @@
 
 ## Later
 
+- **Runway heading (true) from the two thresholds — external utility that does only that** (decided: separate small tool, not inside the radar). The two threshold coordinates (any format of the editor, at least 5–6 decimals or seconds with hundredths) give the true heading with two decimals; the distance between the thresholds is shown as a check against the runway length. Why: 0.1° = 0.026 NM (48 m) of lateral error at 15 NM, 0.3° = 145 m; a heading from the runway number or the magnetic value on the charts (rounded) is not enough; coordinates with 4 decimals (11 m) give about 0.25° on a 2500 m runway. Possible later: check with live traffic (aircraft established on the ILS should have a lateral offset near zero at all distances: a slope means a heading error; the simulator's runway can differ by a few tenths of a degree from the real one, and aircraft fly the simulator's).
+- **Runway management as an external app (like AuroraCoord)** — only if the editor grows (heading tools, file checks, import). Then in this order: (1) runway reminders move into the radar (*Display style → Reminders*, they are a display preference and live in the settings file, which two programs must not both write); (2) the radar rereads `runways.par` by itself when it changes; (3) the external app (same source files linked, third download in the Releases). For now the editor stays in the radar, opened from *Settings → Edit the runways file*.
+
 - Shout line (always-open intercom) in the coordination panel.
 - Event log for the instructor (monitor), with saving to a file.
 - **External controls — FROZEN until the keypad arrives** (mini keypad, 9 keys + 3 knobs, programmable with its own software, onboard memory). Agreed plan:

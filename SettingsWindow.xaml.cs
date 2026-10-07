@@ -24,11 +24,13 @@ namespace AuroraPAR
         /// </summary>
         private readonly List<Action> refreshers = [];
 
-        internal SettingsWindow(AppSettings settings, Action applyToScreen)
+        internal SettingsWindow(AppSettings settings, Action applyToScreen, Action<Window>? editRunways = null)
         {
             InitializeComponent();
             this.settings = settings;
             this.applyToScreen = applyToScreen;
+            EditRunwaysButton.Visibility = editRunways == null ? Visibility.Collapsed : Visibility.Visible;
+            EditRunwaysButton.Click += (s, e) => editRunways?.Invoke(this);
             ProfileComboBox.SelectionChanged += ProfileComboBox_SelectionChanged;
             RenameButton.Click += (s, e) => RenameProfile();
             ProfileNameTextBox.KeyDown += (s, e) =>

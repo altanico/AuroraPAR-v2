@@ -205,7 +205,6 @@ namespace AuroraPAR
             DisplayArea.SizeChanged += (s, e) => ConsoleHost.MaxWidth = Math.Max(90, Math.Min(DisplayArea.ActualWidth * 0.26, 300));
             ConsoleViewbox.Child = consolePanel;
             PreviewKeyDown += MainWindow_PreviewKeyDown;
-            RunwaysButton.Click += RunwaysButton_Click;
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
             DhDownButton.Click += (s, e) => SetDecisionHeight(runway.MDH - DecisionHeightStep);
             DhTextBox.KeyDown += (s, e) =>
@@ -501,7 +500,6 @@ namespace AuroraPAR
             (Button Button, string Text)[] buttons =
             [
                 (SettingsButton, "Settings..."),
-                (RunwaysButton, "Runways..."),
                 (CoordinationButton, "Coordination"),
                 (ModeButton, analog ? "Modern (A)" : "Analog (A)")
             ];
@@ -985,7 +983,8 @@ namespace AuroraPAR
             DhTextBox.Text = FormatHeight(runway.MDH);
         }
 
-        private async void RunwaysButton_Click(object sender, RoutedEventArgs e)
+        /// <summary>Runway editor (from Settings): it is a dialog of the window that opened it.</summary>
+        private async void OpenRunwayEditor(Window owner)
         {
             RunwayEditorWindow window = new(dataPath, runways, (selectedApproach ?? RunwayComboBox.SelectedItem as Runway)?.ToString(), settings, () =>
             {
@@ -993,7 +992,7 @@ namespace AuroraPAR
                 InvalidateViews();
             })
             {
-                Owner = this
+                Owner = owner
             };
             window.ShowDialog();
             if (window.Saved)
@@ -1045,7 +1044,7 @@ namespace AuroraPAR
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            SettingsWindow window = new(settings, ApplyProfile)
+            SettingsWindow window = new(settings, ApplyProfile, OpenRunwayEditor)
             {
                 Owner = this
             };
