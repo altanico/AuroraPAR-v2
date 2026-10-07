@@ -63,11 +63,11 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **2** | Elevation view ([4.2](#42-elevation-view-top)) |
 | **3** | Azimuth view ([4.3](#43-azimuth-view-bottom)) |
 
-**Right column, from the top (4–11).** The selectors "on the fly" are at the top; the buttons Hide labels, Analog, Coordination, Settings... and Runways... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons look like the keys of an equipment (capital letters; a green lamp on ANALOG/MODERN, and on COORDINATION while the panel is open) and the text fields like readout windows:
+**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination, Settings... and Runways... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons look like the keys of an equipment (capital letters; a green lamp on ANALOG/MODERN, and on COORDINATION while the panel is open) and the text fields like readout windows:
 
 | | Control | Use |
 |---|---|---|
-| **4** | **ICAO** filter and runway list | Type the ICAO (or its first letters) to list only that airport's runways; an airport with one runway is selected at once, with several the list opens. Empty: all the airports. Red: no airport matches. When empty it is filled with the airport of your Aurora callsign (LIPC_APP → LIPC). One entry per runway: its approaches (glide path angles) are chosen with **GP (°)**. |
+| **4** | **ICAO** filter and runway list | Type the ICAO (or its first letters) to list only that airport's runways; an airport with one runway is selected at once, with several the list opens. Empty: all the airports. Red: no airport matches. The filter is for the session (empty at the next start, with the last runway still selected). When you connect with a callsign of an airport in the file (LIPC_APP → LIPC) that airport has priority: it is set in the filter whatever was typed, and its first runway is selected if you were on another airport; without such a callsign nothing changes. One entry per runway: its approaches (glide path angles) are chosen with **GP (°)**. |
 | **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | **7** | **Runways...** | Runway editor ([section 12](#12-runways-and-the-runway-editor)). |

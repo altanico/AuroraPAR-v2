@@ -2,7 +2,7 @@
 
 ## Next update
 
-- **Modern: "Hide labels (L)" goes back to the top section** (with the selectors "on the fly"), not with the system buttons at the bottom: it is a quick display switch, not a setting. In the analog mode nothing changes (no labels there).
+(Done and published, to be tested: "Hide labels (L)" back in the top section, a little apart from the antenna tilt; the ICAO filter is for the session only, and the airport of the connected callsign has priority over it.)
 
 (the previous blocks — GP selector and MAPt DIST, antenna colour, azimuth swap, analog afterglow, knob mouse zones, DH above QNH — is done and to be tested, see below.)
 

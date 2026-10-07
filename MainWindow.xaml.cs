@@ -584,7 +584,6 @@ namespace AuroraPAR
             timer.Stop();
             aurora.Close();
             // Remember runway and range for the next start.
-            settings.RunwayFilter = IcaoFilterBox.Text.Trim();
             if (selectedApproach != null)
             {
                 settings.LastRunway = runway.ToString();
@@ -662,7 +661,8 @@ namespace AuroraPAR
             {
                 runways = await DataFile.GetRunways(dataPath);
                 runwayList = GroupRunways(runways);
-                SetFilterText(settings.RunwayFilter ?? "");
+                // The filter is for the session: it starts empty (the runway of the last session is still selected).
+                SetFilterText("");
                 ApplyRunwayFilter(userTyped: false);
                 if (runways.Length == 0)
                 {
@@ -803,18 +803,23 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// When the filter is empty, it is filled with the airport of the callsign connected in Aurora (LIPC_APP:
-        /// LIPC), if the file has it. Only once per callsign, and the runway in use is never changed.
+        /// The airport of the callsign connected in Aurora (LIPC_APP: LIPC), if the file has it, has priority over
+        /// anything typed in the filter: it is set there, and if the runway in use belongs to another airport the first
+        /// runway of this one is selected. Once per callsign, so later changes by the controller are respected.
+        /// Without a matching callsign nothing changes (the runway of the last session stays).
         /// </summary>
         private void SuggestAirport(string? callsign)
         {
             if (string.IsNullOrWhiteSpace(callsign) || callsign == suggestedCallsign) return;
             suggestedCallsign = callsign;
-            if (IcaoFilterBox.Text.Trim().Length > 0 || IcaoFilterBox.IsKeyboardFocusWithin) return;
             string icao = callsign.Split('_', '-')[0].Trim().ToUpperInvariant();
             if (icao.Length != 4 || !runwayList.Any(r => string.Equals(r.ICAO, icao, StringComparison.OrdinalIgnoreCase))) return;
             SetFilterText(icao);
             ApplyRunwayFilter(userTyped: false);
+            if (selectedApproach == null || !string.Equals(selectedApproach.ICAO, icao, StringComparison.OrdinalIgnoreCase))
+            {
+                RunwayComboBox.SelectedItem = runwayList.First(r => string.Equals(r.ICAO, icao, StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         /// <summary>Glide path of the approach to restore at start.</summary>
