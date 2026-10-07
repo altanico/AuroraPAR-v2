@@ -71,6 +71,7 @@ namespace AuroraPAR
                 }
                 else
                 {
+                    double elapsed = Math.Max(0, (now - state.Time).TotalSeconds);
                     Predict(state, aircraft, now);
                     bool newPosition = aircraft.Latitude != state.RawLatitude || aircraft.Longitude != state.RawLongitude
                         || aircraft.Altitude != state.RawAltitude;
@@ -96,10 +97,12 @@ namespace AuroraPAR
                     }
                     else if ((now - state.RawTime).TotalSeconds > MaxPredictSeconds)
                     {
-                        // No new position for a while (simulator paused, data stopped): back onto the last real one.
-                        state.Latitude += 0.2 * (aircraft.Latitude - state.Latitude);
-                        state.Longitude += 0.2 * (aircraft.Longitude - state.Longitude);
-                        state.Altitude += 0.2 * (aircraft.Altitude - state.Altitude);
+                        // No new position for a while (simulator paused, data stopped): back onto the last real one in
+                        // about a second, whatever the number of calls per second.
+                        double back = 1 - Math.Exp(-elapsed / 0.5);
+                        state.Latitude += back * (aircraft.Latitude - state.Latitude);
+                        state.Longitude += back * (aircraft.Longitude - state.Longitude);
+                        state.Altitude += back * (aircraft.Altitude - state.Altitude);
                     }
                     // Vertical speed not known yet (first seconds of a track): the real altitude.
                     if (aircraft.VerticalSpeedFpm == null) state.Altitude = aircraft.Altitude;

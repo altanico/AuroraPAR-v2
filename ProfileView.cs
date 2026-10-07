@@ -92,7 +92,7 @@ namespace AuroraPAR
             }
             else
             {
-                AddSymbol(Options.ThresholdSymbol, length * xscale, H - Options.ThresholdSymbol.Size / 2, Brush(StyleElement.Runway));
+                if (!Options.Theme.IsHidden(StyleElement.Runway)) AddSymbol(Options.ThresholdSymbol, length * xscale, H - Options.ThresholdSymbol.Size / 2, Brush(StyleElement.Runway));
             }
             // Scan limits and beam edges, from the antenna (the lower ones only when above the ground).
             AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, upper), StyleElement.ScanLimits);
@@ -129,7 +129,7 @@ namespace AuroraPAR
             }
             else
             {
-                AddSymbol(Options.TouchdownSymbol, X(0), H - Options.TouchdownSymbol.Size / 2, Brush(StyleElement.Touchdown));
+                if (!Options.Theme.IsHidden(StyleElement.Touchdown)) AddSymbol(Options.TouchdownSymbol, X(0), H - Options.TouchdownSymbol.Size / 2, Brush(StyleElement.Touchdown));
             }
             // Range marks, measured from the touchdown point, between the scan limits.
             List<DistanceReminder> reminders = VisibleReminders();

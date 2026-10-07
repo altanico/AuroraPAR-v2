@@ -65,7 +65,7 @@ namespace AuroraPAR
             }
             else
             {
-                AddSymbol(Options.ThresholdSymbol, length * xscale, cy, Brush(StyleElement.Runway));
+                if (!Options.Theme.IsHidden(StyleElement.Runway)) AddSymbol(Options.ThresholdSymbol, length * xscale, cy, Brush(StyleElement.Runway));
             }
             // Scan limits and beam edges, from the antenna.
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, left), StyleElement.ScanLimits);
@@ -99,7 +99,7 @@ namespace AuroraPAR
             }
             else
             {
-                AddSymbol(Options.TouchdownSymbol, xTouchdown, cy, Brush(StyleElement.Touchdown));
+                if (!Options.Theme.IsHidden(StyleElement.Touchdown)) AddSymbol(Options.TouchdownSymbol, xTouchdown, cy, Brush(StyleElement.Touchdown));
             }
             // Distance where the glide path reaches the decision height: vertical line between the scan limits.
             double interceptNM = length - Runway.TouchdownNM + Runway.MissedApproachPointNM;

@@ -292,12 +292,19 @@ namespace AuroraPAR
         /// </summary>
         private void MoveTracks()
         {
-            if (!Open || viewOptions.Analog) return;
+            if (!Open || viewOptions.Analog || settings.Active.TrackSmoothing == TrackSmoothing.Off) return;
             List<Aircraft> aircrafts = lastAircrafts;
             if (aircrafts.Count == 0) return;
-            trackFilter.Apply(aircrafts, DateTime.UtcNow, settings.Active.TrackSmoothing);
-            profileView.Render(aircrafts);
-            horizontalView.Render(aircrafts);
+            try
+            {
+                trackFilter.Apply(aircrafts, DateTime.UtcNow, settings.Active.TrackSmoothing);
+                profileView.MoveTracks(aircrafts);
+                horizontalView.MoveTracks(aircrafts);
+            }
+            catch (Exception)
+            {
+                // Never let a frame crash the program: the next data refresh redraws everything.
+            }
         }
 
         private static Brush CreateFrozenBrush(Color color)

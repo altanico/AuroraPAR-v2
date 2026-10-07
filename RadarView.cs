@@ -276,6 +276,19 @@ namespace AuroraPAR
         /// <summary>
         /// Updates the view. Must be called on the window's (UI) thread.
         /// </summary>
+        /// <summary>
+        /// Every frame (modern display): moves the existing tracks to their estimated positions (smoothed or
+        /// coasting) without the history, afterglow and label texts, which follow at the next <see cref="Render"/>.
+        /// </summary>
+        public void MoveTracks(IReadOnlyList<Aircraft> aircrafts)
+        {
+            if (!staticValid || Canvas.ActualWidth <= 0 || Canvas.ActualHeight <= 0) return;
+            foreach (Aircraft aircraft in aircrafts)
+            {
+                if (tracks.TryGetValue(aircraft.Callsign, out Track? track)) UpdateTrack(track, aircraft, light: true);
+            }
+        }
+
         public void Render(IReadOnlyList<Aircraft> aircrafts)
         {
             if (Canvas.ActualWidth <= 0 || Canvas.ActualHeight <= 0) return;
@@ -479,7 +492,8 @@ namespace AuroraPAR
             return geometry;
         }
 
-        private void UpdateTrack(Track track, Aircraft aircraft)
+        /// <param name="light">Only the position of the symbol and label (see <see cref="MoveTracks"/>).</param>
+        private void UpdateTrack(Track track, Aircraft aircraft, bool light = false)
         {
             (double along, double value) = ToWorld(aircraft);
             // History: a dot every HistoryInterval seconds, at a new position given by Aurora.
@@ -579,6 +593,11 @@ namespace AuroraPAR
             Canvas.SetLeft(track.Symbol, track.Position.X);
             Canvas.SetTop(track.Symbol, track.Position.Y);
             track.Symbol.Visibility = Visibility.Visible;
+            if (light)
+            {
+                if (track.Label.Visibility == Visibility.Visible) PositionLabel(track);
+                return;
+            }
             UpdateGhosts(track, now);
             UpdateHistory(track);
             UpdateLabel(track, aircraft);

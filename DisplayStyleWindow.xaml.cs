@@ -50,7 +50,15 @@ namespace AuroraPAR
             };
             StyleDefaultButton.Click += (s, e) =>
             {
-                Active.Style = DisplayStyleSettings.CreateDefault();
+                // Default colours and lines; the Show choices (Modern / Analog) are kept.
+                DisplayStyleSettings defaults = DisplayStyleSettings.CreateDefault();
+                foreach (StyleElement element in Enum.GetValues<StyleElement>())
+                {
+                    LineStyle old = Active.Style.Get(element);
+                    defaults.Get(element).Hidden = old.Hidden;
+                    defaults.Get(element).HiddenAnalog = old.HiddenAnalog;
+                }
+                Active.Style = defaults;
                 commit();
                 BuildStyles();
             };
@@ -149,9 +157,10 @@ namespace AuroraPAR
                     CheckBox showModern = new() { IsChecked = !style.Hidden, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, ToolTip = "Draw this line in the modern display" };
                     showModern.Click += (s, e) => Change(st => st.Hidden = showModern.IsChecked != true);
                     AddCell(grid, showModern, r, 5);
+                    // The analog scope has no altitude scale at all.
                     CheckBox showAnalog = new() { IsChecked = !style.HiddenAnalog, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, ToolTip = "Draw this line on the analog scope" };
                     showAnalog.Click += (s, e) => Change(st => st.HiddenAnalog = showAnalog.IsChecked != true);
-                    AddCell(grid, showAnalog, r, 6);
+                    if (element != StyleElement.AltitudeScale) AddCell(grid, showAnalog, r, 6);
                 }
                 r++;
             }
