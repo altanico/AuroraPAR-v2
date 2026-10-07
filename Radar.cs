@@ -33,6 +33,19 @@ namespace AuroraPAR
         public double BeamAzimuth { get; set; } = 20;
         public double BeamElevationNeutral { get; set; } = 3.5;
         public double BeamAzimuthNeutral { get; set; }
+        /// <summary>Narrow beam moved by the tilt; off: the beam is the scan limits (no tilt, no thicker marks).</summary>
+        public bool BeamEnabled { get; set; } = true;
+        /// <summary>Elevation centre in neutral = <see cref="GlidePathAngle"/> (the approach in use).</summary>
+        public bool NeutralFollowsGlidePath { get; set; }
+        /// <summary>Glide path angle of the approach in use (set by the window).</summary>
+        public double GlidePathAngle { get; set; } = 3;
+
+        /// <summary>Beam actually used: the one of the profile, or the scan limits when the beam is off.</summary>
+        private double BeamWidthElevation => BeamEnabled ? BeamElevation : ScanUp - ScanDown;
+        private double BeamWidthAzimuth => BeamEnabled ? BeamAzimuth : ScanLeft + ScanRight;
+        private double BeamNeutralElevation => !BeamEnabled ? (ScanUp + ScanDown) / 2
+            : NeutralFollowsGlidePath ? GlidePathAngle : BeamElevationNeutral;
+        private double BeamNeutralAzimuth => BeamEnabled ? BeamAzimuthNeutral : (ScanRight - ScanLeft) / 2;
 
         /// <summary>
         /// Fixed angles used for the scale of the views (the default scan limits), so the scale depends only on the
@@ -66,12 +79,12 @@ namespace AuroraPAR
             return (min, max);
         }
 
-        private (double Min, double Max) ElevationCentreRange => CentreRange(ScanDown, ScanUp, BeamElevation);
-        private (double Min, double Max) AzimuthCentreRange => CentreRange(-ScanLeft, ScanRight, BeamAzimuth);
+        private (double Min, double Max) ElevationCentreRange => CentreRange(ScanDown, ScanUp, BeamWidthElevation);
+        private (double Min, double Max) AzimuthCentreRange => CentreRange(-ScanLeft, ScanRight, BeamWidthAzimuth);
 
         /// <summary>Beam centre in neutral position (the one of the profile, brought inside the possible range).</summary>
-        private double ElevationNeutralCentre => Math.Clamp(BeamElevationNeutral, ElevationCentreRange.Min, ElevationCentreRange.Max);
-        private double AzimuthNeutralCentre => Math.Clamp(BeamAzimuthNeutral, AzimuthCentreRange.Min, AzimuthCentreRange.Max);
+        private double ElevationNeutralCentre => Math.Clamp(BeamNeutralElevation, ElevationCentreRange.Min, ElevationCentreRange.Max);
+        private double AzimuthNeutralCentre => Math.Clamp(BeamNeutralAzimuth, AzimuthCentreRange.Min, AzimuthCentreRange.Max);
 
         /// <summary>Tilt range from neutral (minimum ≤ 0 ≤ maximum).</summary>
         public double TiltElevationMin => ElevationCentreRange.Min - ElevationNeutralCentre;
@@ -83,11 +96,11 @@ namespace AuroraPAR
         private double AzimuthCentre => AzimuthNeutralCentre + TiltAzimuth;
 
         /// <summary>Elevation edges of the antenna beam, tilt included (inside the scan limits).</summary>
-        public double ElevationLower => Math.Max(ScanDown, ElevationCentre - BeamElevation / 2);
-        public double ElevationUpper => Math.Min(ScanUp, ElevationCentre + BeamElevation / 2);
+        public double ElevationLower => Math.Max(ScanDown, ElevationCentre - BeamWidthElevation / 2);
+        public double ElevationUpper => Math.Min(ScanUp, ElevationCentre + BeamWidthElevation / 2);
         /// <summary>Azimuth edges of the antenna beam, tilt included (signed, positive right; inside the scan limits).</summary>
-        public double AzimuthLeftEdge => Math.Max(-ScanLeft, AzimuthCentre - BeamAzimuth / 2);
-        public double AzimuthRightEdge => Math.Min(ScanRight, AzimuthCentre + BeamAzimuth / 2);
+        public double AzimuthLeftEdge => Math.Max(-ScanLeft, AzimuthCentre - BeamWidthAzimuth / 2);
+        public double AzimuthRightEdge => Math.Min(ScanRight, AzimuthCentre + BeamWidthAzimuth / 2);
 
         /// <summary>Azimuth scan limits as signed angles (positive right).</summary>
         public double ScanLeftEdge => -ScanLeft;
@@ -111,7 +124,15 @@ namespace AuroraPAR
             BeamAzimuth = profile.BeamAzimuth;
             BeamElevationNeutral = profile.BeamElevationNeutral;
             BeamAzimuthNeutral = profile.BeamAzimuthNeutral;
+            BeamEnabled = profile.BeamEnabled;
+            NeutralFollowsGlidePath = profile.BeamElevationNeutralAuto;
             TiltStep = profile.TiltStep;
+            ClampTilt();
+        }
+
+        /// <summary>Keeps the tilt inside its range (after a change of the beam, the limits or the glide path).</summary>
+        public void ClampTilt()
+        {
             TiltElevation = Math.Clamp(TiltElevation, TiltElevationMin, TiltElevationMax);
             TiltAzimuth = Math.Clamp(TiltAzimuth, TiltAzimuthMin, TiltAzimuthMax);
         }
@@ -230,6 +251,22 @@ namespace AuroraPAR
             if (height <= 0) return false;
             double elevation = Math.Atan2(height / Runway.FeetPerNM, fromAntenna) * 180 / Math.PI;
             return elevation >= ElevationLower && elevation <= ElevationUpper;
+        }
+
+        /// <summary>
+        /// Angle (degrees) between the aircraft and the nearest edge of the antenna beam, elevation or azimuth
+        /// (positive inside). The lower edge counts only above the ground.
+        /// </summary>
+        public double BeamMargin(Aircraft aircraft, Runway runway)
+        {
+            double fromAntenna = runway.LengthNM + aircraft.AlongTrackDistance(runway) - AntennaFromRunwayEnd(runway);
+            if (fromAntenna <= 0) return 0;
+            double azimuth = Math.Atan2(aircraft.LateralOffset(runway), fromAntenna) * 180 / Math.PI;
+            double height = aircraft.Altitude - runway.Elevation;
+            double elevation = Math.Atan2(height / Runway.FeetPerNM, fromAntenna) * 180 / Math.PI;
+            double margin = Math.Min(Math.Min(azimuth - AzimuthLeftEdge, AzimuthRightEdge - azimuth), ElevationUpper - elevation);
+            if (ElevationLower > 0) margin = Math.Min(margin, elevation - ElevationLower);
+            return margin;
         }
 
         /// <summary>

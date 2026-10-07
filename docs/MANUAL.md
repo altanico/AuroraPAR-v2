@@ -155,7 +155,9 @@ Each aircraft inside the antenna beam is shown with a **track symbol** (default:
 - dots only where the aircraft was inside the beam;
 - colours of tracks and plots, inside and outside the limits, are configurable.
 
-**Coasting track** (modern display). When an aircraft leaves the beam, the radar computer keeps it for a few seconds at an **estimated position**: straight on from the last position seen in the beam, at the same ground speed and vertical speed (the real position is not used). The symbol changes to the **coasting symbol** (default: diamond) so you know it is no longer seen; the label stays, with the estimated values; no new history dots. After **8 s** by default (*Settings → Radar → Coasting tracks*, 0–30 s, 0 = hidden at once) track, label and tail disappear. If the aircraft comes back into the beam it is shown again at its real position (it may jump a little). Symbol and colour of the coasting track: *Settings → Symbols* and *Display style → Coasting tracks*. On the analog scope there is no estimate: out of the beam the echo goes dark and its afterglow fades.
+**Coasting track** (modern display). When an aircraft leaves the beam, the radar computer keeps it for a few seconds at an **estimated position**: straight on from the last position seen in the beam, at the same ground speed and vertical speed (the real position is not used). The symbol changes to the **coasting symbol** (default: diamond) so you know it is no longer seen; the label stays, with the estimated values; no new history dots. After **8 s** by default (*Settings → Radar → Coasting tracks*, 0–30 s, 0 = hidden at once) track, label and tail disappear. If the aircraft comes back into the beam it is shown again at its real position (it may jump a little). Symbol and colour of the coasting track: *Settings → Symbols* and *Display style → Coasting tracks*. On the analog scope there is no estimate: out of the beam the echo goes dark and its afterglow fades (about 6 s).
+
+**Track smoothing** (modern display). Aurora sends the positions a little irregularly and the altitude in steps, so a raw track moves in small jumps. As the computer of a modern radar, AuroraPAR moves the track smoothly with the speed, direction and vertical speed of the aircraft (as the coasting track) and at every new position from Aurora pulls it part of the way towards the real one: the track stays on the aircraft and moves smoothly, and the label values are steadier. The history dots stay at the real positions (the "plots"). *Settings → Tracks and labels → Track smoothing*: **Off** (raw positions), **Light** (default), **Strong** (smoother, a little late in turns and rate changes). The analog scope always shows the raw echo.
 
 > Aurora interpolates the horizontal position between real network updates but the altitude changes only when a real update arrives (every few seconds). In the elevation view this can make the tail look like steps. A dot interval of about 3 s makes it less visible.
 
@@ -205,7 +207,7 @@ Keys are ignored while you are typing in a text box (e.g. the DH box).
 
 ## 7. Antenna tilt
 
-On the old PAR the antenna beam was narrow, and the antenna was tilted to point it where the aircraft was. AuroraPAR has two sets of lines:
+On the old PAR the antenna beam was narrow, and the antenna was tilted to point it where the aircraft was. This is an **advanced function**, off in a new profile: the radar then sees everything inside the scan limits (default −1° to +10° in elevation, ±15° in azimuth) and the tilt controls only show a hint on how to turn it on. Turn it on with *Settings → Radar → Narrow antenna beam moved by the tilt*: the beam is then set a few degrees narrower than the scan limits (4° in elevation, 6° in azimuth), so the tilt works at once; then set it as you like. With the beam on, AuroraPAR has two sets of lines:
 
 - the **scan limits**: the physical limits, as far as the antenna can look; they never move;
 - the **antenna beam**: what the antenna looks at now, with its own width in elevation and azimuth (*Settings → Radar → Antenna beam*). Only the traffic inside the beam is seen, and the range marks are thicker inside it (as on the real scopes).
@@ -214,7 +216,7 @@ The tilt moves the **beam** inside the scan limits; the glide path, centreline a
 
 - Buttons **EL ▲ / EL ▼ / AZ L / AZ R / Neutral**, or the arrow keys and Home.
 - Step **2°** by default (*Settings → Radar*). The beam stops where it reaches a scan limit: the narrower the beam, the more it can be tilted; a beam as wide as the scan limits cannot be tilted at all. The range can differ up and down (and left and right): the EL/AZ TILT knobs have their 0 where the neutral position is.
-- The neutral position is the beam centre set in the profile (*Elevation / Azimuth centre in neutral*).
+- The neutral position is the beam centre set in the profile (*Elevation / Azimuth centre in neutral*). The elevation centre can also be **automatic**: the glide path angle of the approach in use (published or free), so the beam is centred on the glide path by itself, also when the approach changes. (The glide path starts at the touchdown point and the beam at the antenna, so seen from the antenna the glide path is a little steeper near the runway; the GP angle is a good centre for the whole approach.)
 - Profiles from older versions are converted with the same picture: scan limits = the old ones widened by the old maximum tilt, beam = the old scan sector, same neutral position. Narrow the beam to work like an old PAR.
 - While tilted, an orange reminder is shown (`EL TILT 2.0 UP`, `AZ TILT 2.0 L`).
 - Left/right of the azimuth tilt are **as seen by the pilot** flying the approach. *Settings → Radar → Azimuth: swap left and right* makes them **as seen from the runway** looking at the approach (R = the pilot's left): AZ buttons, ← / → keys, AZ TILT knob and the L/R readouts all follow it.
@@ -254,6 +256,7 @@ Some runways have approaches with different glide path angles. In `runways.par` 
 - No labels and no altitude scale, as on the real scopes. The history tail fades with age.
 - The tooltips (help bubbles) are dark with amber text, like the console.
 - **Afterglow**: like the phosphor of the old screens, a faint trail of the echo stays where the aircraft was in the last seconds, and the history dots glow slightly when the beam passes over them.
+- **Edge of the antenna beam**: near the edge of the beam (the last half degree) the echo gets weaker; out of the beam it goes dark, and its afterglow and dots fade in about 6 s.
 - In a low window the screen is cut at the top and bottom (only frame and glass), so the views stay large.
 
 ### 9.2 Console panel (left)
@@ -382,12 +385,12 @@ Set once for your radar type:
 | Group | Fields | Default |
 |---|---|---|
 | Approach limits | above / below the glide path, left / right of the centreline | 0.5 / 0.5 / 1.5 / 1.5 |
-| Scan limits (physical) | up, down (negative = below the horizon), left, right | 18 / −11 / 20 / 20 |
-| Antenna beam | elevation width, azimuth width, elevation centre in neutral, azimuth centre in neutral (+ right); *Draw the edges of the beam* | 9 / 20 / 3.5 / 0 / not ticked |
+| Scan limits (physical) | up, down (negative = below the horizon), left, right | new profile: 10 / −1 / 15 / 15 |
+| Antenna beam | *Narrow antenna beam moved by the tilt* (on/off); elevation width, azimuth width, elevation centre in neutral (or *automatic: the glide path angle in use*), azimuth centre in neutral (+ right); *Draw the edges of the beam* | new profile: off; when turned on: 7 / 24 / 4.5 / 0 |
 | Antenna tilt | step; *Azimuth: swap left and right* ([section 7](#7-antenna-tilt)) | 2 / not ticked |
 | Coasting tracks | seconds a track out of the beam is still shown at its estimated position (modern display; 0 = none) | 8 |
 
-The defaults give the same picture as the versions before the antenna beam (the old 8 / −1 / 10 / 10 sector tilted up to 10°). The scale of the views does not change with the scan limits or the beam: they move the lines, the rest keeps its size.
+Profiles of the versions before the antenna beam are converted with the same picture: scan limits = the old ones widened by the old maximum tilt (e.g. 18 / −11 / 20 / 20), beam on = the old sector (9° / 20°, centre 3.5° / 0). The scale of the views does not change with the scan limits or the beam: they move the lines, the rest keeps its size.
 
 ### 10.5 Units and references
 

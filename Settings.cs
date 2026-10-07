@@ -182,10 +182,19 @@ namespace AuroraPAR
         /// <summary>Draw the edges of the antenna beam (off: the beam is shown only by the thicker range marks).</summary>
         public bool ShowBeamEdges { get; set; }
         /// <summary>
+        /// Narrow antenna beam moved by the tilt (an advanced function). Off: the beam is the scan limits, no tilt.
+        /// On in the profiles of the earlier versions (same picture), off in a new profile (<see cref="CreateNew"/>).
+        /// </summary>
+        public bool BeamEnabled { get; set; } = true;
+        /// <summary>Elevation centre of the beam in neutral = the glide path angle in use (instead of <see cref="BeamElevationNeutral"/>).</summary>
+        public bool BeamElevationNeutralAuto { get; set; }
+        /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).
         /// </summary>
         public double CoastSeconds { get; set; } = 8;
+        /// <summary>Track filter of the modern display: smooth tracks (see TrackFilter).</summary>
+        public TrackSmoothing TrackSmoothing { get; set; } = TrackSmoothing.Light;
         public const double MaxCoastSeconds = 30;
         /// <summary>Largest scan limit angle (a limit near 90° would be drawn far away).</summary>
         public const double MaxScanAngle = 80;
@@ -278,6 +287,7 @@ namespace AuroraPAR
             HistoryDots = Math.Clamp(HistoryDots, MinHistoryDots, MaxHistoryDots);
             HistoryInterval = double.IsNaN(HistoryInterval) ? 2 : Math.Clamp(HistoryInterval, MinHistoryInterval, MaxHistoryInterval);
             if (!Enum.IsDefined(ScanEffectSpeed)) ScanEffectSpeed = ScanEffectSpeed.Normal;
+            if (!Enum.IsDefined(TrackSmoothing)) TrackSmoothing = TrackSmoothing.Light;
             if (!Enum.IsDefined(DisplayMode)) DisplayMode = DisplayMode.Modern;
             RangeMarks ??= RangeMarkSettings.Default();
             RangeMarks.Normalize();
@@ -308,6 +318,38 @@ namespace AuroraPAR
             BeamAzimuth = double.IsNaN(BeamAzimuth) ? 20 : Math.Clamp(BeamAzimuth, 0.1, 180);
             if (double.IsNaN(BeamElevationNeutral)) BeamElevationNeutral = (ScanUp + ScanDown) / 2;
             if (double.IsNaN(BeamAzimuthNeutral)) BeamAzimuthNeutral = 0;
+        }
+
+        /// <summary>
+        /// Profile created when there is none yet (first start): wide scan limits that work at once, no antenna beam
+        /// and no tilt (advanced functions, turned on in the settings).
+        /// </summary>
+        public static Profile CreateNew()
+        {
+            Profile profile = new()
+            {
+                ScanModel = 1,
+                ScanUp = 10,
+                ScanDown = -1,
+                ScanLeft = 15,
+                ScanRight = 15,
+                BeamEnabled = false
+            };
+            profile.NarrowBeam();
+            profile.Normalize();
+            return profile;
+        }
+
+        /// <summary>
+        /// Beam a few degrees narrower than the scan limits, centred: set when the antenna beam is turned on, so the
+        /// tilt has some room at once and the user sees how it works.
+        /// </summary>
+        public void NarrowBeam()
+        {
+            BeamElevation = Math.Max(1, ScanUp - ScanDown - 4);
+            BeamAzimuth = Math.Max(1, ScanLeft + ScanRight - 6);
+            BeamElevationNeutral = (ScanUp + ScanDown) / 2;
+            BeamAzimuthNeutral = (ScanRight - ScanLeft) / 2;
         }
 
         /// <summary>
@@ -452,9 +494,7 @@ namespace AuroraPAR
             }
             if (Profiles.Count == 0)
             {
-                Profile profile = new();
-                profile.Normalize();
-                Profiles.Add(profile);
+                Profiles.Add(Profile.CreateNew());
             }
             if (!Profiles.Any(p => p.Name == ActiveProfile))
             {

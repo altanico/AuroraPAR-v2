@@ -70,7 +70,7 @@ namespace AuroraPAR
             // Scan limits and beam edges, from the antenna.
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, left), StyleElement.ScanLimits);
             AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, right), StyleElement.ScanLimits);
-            if (Options.ShowBeamEdges)
+            if (Options.ShowBeamEdges && Radar.BeamEnabled)
             {
                 AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamLeft), StyleElement.AntennaBeam);
                 AddLine(AntennaNM * xscale, cy, end * xscale, ScanY(end, beamRight), StyleElement.AntennaBeam);
@@ -115,7 +115,10 @@ namespace AuroraPAR
                 double markNM = distance - Runway.TouchdownNM + length;
                 AddLine(markNM * xscale, ScanY(markNM, left), markNM * xscale, ScanY(markNM, right), element);
                 // Thicker where the antenna beam looks.
-                AddLine(markNM * xscale, ScanY(markNM, beamLeft), markNM * xscale, ScanY(markNM, beamRight), element, extraWidth: InBeamExtraWidth);
+                if (Radar.BeamEnabled)
+                {
+                    AddLine(markNM * xscale, ScanY(markNM, beamLeft), markNM * xscale, ScanY(markNM, beamRight), element, extraWidth: InBeamExtraWidth);
+                }
             }
             // Distance reminders: only the line in this view (the markers are in the elevation view).
             foreach (DistanceReminder reminder in reminders.Where(r => r.HasLine))

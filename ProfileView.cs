@@ -100,7 +100,7 @@ namespace AuroraPAR
             {
                 AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, lower), StyleElement.ScanLimits);
             }
-            if (Options.ShowBeamEdges)
+            if (Options.ShowBeamEdges && Radar.BeamEnabled)
             {
                 AddLine(AntennaNM * xscale, H, end * xscale, ScanY(end, beamUpper), StyleElement.AntennaBeam);
                 if (beamLower > 0)
@@ -147,7 +147,7 @@ namespace AuroraPAR
                     // Thicker where the antenna beam looks.
                     double beamTop = ScanY(markNM, beamUpper);
                     double beamBottom = beamLower > 0 ? ScanY(markNM, beamLower) : H;
-                    if (beamTop < beamBottom)
+                    if (Radar.BeamEnabled && beamTop < beamBottom)
                     {
                         AddLine(markNM * xscale, beamBottom, markNM * xscale, beamTop, element, extraWidth: InBeamExtraWidth);
                     }

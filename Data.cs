@@ -232,6 +232,23 @@ namespace AuroraPAR
         /// </summary>
         public string? Squawk { get; set; }
         /// <summary>
+        /// Estimated (smoothed) position of the track filter of the modern display, or null (see <see cref="TrackFilter"/>).
+        /// </summary>
+        public Aircraft? Filtered { get; set; }
+
+        /// <summary>Copy of the data (without <see cref="Filtered"/>).</summary>
+        public Aircraft Copy() => new()
+        {
+            Callsign = Callsign,
+            Latitude = Latitude,
+            Longitude = Longitude,
+            Altitude = Altitude,
+            Track = Track,
+            Speed = Speed,
+            VerticalSpeedFpm = VerticalSpeedFpm,
+            Squawk = Squawk
+        };
+        /// <summary>
         /// Distance to runway.
         /// </summary>
         /// <param name="runway">Runway.</param>

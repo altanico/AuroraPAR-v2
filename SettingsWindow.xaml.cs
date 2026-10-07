@@ -68,6 +68,13 @@ namespace AuroraPAR
                 ScanEffectSpeed speed = Enum.GetValues<ScanEffectSpeed>()[ScanEffectSpeedComboBox.SelectedIndex];
                 SetProfileValue(p => p.ScanEffectSpeed == speed, p => p.ScanEffectSpeed = speed);
             };
+            SmoothingComboBox.ItemsSource = Enum.GetValues<TrackSmoothing>().Select(s => s.ToString()).ToList();
+            SmoothingComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || SmoothingComboBox.SelectedIndex < 0) return;
+                TrackSmoothing smoothing = Enum.GetValues<TrackSmoothing>()[SmoothingComboBox.SelectedIndex];
+                SetProfileValue(p => p.TrackSmoothing == smoothing, p => p.TrackSmoothing = smoothing);
+            };
             BuildRadarFields();
             BuildSymbolRows();
             HistoryCheck.Checked += (s, e) => SetProfileValue(p => p.HistoryEnabled, p => p.HistoryEnabled = true);
@@ -151,6 +158,7 @@ namespace AuroraPAR
                 ScaleFeetRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Feet;
                 ScaleMetresRadio.IsChecked = Active.AltitudeScaleUnit == LengthUnit.Metres;
                 HistoryCheck.IsChecked = Active.HistoryEnabled;
+                SmoothingComboBox.SelectedIndex = Array.IndexOf(Enum.GetValues<TrackSmoothing>(), Active.TrackSmoothing);
                 ScanEffectCheck.IsChecked = Active.ScanEffect;
                 ScanEffectSpeedComboBox.SelectedIndex = Array.IndexOf(Enum.GetValues<ScanEffectSpeed>(), Active.ScanEffectSpeed);
                 HistoryDotsBox.Text = Active.HistoryDots.ToString(CultureInfo.InvariantCulture);
@@ -487,9 +495,18 @@ namespace AuroraPAR
             AddNumberField("Left", p => p.ScanLeft, (p, v) => p.ScanLeft = v, 1, Profile.MaxScanAngle);
             AddNumberField("Right", p => p.ScanRight, (p, v) => p.ScanRight = v, 1, Profile.MaxScanAngle);
             AddHeader("Antenna beam (only the traffic inside the beam is seen)");
+            AddCheckRow("Narrow antenna beam moved by the tilt (advanced; off: the beam is the scan limits, no tilt)",
+                p => p.BeamEnabled, (p, v) =>
+                {
+                    p.BeamEnabled = v;
+                    // Turned on: a beam a few degrees narrower than the scan limits, so the tilt works at once.
+                    if (v) p.NarrowBeam();
+                });
             AddNumberField("Elevation width", p => p.BeamElevation, (p, v) => p.BeamElevation = v, 0.5, 90);
             AddNumberField("Azimuth width", p => p.BeamAzimuth, (p, v) => p.BeamAzimuth = v, 0.5, 180);
             AddNumberField("Elevation centre in neutral", p => p.BeamElevationNeutral, (p, v) => p.BeamElevationNeutral = v, -30, 60);
+            AddCheckRow("Elevation centre in neutral: automatic, the glide path angle in use (instead of the value above)",
+                p => p.BeamElevationNeutralAuto, (p, v) => p.BeamElevationNeutralAuto = v);
             AddNumberField("Azimuth centre in neutral (+ right)", p => p.BeamAzimuthNeutral, (p, v) => p.BeamAzimuthNeutral = v, -90, 90);
             AddCheckRow("Draw the edges of the beam (otherwise only the thicker range marks show it)",
                 p => p.ShowBeamEdges, (p, v) => p.ShowBeamEdges = v);

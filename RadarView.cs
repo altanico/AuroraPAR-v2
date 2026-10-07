@@ -160,6 +160,8 @@ namespace AuroraPAR
             public double BeamFixTime;
             /// <summary>The symbol is the one of a coasting track.</summary>
             public bool SymbolCoasting;
+            /// <summary>Analog scope: brightness factor of an echo near the edge of the beam (1 well inside, towards 0 at the edge).</summary>
+            public double EdgeFactor = 1;
             /// <summary>Analog scope: when the echo left the beam (history clock), NaN while inside.</summary>
             public double OutOfBeamSince = double.NaN;
 
@@ -388,7 +390,8 @@ namespace AuroraPAR
                     continue;
                 }
                 double age = ScanEffect.SinceLastPass(t, speed, IsElevation, PositionOf(track.Logical));
-                double echo = 0.18 + 0.82 * Math.Exp(-age / 0.6);
+                // Weaker near the edge of the beam (soft edge).
+                double echo = (0.18 + 0.82 * Math.Exp(-age / 0.6)) * (0.15 + 0.85 * track.EdgeFactor);
                 track.Symbol.Opacity = echo;
                 // Afterglow: the copies behind the echo light up and fade with it.
                 for (int k = 0; k < track.Ghosts.Length; k++)
@@ -411,7 +414,8 @@ namespace AuroraPAR
         /// </summary>
         private static void FadeOutOfBeam(Track track)
         {
-            double fade = Math.Exp(-(HistoryClock.Elapsed.TotalSeconds - track.OutOfBeamSince) / 1.2);
+            // About 6 s to disappear (below 3% after 3.5 time constants).
+            double fade = Math.Exp(-(HistoryClock.Elapsed.TotalSeconds - track.OutOfBeamSince) / 1.7);
             bool gone = fade < 0.03;
             for (int k = 0; k < track.Ghosts.Length; k++)
             {
@@ -507,9 +511,18 @@ namespace AuroraPAR
             bool coasting = false;
             if (inside)
             {
-                track.BeamFix = Copy(aircraft);
+                // Modern display with the track filter: symbol and label at the smoothed position (the history
+                // dots above stay at the real positions, as the plots of a radar).
+                if (!Options.Analog && aircraft.Filtered is Aircraft smooth)
+                {
+                    aircraft = smooth;
+                    (along, value) = ToWorld(aircraft);
+                }
+                track.BeamFix = aircraft.Copy();
                 track.BeamFixTime = now;
                 track.OutOfBeamSince = double.NaN;
+                // Analog: an echo near the edge of the beam is weaker (soft edge of the beam).
+                track.EdgeFactor = Options.Analog ? Math.Clamp(Radar.BeamMargin(aircraft, Runway) / SoftEdgeDegrees, 0, 1) : 1;
             }
             else if (Options.Analog)
             {
@@ -570,26 +583,13 @@ namespace AuroraPAR
             UpdateLabel(track, aircraft);
         }
 
-        /// <summary>Copy of the data of an aircraft (the last one seen in the beam).</summary>
-        private static Aircraft Copy(Aircraft a) => new()
-        {
-            Callsign = a.Callsign,
-            Latitude = a.Latitude,
-            Longitude = a.Longitude,
-            Altitude = a.Altitude,
-            Track = a.Track,
-            Speed = a.Speed,
-            VerticalSpeedFpm = a.VerticalSpeedFpm,
-            Squawk = a.Squawk
-        };
-
         /// <summary>
         /// Estimated position after <paramref name="seconds"/>: straight on along the track, at the same ground
         /// speed and vertical speed.
         /// </summary>
         private static Aircraft Predict(Aircraft fix, double seconds)
         {
-            Aircraft estimate = Copy(fix);
+            Aircraft estimate = fix.Copy();
             double nm = fix.Speed * seconds / 3600;
             double track = fix.Track * Math.PI / 180;
             double cosLatitude = Math.Max(0.01, Math.Cos(fix.Latitude * Math.PI / 180));
@@ -996,6 +996,9 @@ namespace AuroraPAR
         /// Adds a static line with the colour, width and dash style of an element; <paramref name="dashed"/> forces a
         /// dashed line (e.g. glide path between touchdown and threshold).
         /// </summary>
+        /// <summary>Analog scope: width of the soft edge of the beam, in degrees (the echo gets weaker there).</summary>
+        private const double SoftEdgeDegrees = 0.5;
+
         /// <summary>Pixels added to the width of a range mark where it is inside the antenna beam.</summary>
         protected const double InBeamExtraWidth = 2;
 

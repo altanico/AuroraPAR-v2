@@ -112,6 +112,7 @@ namespace AuroraPAR
         /// </summary>
         private readonly Radar radar = new();
         private readonly ViewOptions viewOptions = new();
+        private readonly TrackFilter trackFilter = new();
         private readonly TextBlock statusText = new() { FontSize = 14 };
         private readonly TextBlock dataText = new() { FontSize = 14 };
         /// <summary>
@@ -1329,11 +1330,46 @@ namespace AuroraPAR
 
         private void TiltAntenna(int elevationSteps, int azimuthSteps)
         {
+            // Beam off (advanced function not in use): the controls stay, a hint says how to turn it on.
+            if (!radar.BeamEnabled)
+            {
+                ShowTiltHint(viewOptions.Analog ? (elevationSteps != 0 ? elevationKnob : azimuthKnob) : TiltPanel);
+                return;
+            }
             if (radar.Tilt(elevationSteps, azimuthSteps))
             {
                 InvalidateViews();
             }
             UpdateKnobs();
+        }
+
+        private System.Windows.Controls.ToolTip? tiltHint;
+        private System.Windows.Threading.DispatcherTimer? tiltHintTimer;
+
+        /// <summary>Shows for a few seconds, next to the tilt control used, how to turn the antenna tilt on.</summary>
+        private void ShowTiltHint(FrameworkElement target)
+        {
+            tiltHint ??= new System.Windows.Controls.ToolTip
+            {
+                Content = "Antenna tilt: turn on the antenna beam to use it\n(Settings → Radar → Narrow antenna beam moved by the tilt).",
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom
+            };
+            if (viewOptions.Analog) tiltHint.Style = AnalogToolTipStyle;
+            else tiltHint.ClearValue(StyleProperty);
+            tiltHint.IsOpen = false;
+            tiltHint.PlacementTarget = target;
+            tiltHint.IsOpen = true;
+            if (tiltHintTimer == null)
+            {
+                tiltHintTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+                tiltHintTimer.Tick += (s, e) =>
+                {
+                    tiltHintTimer.Stop();
+                    if (tiltHint != null) tiltHint.IsOpen = false;
+                };
+            }
+            tiltHintTimer.Stop();
+            tiltHintTimer.Start();
         }
 
         private void NeutralAntenna()
@@ -1551,6 +1587,20 @@ namespace AuroraPAR
         {
             if (!Open) return;
             List<Aircraft> aircrafts = lastAircrafts;
+            // Beam centre that follows the glide path: a new approach (angle) moves it.
+            if (radar.GlidePathAngle != runway.GlideSlope)
+            {
+                radar.GlidePathAngle = runway.GlideSlope;
+                if (radar.NeutralFollowsGlidePath)
+                {
+                    radar.ClampTilt();
+                    profileView.Invalidate();
+                    horizontalView.Invalidate();
+                    UpdateKnobs();
+                }
+            }
+            // Track filter (modern display): smoothed positions of the tracks at this moment.
+            trackFilter.Apply(aircrafts, DateTime.UtcNow, viewOptions.Analog ? TrackSmoothing.Off : settings.Active.TrackSmoothing);
             // Fictitious IDs: given to the tracks inside the scan.
             viewOptions.Identities.Update(aircrafts.Where(a => radar.IsInsideScan(a, runway)).Select(a => a.Callsign), DateTime.UtcNow);
             UpdateInfo();
