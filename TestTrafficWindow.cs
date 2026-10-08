@@ -43,6 +43,11 @@ namespace AuroraPAR
         private readonly TextBox windGustBox = NumberBox("0");
         private readonly TextBlock windMagnetic = new() { VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 4, 0) };
         private readonly TextBox headingBox = NumberBox("");
+        private readonly TextBox reactionBox = NumberBox("0.5");
+        /// <summary>Pilot reaction: the heading instruction is carried out this long after it is given.</summary>
+        private readonly DispatcherTimer reaction = new();
+        private int pendingSide;
+        private string? pendingCallsign;
         private readonly ListBox list = new() { Height = 64, Width = 110 };
         private readonly TextBlock info = new() { Margin = new Thickness(10, 0, 0, 0), TextWrapping = TextWrapping.Wrap };
         private readonly TextBlock bestLabel = ReadoutCaption("BEST VS");
@@ -264,14 +269,24 @@ namespace AuroraPAR
             StackPanel headingRow = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
             headingRow.Children.Add(Caption("Heading"));
             headingBox.MaxLength = 3;
-            headingBox.ToolTip = "Heading given by the controller, magnetic (e.g. 275). Enter: turn the shortest way.";
+            headingBox.ToolTip = "Heading given by the controller, magnetic (e.g. 275). Enter: turn the shortest way. Mouse wheel: 1° per step (Shift: 10°), the aircraft turns the shortest way after the pilot reaction.";
             headingBox.KeyDown += (s, e) =>
             {
                 if (e.Key == Key.Enter)
                 {
-                    TurnToHeading(0);
+                    GiveHeading(0);
                     e.Handled = true;
                 }
+            };
+            headingBox.PreviewMouseWheel += (s, e) =>
+            {
+                WheelHeading(e.Delta > 0 ? 1 : -1);
+                e.Handled = true;
+            };
+            reaction.Tick += (s, e) =>
+            {
+                reaction.Stop();
+                TurnToHeading(pendingSide, pendingCallsign);
             };
             headingRow.Children.Add(headingBox);
             headingRow.Children.Add(Caption("°M"));
@@ -283,10 +298,16 @@ namespace AuroraPAR
             })
             {
                 Button button = new() { Content = text, ToolTip = tip + " At the turn rate chosen (3°/s with Free); the stick cancels it.", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(4, 0, 0, 0) };
-                button.Click += (s, e) => TurnToHeading(side);
+                button.Click += (s, e) => GiveHeading(side);
                 headingRow.Children.Add(button);
             }
             control.Children.Add(headingRow);
+            StackPanel reactionRow = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+            reactionRow.ToolTip = "Pilots are not instantaneous: a heading given (box, wheel, Turn L / HDG / Turn R) is carried out this long after it is given (0 to 5 s).";
+            reactionRow.Children.Add(Caption("Pilot reaction to the heading:"));
+            reactionRow.Children.Add(reactionBox);
+            reactionRow.Children.Add(Caption("s"));
+            control.Children.Add(reactionRow);
             root.Children.Add(Group("Control", control));
 
             // Service buttons.
@@ -365,8 +386,11 @@ namespace AuroraPAR
             HorizontalContentAlignment = HorizontalAlignment.Right
         };
 
-        /// <summary>Shortest action of a click on a stick key (seconds at full stick).</summary>
+        /// <summary>Shortest action of a click on ▲ UP / ▼ DN (seconds at full stick).</summary>
         private const double StickKeySeconds = 1;
+        /// <summary>A press of ◀ L / R ▶ shorter than this is a click: the heading changes by <see cref="TurnClickDegrees"/>.</summary>
+        private const double TurnClickSeconds = 0.35;
+        private const double TurnClickDegrees = 1;
 
         /// <summary>
         /// Key that acts as the stick at one of its edges while held (x: left −1 / right +1, or y: down −1 / up +1); a
@@ -378,6 +402,9 @@ namespace AuroraPAR
             Button key = new() { Content = text, Padding = new Thickness(2, 3, 2, 3), ToolTip = tip };
             DateTime pressed = DateTime.MinValue;
             DispatcherTimer stop = new();
+            // Turn keys: heading when pressed, so that a click turns exactly 1°.
+            double pressHeading = double.NaN;
+            string? pressCallsign = null;
             void Set(int value)
             {
                 if (x != 0) SetKeyStick(value * x, keyY);
@@ -386,12 +413,25 @@ namespace AuroraPAR
             stop.Tick += (s, e) =>
             {
                 stop.Stop();
-                if (!key.IsPressed) Set(0);
+                if (key.IsPressed) return;
+                if (x != 0)
+                {
+                    // End of the short show of a click: the knob back to the centre.
+                    if (keyX == 0 && keyY == 0 && joystickCallsign == null && !pad.IsMouseCaptured) CentreKnob();
+                }
+                else
+                {
+                    Set(0);
+                }
             };
             key.PreviewMouseLeftButtonDown += (s, e) =>
             {
                 pressed = DateTime.UtcNow;
                 stop.Stop();
+                pressCallsign = list.SelectedItem as string;
+                pressHeading = double.NaN;
+                // Several quick clicks add up: from the heading still being reached, if any.
+                if (pressCallsign != null) traffic.Change(pressCallsign, p => pressHeading = double.IsNaN(p.TargetHeading) ? p.Heading : p.TargetHeading);
                 Set(1);
             };
             void Release()
@@ -399,7 +439,23 @@ namespace AuroraPAR
                 if (pressed == DateTime.MinValue) return;
                 double held = (DateTime.UtcNow - pressed).TotalSeconds;
                 pressed = DateTime.MinValue;
-                if (held >= StickKeySeconds)
+                if (x != 0 && held < TurnClickSeconds && pressCallsign != null && !double.IsNaN(pressHeading))
+                {
+                    // A click on ◀ L / R ▶: exactly 1° from the heading when pressed; the knob shows it for a moment.
+                    Set(0);
+                    double target = TestTraffic.Wrap(pressHeading + x * TurnClickDegrees);
+                    traffic.Change(pressCallsign, p =>
+                    {
+                        p.TargetHeading = target;
+                        p.TargetTurn = 0;
+                        p.Auto = false;
+                    });
+                    ShowKnob(x, 0);
+                    stop.Interval = TimeSpan.FromSeconds(0.3);
+                    stop.Start();
+                    return;
+                }
+                if (x != 0 || held >= StickKeySeconds)
                 {
                     Set(0);
                 }
@@ -601,16 +657,60 @@ namespace AuroraPAR
         });
 
         /// <summary>Turns the selected aircraft to the heading of the box (magnetic): left −1, right 1, shortest 0.</summary>
-        private void TurnToHeading(int side)
+        /// <summary>A heading instruction (box, wheel, buttons): carried out after the pilot reaction; a new one replaces it.</summary>
+        private void GiveHeading(int side)
+        {
+            if (list.SelectedItem is not string callsign)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+            pendingSide = side;
+            pendingCallsign = callsign;
+            reaction.Stop();
+            double delay = TryNumber(reactionBox, 0, 5, out double seconds) ? seconds : 0.5;
+            if (delay <= 0)
+            {
+                TurnToHeading(side, callsign);
+                return;
+            }
+            reaction.Interval = TimeSpan.FromSeconds(delay);
+            reaction.Start();
+        }
+
+        /// <summary>Mouse wheel over the heading box: 1° per step (Shift: 10°), from the heading of the aircraft when empty.</summary>
+        private void WheelHeading(int direction)
+        {
+            int step = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 10 : 1;
+            if (!int.TryParse(headingBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360)
+            {
+                TestTraffic.Plane? plane = traffic.List().FirstOrDefault(p => p.Callsign == list.SelectedItem as string);
+                if (plane == null)
+                {
+                    System.Media.SystemSounds.Beep.Play();
+                    return;
+                }
+                heading = (int)Math.Round(plane.HeadingTrue - variation(), MidpointRounding.AwayFromZero);
+                step = 0;
+            }
+            heading = ((heading + direction * step) % 360 + 360) % 360;
+            if (heading == 0) heading = 360;
+            headingBox.Text = heading.ToString("000", CultureInfo.InvariantCulture);
+            headingBox.CaretIndex = headingBox.Text.Length;
+            GiveHeading(0);
+        }
+
+        /// <summary>Turns the aircraft to the heading of the box (magnetic): left −1, right 1, shortest 0.</summary>
+        private void TurnToHeading(int side, string? callsign)
         {
             string text = headingBox.Text.Trim();
-            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360 || list.SelectedItem is not string)
+            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360 || callsign == null)
             {
                 System.Media.SystemSounds.Beep.Play();
                 return;
             }
             double magneticVariation = variation();
-            ChangeSelected(p =>
+            traffic.Change(callsign, p =>
             {
                 p.TargetHeading = TestTraffic.Wrap(heading + magneticVariation - p.FinalTrue);
                 p.TargetTurn = side;
