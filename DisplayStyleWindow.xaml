@@ -23,7 +23,7 @@
             <TabItem Header="Colours &amp; lines">
                 <StackPanel Margin="10">
                     <TextBlock TextWrapping="Wrap" MaxWidth="600" Foreground="Gray"
-                               Text="Modern display: colour, line style and width of each element. Plots are the history dots, tracks the aircraft symbols. Modern / Analog (last two columns): draw the line or not, separately in the modern display and on the analog scope (e.g. no approach limit lines, as on many old scopes; the track colour still follows the limits). Changes are applied immediately."/>
+                               Text="Colour (modern display), line style and width (both displays) of each element. Plots are the history dots, tracks the aircraft symbols. Modern / Analog (last two columns): draw the line or not, separately in the modern display and on the analog scope (e.g. no approach limit lines, as on many old scopes; the track colour still follows the limits). Changes are applied immediately."/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="520" Margin="0,10,0,0">
                         <Grid Name="StyleGrid"/>
                     </ScrollViewer>
@@ -31,7 +31,7 @@
                     <GroupBox Header="Analog scope" Padding="8" Margin="0,12,0,0">
                         <StackPanel>
                             <TextBlock TextWrapping="Wrap" MaxWidth="580" Foreground="Gray"
-                                       Text="The analog scope has a fixed theme: choose the colour of its phosphor, all the elements use it with different brightness."/>
+                                       Text="The analog scope uses one colour, its phosphor, with a different brightness for each element; the line style and width set above apply to it too."/>
                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                 <TextBlock Text="Phosphor:" VerticalAlignment="Center"/>
                                 <ComboBox Name="PhosphorComboBox" Width="190" Margin="8,0,0,0"/>

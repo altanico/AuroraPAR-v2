@@ -8,6 +8,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Analog uses the line width and dash style** set in Colours & lines (only the colour is the phosphor). Check: scan limits at 1 px on the analog scope.
 - **Profile keys:** P = next profile, Shift+P = previous (in a circle), name shown for 2 s; one profile: "ONLY ONE PROFILE". Check: not active while typing in ICAO / GP / APT, mode change when the profiles differ.
 - **Show / hide each line** (Display style → Colours & lines, columns Modern and Analog; not the range marks). Check: hide the approach limits on the analog scope only; altitude scale hidden also hides its values.
 - **Analog echo:** brightens as the beam arrives (rise time about a tenth of the sweep), brightest at the centre, then fades; same for the dots.

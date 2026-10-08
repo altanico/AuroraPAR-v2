@@ -240,8 +240,8 @@ namespace AuroraPAR
     }
 
     /// <summary>
-    /// Colours, dash styles and widths of the modern display (the analog scope has a fixed theme, only its
-    /// phosphor colour can be chosen).
+    /// Colours, dash styles and widths of the elements. The analog scope uses the dash styles, widths and its own
+    /// Show choice, with the phosphor colour instead of the colours.
     /// </summary>
     internal class DisplayStyleSettings
     {

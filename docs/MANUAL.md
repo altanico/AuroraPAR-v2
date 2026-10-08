@@ -435,7 +435,7 @@ Elements: each type of range mark, range text, glide path, centreline, approach 
 
 The last two columns, **Modern** and **Analog**, show or hide each line (not the range marks, which have their own table), separately in the two modes: for example no approach limit lines on the analog scope, as on many old radars. Only the drawing changes: the track is still green or red by the approach limits.
 
-**Analog scope**: the analog display has a fixed theme. Only the **phosphor** colour is chosen — yellow-green (P39), amber/yellow, green (P1), orange, blue-white or any colour — and all elements use it with different brightness.
+**Analog scope**: one colour, the **phosphor** — yellow-green (P39), amber/yellow, green (P1), orange, blue-white or any colour — used by all elements with different brightness. The **line style and width** set in the table (and the Analog Show column) apply to it too.
 
 ### 11.3 Reminders
 

@@ -53,7 +53,8 @@ namespace AuroraPAR
             return theme;
         }
 
-        /// <param name="style">Only for the lines hidden on the analog scope (the colours are the phosphor).</param>
+        /// <param name="style">Width, dash style and Show of the lines as set in Colours &amp; lines (the colours are
+        /// the phosphor).</param>
         public static Theme Analog(Color phosphor, double boost = 0, DisplayStyleSettings? style = null)
         {
             boost = Math.Clamp(boost, 0, 1);
@@ -69,7 +70,9 @@ namespace AuroraPAR
                 Brush brush = element == StyleElement.Background
                     ? Brushes.Transparent
                     : Frozen(Phosphor(phosphor, Brightness(element), boost));
-                theme.elements[element] = (brush, defaults.Width, defaults.Dash);
+                // Width and dash style as set by the user (same as the modern display); colour: the phosphor.
+                LineStyle line = style?.Get(element) ?? defaults;
+                theme.elements[element] = (brush, line.Width, line.Dash);
                 if (style != null && style.Get(element).HiddenAnalog && DisplayStyleSettings.CanHide(element)) theme.hidden.Add(element);
             }
             return theme;
