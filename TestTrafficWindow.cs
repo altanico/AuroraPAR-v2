@@ -90,7 +90,7 @@ namespace AuroraPAR
             pad.Children.Add(PadText("R", PadSize - 12, PadSize / 2 - 16));
             pad.Children.Add(knob);
             CentreKnob();
-            pad.ToolTip = "Drag: left/right moves the selected aircraft across the centreline (as seen by the pilot), up/down above or below the glide path. Release: the offset reached is kept.";
+            pad.ToolTip = "Like a control stick: hold left/right to turn the selected aircraft off the centreline heading (as seen by the pilot), up/down to climb or descend relative to the glide path. Released, the heading and the climb/descent reached stay. 'Level / straight': back parallel to the centreline and the glide path.";
             pad.MouseLeftButtonDown += (s, e) =>
             {
                 pad.CaptureMouse();
@@ -110,7 +110,8 @@ namespace AuroraPAR
             WrapPanel quick = new();
             foreach ((string text, Action<TestTraffic.Plane> action) in new (string, Action<TestTraffic.Plane>)[]
             {
-                ("On GP / CL", p => { p.Lateral = 0; p.HeightOffset = 0; }),
+                ("On GP / CL", p => { p.Lateral = 0; p.HeightOffset = 0; p.LateralRate = 0; p.HeightRate = 0; }),
+                ("Level / straight", p => { p.LateralRate = 0; p.HeightRate = 0; }),
                 ("+200 ft", p => { p.HeightOffset += 200; p.Auto = false; }),
                 ("−200 ft", p => { p.HeightOffset -= 200; p.Auto = false; }),
                 ("Left 300 m", p => { p.Lateral -= 300 / 1852.0; p.Auto = false; }),
@@ -231,9 +232,12 @@ namespace AuroraPAR
             }
             autoCheck.IsChecked = plane.Auto;
             double metres = plane.Lateral * 1852;
-            status.Text = string.Format(CultureInfo.InvariantCulture, "{0}: {1:0.0} NM from touchdown, {2} {3:0} m, {4} {5:0} ft, {6:0} kt",
+            double headingOff = Math.Atan2(plane.LateralRate * 3600, Math.Max(1, plane.Speed)) * 180 / Math.PI;
+            status.Text = string.Format(CultureInfo.InvariantCulture,
+                "{0}: {1:0.0} NM from touchdown, {2} {3:0} m, {4} {5:0} ft, {6:0} kt\nHeading {7:+0.0;-0.0;0.0}° off the centreline, {8:+0;-0;0} ft/min from the glide path",
                 plane.Callsign, plane.Distance, metres >= 0 ? "R" : "L", Math.Abs(metres),
-                plane.HeightOffset >= 0 ? "above" : "below", Math.Abs(plane.HeightOffset), plane.Speed);
+                plane.HeightOffset >= 0 ? "above" : "below", Math.Abs(plane.HeightOffset), plane.Speed,
+                headingOff, plane.HeightRate * 60);
         }
 
         private void CentreKnob()
@@ -260,8 +264,8 @@ namespace AuroraPAR
             double y = -dy / PadReach;
             ChangeSelected(p =>
             {
-                p.LateralRate = x * TestTraffic.MaxLateralRateNM;
-                p.HeightRate = y * TestTraffic.MaxHeightRateFt;
+                p.StickX = x;
+                p.StickY = y;
                 p.Auto = false;
             });
             autoCheck.IsChecked = false;
@@ -273,8 +277,9 @@ namespace AuroraPAR
             CentreKnob();
             ChangeSelected(p =>
             {
-                p.LateralRate = 0;
-                p.HeightRate = 0;
+                // Heading and climb/descent reached stay.
+                p.StickX = 0;
+                p.StickY = 0;
             });
         }
     }

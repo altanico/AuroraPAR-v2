@@ -25,9 +25,16 @@ namespace AuroraPAR
             public string? Squawk;
             /// <summary>Back onto the glide path and centreline by itself.</summary>
             public bool Auto = true;
-            /// <summary>Joystick: change of the lateral offset (NM/s) and of the height offset (ft/s).</summary>
+            /// <summary>
+            /// Drift across the centreline (NM/s, i.e. a heading off the runway heading) and climb/descent relative
+            /// to the glide path (ft/s). They stay as they are until changed: the aircraft keeps its heading and
+            /// its trend, as a real one when the controls are released.
+            /// </summary>
             public double LateralRate;
             public double HeightRate;
+            /// <summary>Joystick deflection (−1..1): it changes the drift and the climb/descent while held.</summary>
+            public double StickX;
+            public double StickY;
             // Aurora-like data: last positions given and when.
             public double GivenLatitude = double.NaN;
             public double GivenLongitude = double.NaN;
@@ -38,9 +45,12 @@ namespace AuroraPAR
             public Plane Copy() => (Plane)MemberwiseClone();
         }
 
-        /// <summary>Fastest change of the offsets with the joystick at its edge.</summary>
+        /// <summary>Largest drift across the centreline (NM/s, about 15° off the runway heading at 140 kt) and
+        /// climb/descent relative to the glide path (ft/s, 1200 ft/min).</summary>
         public const double MaxLateralRateNM = 0.01;
         public const double MaxHeightRateFt = 20;
+        /// <summary>Seconds of full joystick to go from nothing to the largest drift or climb/descent.</summary>
+        private const double StickSeconds = 4;
         /// <summary>Auto mode: time constant to go back onto the glide path and centreline (s).</summary>
         private const double AutoSeconds = 6;
 
@@ -113,14 +123,20 @@ namespace AuroraPAR
                 List<Aircraft> result = [];
                 foreach (Plane plane in planes.ToList())
                 {
+                    // Joystick: changes heading (drift) and climb/descent while held; released, they stay.
+                    plane.LateralRate = Math.Clamp(plane.LateralRate + plane.StickX * MaxLateralRateNM / StickSeconds * seconds, -MaxLateralRateNM, MaxLateralRateNM);
+                    plane.HeightRate = Math.Clamp(plane.HeightRate + plane.StickY * MaxHeightRateFt / StickSeconds * seconds, -MaxHeightRateFt, MaxHeightRateFt);
                     plane.Distance -= plane.Speed * seconds / 3600;
                     plane.Lateral += plane.LateralRate * seconds;
                     plane.HeightOffset += plane.HeightRate * seconds;
-                    if (plane.Auto && plane.LateralRate == 0 && plane.HeightRate == 0)
+                    if (plane.Auto && plane.StickX == 0 && plane.StickY == 0)
                     {
+                        // Auto: back onto the glide path and the centreline by itself.
                         double back = Math.Exp(-seconds / AutoSeconds);
                         plane.Lateral *= back;
                         plane.HeightOffset *= back;
+                        plane.LateralRate = 0;
+                        plane.HeightRate = 0;
                     }
                     if (plane.Distance < 0)
                     {
