@@ -60,6 +60,8 @@ Last updates, newest first. When an item works in the test, delete it.
 
 ## Later
 
+- **New project after AuroraPAR (and its Instructor version): tower circuit simulator, instructor / student.** Separate to-do: [TODO-TowerSim.md](TODO-TowerSim.md).
+
 - **Real joystick, still to do:** two devices with their own fixed role (tilt and aircraft at the same time); second stick of a gamepad for the antenna; use for the Instructor. (Done: see *Done, to be tested*.) Original note: **Real joystick / game controller for the test traffic (and later the Instructor).** Any USB joystick, gamepad or throttle seen by Windows (Windows.Gaming.Input RawGameController, no driver needed): X axis = turn, Y axis = vertical speed (same logic as the virtual stick, with a dead zone and an invert option), buttons assignable to L / R / UP / DN / Final CRS / − = + rate of descent / next aircraft. Settings page with "move the axis / press the button to assign" and a live test. The virtual stick moves with the real one (visual confirmation). Could also serve the "External controls" (keypad knobs) later. Also usable for the **antenna tilt** (controller). **Role of each device:** Automatic (default: test traffic window / Instructor open with an aircraft selected → the aircraft, otherwise → antenna tilt), Always tilt, Always aircraft; a joystick button to switch on the fly, with a short banner ("JOYSTICK: TILT" / "JOYSTICK: AIRCRAFT"); with two devices each can have its own fixed role (tilt and aircraft at the same time). Instructor and student on two PCs: no conflict.
 
 - **AuroraPAR Instructor (training simulator) — big project in phases, plan with Opus when the current tests are closed (decided).**
