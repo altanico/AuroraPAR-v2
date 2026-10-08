@@ -56,6 +56,8 @@ Last updates, newest first. When an item works in the test, delete it.
 
 ## Later
 
+- **Real joystick / game controller for the test traffic (and later the Instructor).** Any USB joystick, gamepad or throttle seen by Windows (Windows.Gaming.Input RawGameController, no driver needed): X axis = turn, Y axis = vertical speed (same logic as the virtual stick, with a dead zone and an invert option), buttons assignable to L / R / UP / DN / Final CRS / − = + rate of descent / next aircraft. Settings page with "move the axis / press the button to assign" and a live test. The virtual stick moves with the real one (visual confirmation). Could also serve the "External controls" (keypad knobs) later.
+
 - **AuroraPAR Instructor (training simulator) — big project in phases, plan with Opus when the current tests are closed (decided).**
   - **Where:** an Instructor mode inside AuroraPAR (one program, one download; it reuses the radar views, the test traffic and the coordination relay). The simulation (flight model, scenarios, link) in its own classes, separate from the radar, so it can grow (or become a separate program) later.
   - **Flight model:** each aircraft has commanded altitude, speed, heading, turn rate (°/s) and rate of descent/climb (ft/min) and reaches them gradually. Values typed, or with +/− buttons, preset values (e.g. heading: runway, ±5°, ±10°; rate 500/700/1000 ft/min), mouse wheel over the field. Controls in the instructor's labels, plus a larger panel for the selected aircraft.
