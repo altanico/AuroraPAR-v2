@@ -200,9 +200,16 @@ namespace AuroraPAR
                 p.BackToFinal = true;
                 p.Auto = false;
             });
-            Grid.SetColumn(finalCourse, 1);
-            Grid.SetRow(finalCourse, 1);
-            stickArea.Children.Add(finalCourse);
+            finalCourse.Margin = new Thickness(4, 0, 4, 0);
+            // Turn keys: held, as the stick at its edge (left or right); a short click turns for at least 1 s.
+            StackPanel lateral = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0) };
+            lateral.Children.Add(TurnKey("◀ L", -1));
+            lateral.Children.Add(finalCourse);
+            lateral.Children.Add(TurnKey("R ▶", 1));
+            Grid.SetColumn(lateral, 0);
+            Grid.SetColumnSpan(lateral, 2);
+            Grid.SetRow(lateral, 1);
+            stickArea.Children.Add(lateral);
             control.Children.Add(stickArea);
             root.Children.Add(Group("Control", control));
 
@@ -289,6 +296,68 @@ namespace AuroraPAR
             VerticalContentAlignment = VerticalAlignment.Center,
             HorizontalContentAlignment = HorizontalAlignment.Right
         };
+
+        /// <summary>Shortest turn of a click on a turn key (seconds at full stick).</summary>
+        private const double TurnKeySeconds = 1;
+
+        /// <summary>
+        /// Key that turns the selected aircraft as the stick at its edge while held (left −1, right +1); a short click
+        /// still turns for <see cref="TurnKeySeconds"/>. Released, the course reached stays.
+        /// </summary>
+        private Button TurnKey(string text, int side)
+        {
+            Button key = new()
+            {
+                Content = text,
+                Padding = new Thickness(10, 3, 10, 3),
+                ToolTip = $"Turn {(side < 0 ? "left" : "right")} at the turn rate chosen while held (a click: at least 1 s). Released, the course reached stays."
+            };
+            DateTime pressed = DateTime.MinValue;
+            DispatcherTimer stop = new();
+            stop.Tick += (s, e) =>
+            {
+                stop.Stop();
+                if (!key.IsPressed) SetStickX(0);
+            };
+            key.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                pressed = DateTime.UtcNow;
+                stop.Stop();
+                SetStickX(side);
+            };
+            void Release()
+            {
+                if (pressed == DateTime.MinValue) return;
+                double held = (DateTime.UtcNow - pressed).TotalSeconds;
+                pressed = DateTime.MinValue;
+                if (held >= TurnKeySeconds)
+                {
+                    SetStickX(0);
+                }
+                else
+                {
+                    stop.Interval = TimeSpan.FromSeconds(TurnKeySeconds - held);
+                    stop.Start();
+                }
+            }
+            key.PreviewMouseLeftButtonUp += (s, e) => Release();
+            key.LostMouseCapture += (s, e) => Release();
+            return key;
+        }
+
+        private void SetStickX(double x) => ChangeSelected(p =>
+        {
+            p.StickX = x;
+            if (x != 0)
+            {
+                p.Auto = false;
+                p.BackToFinal = false;
+            }
+            else
+            {
+                p.StickHeld = 0;
+            }
+        });
 
         private static Button SmallButton(string text) => new() { Content = text, Margin = new Thickness(0, 0, 6, 4), Padding = new Thickness(8, 2, 8, 2) };
 
