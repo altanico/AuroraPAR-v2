@@ -2,7 +2,7 @@
 
 ## Next update
 
-- Test traffic: rename the button *Final TRK + GP* to **Final CRS + GP** (CRS as on the rest of the interface; also the tooltip and the manual).
+- **Test traffic, control panel v2** (mockup sent): model on heading (CRS off final, up to about 30°) instead of drift; **turn rate selector 1.5°/s / 3°/s / Free** (Free: the longer the stick is held at full deflection, the higher the rate); the button *Final TRK + GP* split into **Final CRS** (turns back to the final course at the selected rate, Free → 3°/s; offset kept) and **Optimal GP** (back to the glide path rate; offset kept). Layout: New aircraft (distance, speed, SSR, Add) / Aircraft (list + status: distance, offsets, CRS off final, ft/min from GP, speed) / Control (turn rate selector; vertical buttons +200 ft, Optimal GP, −200 ft left of the stick; ◀ 300 m, Final CRS, 300 m ▶ under it) / footer (On GP / CL, Auto, Pause, Remove, Remove all) / Aurora-like data.
 
 ## Done, to be tested
 
