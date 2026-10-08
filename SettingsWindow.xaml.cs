@@ -36,7 +36,7 @@ namespace AuroraPAR
             {
                 // The settings are modal: closed first, then the test traffic window opens beside the radar.
                 Close();
-                openTestTraffic?.Invoke();
+                if (openTestTraffic != null) Dispatcher.BeginInvoke(openTestTraffic);
             };
             ProfileComboBox.SelectionChanged += ProfileComboBox_SelectionChanged;
             RenameButton.Click += (s, e) => RenameProfile();

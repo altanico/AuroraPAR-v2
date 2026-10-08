@@ -34,6 +34,8 @@ namespace AuroraPAR
             public double GivenAltitude = double.NaN;
             public DateTime GivenPositionTime;
             public DateTime GivenAltitudeTime;
+
+            public Plane Copy() => (Plane)MemberwiseClone();
         }
 
         /// <summary>Fastest change of the offsets with the joystick at its edge.</summary>
@@ -60,7 +62,7 @@ namespace AuroraPAR
         /// <summary>Copies of the aircraft, for the window.</summary>
         public List<Plane> List()
         {
-            lock (sync) return [.. planes];
+            lock (sync) return planes.Select(p => p.Copy()).ToList();
         }
 
         /// <summary>Adds an aircraft on the glide path and the centreline; returns its callsign.</summary>
@@ -68,6 +70,8 @@ namespace AuroraPAR
         {
             lock (sync)
             {
+                // The first one after a pause of the list: no jump for the time with no test traffic.
+                if (planes.Count == 0) lastTime = DateTime.MinValue;
                 number++;
                 Plane plane = new() { Callsign = $"TEST{number}", Distance = distanceNM, Speed = speedKt, Squawk = squawk };
                 planes.Add(plane);

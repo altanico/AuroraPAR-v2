@@ -245,6 +245,7 @@ namespace AuroraPAR
         /// <summary>Joystick moved: rates proportional to the distance from the centre (inside a circle).</summary>
         private void MoveKnob(Point point)
         {
+            if (list.SelectedItem is not string) return;
             double dx = point.X - PadSize / 2;
             double dy = point.Y - PadSize / 2;
             double length = Math.Sqrt(dx * dx + dy * dy);
