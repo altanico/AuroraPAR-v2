@@ -4,6 +4,7 @@
         Title="Aurora PAR - Settings" Width="880" SizeToContent="Height"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Icon="AuroraPAR.ico">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="12">
         <Grid>
         <Grid.ColumnDefinitions>
@@ -100,6 +101,34 @@
                 </StackPanel>
             </StackPanel>
         </GroupBox>
+            <GroupBox Header="Analog console controls (this profile)" Padding="8" Margin="0,10,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Range:" VerticalAlignment="Center"/>
+                    <ComboBox Name="RangeControlComboBox" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0"
+                                ToolTip="Text of the middle key (back to the preferred range of the Display settings), at most 5 characters.">
+                        <TextBlock Text="middle key:" VerticalAlignment="Center"/>
+                        <TextBox Name="RangeKeyTextBox" Width="52" Height="22" Margin="6,0,0,0" MaxLength="5" CharacterCasing="Upper" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="Antenna tilt:" VerticalAlignment="Center"/>
+                    <ComboBox Name="TiltControlComboBox" Grid.Row="1" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <TextBlock Grid.Row="2" Text="DH:" VerticalAlignment="Center"/>
+                    <ComboBox Name="DhControlComboBox" Grid.Row="2" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <TextBlock Grid.Row="3" Text="Brightness:" VerticalAlignment="Center"/>
+                    <ComboBox Name="BrightnessControlComboBox" Grid.Row="3" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                </Grid>
+            </GroupBox>
         </StackPanel>
         <StackPanel Grid.Column="2">
             <GroupBox Header="Radar (angles in degrees)" Padding="8">
@@ -145,45 +174,18 @@
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
-            <GroupBox Header="Analog console controls (this profile)" Padding="8" Margin="0,10,0,0">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="Range:" VerticalAlignment="Center"/>
-                    <ComboBox Name="RangeControlComboBox" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0"
-                                ToolTip="Text of the middle key (back to the preferred range of the Display settings), at most 5 characters.">
-                        <TextBlock Text="middle key:" VerticalAlignment="Center"/>
-                        <TextBox Name="RangeKeyTextBox" Width="52" Height="22" Margin="6,0,0,0" MaxLength="5" CharacterCasing="Upper" VerticalContentAlignment="Center"/>
-                    </StackPanel>
-                    <TextBlock Grid.Row="1" Text="Antenna tilt:" VerticalAlignment="Center"/>
-                    <ComboBox Name="TiltControlComboBox" Grid.Row="1" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
-                    <TextBlock Grid.Row="2" Text="DH:" VerticalAlignment="Center"/>
-                    <ComboBox Name="DhControlComboBox" Grid.Row="2" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
-                    <TextBlock Grid.Row="3" Text="Brightness:" VerticalAlignment="Center"/>
-                    <ComboBox Name="BrightnessControlComboBox" Grid.Row="3" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
-                </Grid>
-            </GroupBox>
         </StackPanel>
         </Grid>
-        <Button Name="EditRunwaysButton" Content="Edit the runways file (runways.par)..." HorizontalAlignment="Left" Height="26" Padding="12,0" Margin="0,10,0,0"
-                ToolTip="Runway editor: add, change, duplicate or delete runways and approaches; the previous file is kept as runways.par.bak."/>
-        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-            <Button Name="TestTrafficButton" Content="Test traffic... (T)" Height="26" Padding="12,0"
+        <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
+        <DockPanel Margin="0,8,0,0" LastChildFill="False">
+            <Button Name="CloseButton" DockPanel.Dock="Right" Content="Close" Width="80" Height="26" IsCancel="True"/>
+            <Button Name="EditRunwaysButton" Content="Edit the runways file (runways.par)..." Height="26" Padding="12,0"
+                    ToolTip="Runway editor: add, change, duplicate or delete runways and approaches; the previous file is kept as runways.par.bak."/>
+            <Button Name="TestTrafficButton" Content="Test traffic... (T)" Height="26" Padding="12,0" Margin="8,0,0,0"
                     ToolTip="Virtual aircraft on the glide path, moved with a joystick, to test the radar without real traffic (also without Aurora)."/>
             <Button Name="JoystickButton" Content="Joystick..." Height="26" Padding="12,0" Margin="8,0,0,0"
                     ToolTip="A real joystick or gamepad (USB) for the test aircraft and the antenna tilt: device, buttons, live test."/>
-        </StackPanel>
-        <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
-        <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
+        </DockPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>

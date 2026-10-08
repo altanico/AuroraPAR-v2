@@ -28,6 +28,14 @@ namespace AuroraPAR
             Action<Window>? openJoystick = null)
         {
             InitializeComponent();
+            // Never taller than the screen (a scroll bar appears), and its top edge on the screen.
+            MaxHeight = SystemParameters.WorkArea.Height;
+            Loaded += (s, e) =>
+            {
+                Rect area = SystemParameters.WorkArea;
+                if (Top + ActualHeight > area.Bottom) Top = area.Bottom - ActualHeight;
+                if (Top < area.Top) Top = area.Top;
+            };
             this.settings = settings;
             this.applyToScreen = applyToScreen;
             EditRunwaysButton.Visibility = editRunways == null ? Visibility.Collapsed : Visibility.Visible;
