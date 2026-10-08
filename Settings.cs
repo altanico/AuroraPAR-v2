@@ -106,6 +106,29 @@ namespace AuroraPAR
     /// <summary>
     /// Display ranges available, in NM.
     /// </summary>
+    /// <summary>A control group of the analog console: a knob or keys.</summary>
+    internal enum AnalogControl
+    {
+        Knob,
+        Keys
+    }
+
+    /// <summary>Range of the analog console: a knob, one key per range, or keys down / preferred / up.</summary>
+    internal enum AnalogRangeControl
+    {
+        Knob,
+        RangeKeys,
+        StepKeys
+    }
+
+    /// <summary>Antenna tilt of the analog console: two knobs (EL, AZ), keys, or a small 4-way joystick.</summary>
+    internal enum AnalogTiltControl
+    {
+        Knobs,
+        Keys,
+        Joystick
+    }
+
     internal static class Ranges
     {
         public static readonly double[] Values = [1, 2.5, 5, 10, 15, 20];
@@ -201,6 +224,13 @@ namespace AuroraPAR
         /// untick this in the settings).
         /// </summary>
         public bool LockDisplayMode { get; set; }
+        /// <summary>Analog console: the controls of each group as a knob or as keys (the tilt also as a small joystick).</summary>
+        public AnalogRangeControl RangeControl { get; set; } = AnalogRangeControl.Knob;
+        /// <summary>Text of the key back to the preferred range (<see cref="AnalogRangeControl.StepKeys"/>), at most 5 characters.</summary>
+        public string RangeDefaultKey { get; set; } = "DEF";
+        public AnalogTiltControl TiltControl { get; set; } = AnalogTiltControl.Knobs;
+        public AnalogControl DhControl { get; set; } = AnalogControl.Knob;
+        public AnalogControl BrightnessControl { get; set; } = AnalogControl.Knob;
         /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).
@@ -302,6 +332,13 @@ namespace AuroraPAR
             if (!Enum.IsDefined(ScanEffectSpeed)) ScanEffectSpeed = ScanEffectSpeed.Normal;
             if (!Enum.IsDefined(TrackSmoothing)) TrackSmoothing = TrackSmoothing.Light;
             if (!Enum.IsDefined(DisplayMode)) DisplayMode = DisplayMode.Modern;
+            if (!Enum.IsDefined(RangeControl)) RangeControl = AnalogRangeControl.Knob;
+            if (!Enum.IsDefined(TiltControl)) TiltControl = AnalogTiltControl.Knobs;
+            if (!Enum.IsDefined(DhControl)) DhControl = AnalogControl.Knob;
+            if (!Enum.IsDefined(BrightnessControl)) BrightnessControl = AnalogControl.Knob;
+            RangeDefaultKey = (RangeDefaultKey ?? "").Trim().ToUpperInvariant();
+            if (RangeDefaultKey.Length > MaxRangeKeyText) RangeDefaultKey = RangeDefaultKey[..MaxRangeKeyText];
+            if (RangeDefaultKey.Length == 0) RangeDefaultKey = "DEF";
             RangeMarks ??= RangeMarkSettings.Default();
             RangeMarks.Normalize();
             Style ??= DisplayStyleSettings.CreateDefault();
@@ -434,6 +471,8 @@ namespace AuroraPAR
         /// <summary>
         /// Deep copy (through JSON, so it stays correct when nested settings are added).
         /// </summary>
+        public const int MaxRangeKeyText = 5;
+
         public Profile Clone()
         {
             return JsonSerializer.Deserialize<Profile>(JsonSerializer.Serialize(this, SettingsStore.JsonOptions), SettingsStore.JsonOptions)!;

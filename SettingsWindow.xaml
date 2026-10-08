@@ -145,6 +145,34 @@
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
+            <GroupBox Header="Analog console controls (this profile)" Padding="8" Margin="0,10,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Range:" VerticalAlignment="Center"/>
+                    <ComboBox Name="RangeControlComboBox" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0"
+                                ToolTip="Text of the middle key (back to the preferred range of the Display settings), at most 5 characters.">
+                        <TextBlock Text="middle key:" VerticalAlignment="Center"/>
+                        <TextBox Name="RangeKeyTextBox" Width="52" Height="22" Margin="6,0,0,0" MaxLength="5" CharacterCasing="Upper" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="Antenna tilt:" VerticalAlignment="Center"/>
+                    <ComboBox Name="TiltControlComboBox" Grid.Row="1" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <TextBlock Grid.Row="2" Text="DH:" VerticalAlignment="Center"/>
+                    <ComboBox Name="DhControlComboBox" Grid.Row="2" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <TextBlock Grid.Row="3" Text="Brightness:" VerticalAlignment="Center"/>
+                    <ComboBox Name="BrightnessControlComboBox" Grid.Row="3" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                </Grid>
+            </GroupBox>
         </StackPanel>
         </Grid>
         <Button Name="EditRunwaysButton" Content="Edit the runways file (runways.par)..." HorizontalAlignment="Left" Height="26" Padding="12,0" Margin="0,10,0,0"

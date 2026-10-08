@@ -331,26 +331,173 @@ namespace AuroraPAR
                 UpdateKnobs();
             };
             elevationKnob.Turned += steps => TiltAntenna(steps, 0);
-            elevationKnob.Reset += () =>
-            {
-                if (radar.NeutralElevation()) InvalidateViews();
-                UpdateKnobs();
-            };
+            elevationKnob.Reset += NeutralElevation;
             azimuthKnob.Turned += steps => TiltAntenna(0, steps * AzimuthSign);
-            azimuthKnob.Reset += () =>
-            {
-                if (radar.NeutralAzimuth()) InvalidateViews();
-                UpdateKnobs();
-            };
+            azimuthKnob.Reset += NeutralAzimuth;
             dhKnob.Turned += steps => SetDecisionHeight(runway.MDH + steps * DecisionHeightStep);
             dhKnob.Reset += () => SetDecisionHeight(runway.DefaultMDH);
             brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 100 / Profile.BrightnessStep - 1 ? "100" : i == Profile.MaxBrightness / Profile.BrightnessStep - 1 ? "MAX" : null;
             brightnessKnob.Turned += steps => ChangeBrightness(steps);
             brightnessKnob.Reset += () => SetBrightness(100);
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob })
+            tiltStick.Moved += (elevation, azimuth) => TiltAntenna(elevation, azimuth * AzimuthSign);
+            tiltStick.Centred += NeutralAntenna;
+            ToolTips.KeepOpen(tiltStick);
+        }
+
+        private void NeutralElevation()
+        {
+            if (radar.NeutralElevation()) InvalidateViews();
+            UpdateKnobs();
+        }
+
+        private void NeutralAzimuth()
+        {
+            if (radar.NeutralAzimuth()) InvalidateViews();
+            UpdateKnobs();
+        }
+
+        /// <summary>Analog: the small 4-way joystick of the antenna tilt (instead of the two tilt knobs).</summary>
+        private readonly TiltStick tiltStick = new()
+        {
+            Title = "TILT",
+            ToolTip = "Antenna tilt: push the stick (drag, or click on a direction) up/down for the elevation, left/right for the azimuth; held, it repeats. Click on the centre: neutral."
+        };
+        /// <summary>Analog keys of the control groups, and when each one is lit.</summary>
+        private readonly List<(Button Key, Func<bool>? Lit)> analogKeys = [];
+        /// <summary>Choices the analog controls were built for.</summary>
+        private string? analogControlsLayout;
+
+        /// <summary>
+        /// Analog console, right side: each control group as a knob or as keys (the tilt also as a small joystick),
+        /// as chosen in the profile. Built again only when the choices change.
+        /// </summary>
+        private void BuildAnalogControls()
+        {
+            Profile profile = settings.Active;
+            string layout = $"{profile.RangeControl}|{profile.RangeDefaultKey}|{profile.TiltControl}|{profile.DhControl}|{profile.BrightnessControl}";
+            if (layout == analogControlsLayout) return;
+            analogControlsLayout = layout;
+            KnobPanel.Children.Clear();
+            analogKeys.Clear();
+            System.Globalization.CultureInfo invariant = System.Globalization.CultureInfo.InvariantCulture;
+            switch (profile.RangeControl)
             {
-                KnobPanel.Children.Add(knob);
+                case AnalogRangeControl.RangeKeys:
+                    AddKeyGroup("RANGE NM", Ranges.Values.Select((value, i) => (
+                        value.ToString(invariant), $"Range {value.ToString(invariant)} NM",
+                        (Action)(() => SetRangeIndex(i)), (Func<bool>?)(() => DistanceComboBox.SelectedIndex == i))).ToArray());
+                    break;
+                case AnalogRangeControl.StepKeys:
+                    AddKeyGroup("RANGE NM",
+                    [
+                        ("<", "Range down (smaller).", () => SetRangeIndex(DistanceComboBox.SelectedIndex - 1), null),
+                        (profile.RangeDefaultKey, "Back to the preferred range (Settings → Display).",
+                            () => SetRangeIndex(Ranges.IndexOfClosest(settings.Active.PreferredRange)),
+                            () => DistanceComboBox.SelectedIndex == Ranges.IndexOfClosest(settings.Active.PreferredRange)),
+                        (">", "Range up (larger).", () => SetRangeIndex(DistanceComboBox.SelectedIndex + 1), null)
+                    ]);
+                    break;
+                default:
+                    KnobPanel.Children.Add(rangeKnob);
+                    break;
             }
+            switch (profile.TiltControl)
+            {
+                case AnalogTiltControl.Keys:
+                    AddKeyGroup("EL TILT",
+                    [
+                        ("UP", "Antenna elevation tilt up (key ↑).", () => TiltAntenna(1, 0), null),
+                        ("0", "Elevation tilt neutral.", NeutralElevation, () => radar.TiltElevation == 0),
+                        ("DN", "Antenna elevation tilt down (key ↓).", () => TiltAntenna(-1, 0), null)
+                    ]);
+                    AddKeyGroup("AZ TILT",
+                    [
+                        ("L", "Antenna azimuth tilt left (key ←).", () => TiltAntenna(0, -AzimuthSign), null),
+                        ("0", "Azimuth tilt neutral.", NeutralAzimuth, () => radar.TiltAzimuth == 0),
+                        ("R", "Antenna azimuth tilt right (key →).", () => TiltAntenna(0, AzimuthSign), null)
+                    ]);
+                    break;
+                case AnalogTiltControl.Joystick:
+                    KnobPanel.Children.Add(tiltStick);
+                    break;
+                default:
+                    KnobPanel.Children.Add(elevationKnob);
+                    KnobPanel.Children.Add(azimuthKnob);
+                    break;
+            }
+            if (profile.DhControl == AnalogControl.Keys)
+            {
+                AddKeyGroup("DH",
+                [
+                    ("−", $"Decision height {DecisionHeightStep} ft lower.", () => SetDecisionHeight(runway.MDH - DecisionHeightStep), null),
+                    ("RWY", "Decision height of the runway.", () => SetDecisionHeight(runway.DefaultMDH), () => runway.MDH == runway.DefaultMDH),
+                    ("+", $"Decision height {DecisionHeightStep} ft higher.", () => SetDecisionHeight(runway.MDH + DecisionHeightStep), null)
+                ]);
+            }
+            else
+            {
+                KnobPanel.Children.Add(dhKnob);
+            }
+            if (profile.BrightnessControl == AnalogControl.Keys)
+            {
+                AddKeyGroup("BRT",
+                [
+                    ("−", "Scope brightness down.", () => ChangeBrightness(-1), null),
+                    ("100", "Scope brightness 100%.", () => SetBrightness(100), () => settings.Active.BrightnessAnalog == 100),
+                    ("+", "Scope brightness up (above 100% for dim monitors).", () => ChangeBrightness(1), null)
+                ]);
+            }
+            else
+            {
+                KnobPanel.Children.Add(brightnessKnob);
+            }
+            UpdateAnalogKeys();
+        }
+
+        /// <summary>Small console keys of the analog panel.</summary>
+        private const double SmallKeyWidth = 28;
+        private const double SmallKeyHeight = 32;
+
+        /// <summary>A group of small keys, three per row, on a recessed plate with its engraved name.</summary>
+        private void AddKeyGroup(string title, (string Text, string Tip, Action Action, Func<bool>? Lit)[] keys)
+        {
+            StackPanel group = new() { Margin = new Thickness(0, 4, 0, 6) };
+            group.Children.Add(new TextBlock { Text = title, Style = (Style)FindResource("EngravedLabel") });
+            System.Windows.Controls.Primitives.UniformGrid grid = new() { Columns = 3 };
+            foreach ((string text, string tip, Action action, Func<bool>? lit) in keys)
+            {
+                Button key = new() { Content = text, ToolTip = tip };
+                StyleAsKey(key, text, SmallKeyWidth, SmallKeyHeight);
+                key.Margin = new Thickness(1, 0, 1, 2);
+                key.Click += (s, e) => action();
+                grid.Children.Add(key);
+                analogKeys.Add((key, lit));
+            }
+            group.Children.Add(new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(0x1F, 0x20, 0x1D)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x0E, 0x0F, 0x0D)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(5),
+                Padding = new Thickness(0, 2, 0, 0),
+                Child = grid
+            });
+            KnobPanel.Children.Add(group);
+        }
+
+        /// <summary>Lamps of the analog keys (range in use, neutral, runway DH, 100%).</summary>
+        private void UpdateAnalogKeys()
+        {
+            foreach ((Button key, Func<bool>? lit) in analogKeys)
+            {
+                key.Tag = lit?.Invoke() == true ? "Lit" : "Unlit";
+            }
+        }
+
+        private void SetRangeIndex(int index)
+        {
+            DistanceComboBox.SelectedIndex = Math.Clamp(index, 0, DistanceComboBox.Items.Count - 1);
+            UpdateKnobs();
         }
 
         private static readonly Style AnalogToolTipStyle = CreateAnalogToolTipStyle();
@@ -403,6 +550,7 @@ namespace AuroraPAR
                 knob.Index = Math.Clamp(down + offset, 0, down + up);
             }
             rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
+            UpdateAnalogKeys();
         }
 
         /// <summary>
@@ -492,13 +640,13 @@ namespace AuroraPAR
         /// Square console key: 45 wide, with big characters (smaller when the text is longer). The whole key lights
         /// up when its <see cref="FrameworkElement.Tag"/> is "Lit".
         /// </summary>
-        private void StyleAsKey(Button key, string text)
+        private void StyleAsKey(Button key, string text, double width = 45, double height = 48)
         {
             key.Style = (Style)FindResource("ConsoleButton");
-            key.Width = 45;
-            key.Height = 48;
+            key.Width = width;
+            key.Height = height;
             key.Margin = new Thickness(2, 0, 2, 2);
-            key.FontSize = KeyFontSize(text);
+            key.FontSize = KeyFontSize(text, width - 9, height < 40 ? 16 : KeyMaxFontSize);
             key.Tag = "Unlit";
         }
 
@@ -509,18 +657,18 @@ namespace AuroraPAR
             new FontFamily(new Uri("pack://application:,,,/"), "./Fonts/#Barlow Condensed"),
             FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
 
-        /// <summary>Largest font size (up to 22) at which the text fits on a key.</summary>
-        private double KeyFontSize(string text)
+        /// <summary>Largest font size (up to <paramref name="maxSize"/>) at which the text fits on a key.</summary>
+        private double KeyFontSize(string text, double textWidth = KeyTextWidth, double maxSize = KeyMaxFontSize)
         {
-            if (string.IsNullOrEmpty(text)) return KeyMaxFontSize;
+            if (string.IsNullOrEmpty(text)) return maxSize;
             double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-            for (double size = KeyMaxFontSize; size > 8; size -= 0.5)
+            for (double size = maxSize; size > 7; size -= 0.5)
             {
                 FormattedText formatted = new(text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
                     KeyTypeface, size, Brushes.Black, pixelsPerDip);
-                if (formatted.WidthIncludingTrailingWhitespace <= KeyTextWidth) return size;
+                if (formatted.WidthIncludingTrailingWhitespace <= textWidth) return size;
             }
-            return 8;
+            return 7;
         }
 
         /// <summary>Selects a runway of the list (also when the ICAO filter would hide it).</summary>
@@ -582,6 +730,7 @@ namespace AuroraPAR
             Horizontal.Opacity = Math.Min(percent, 100) / 100.0;
             BrightnessText.Text = $"{percent}%";
             brightnessKnob.Index = Math.Clamp(percent / Profile.BrightnessStep - 1, 0, brightnessKnob.Positions - 1);
+            UpdateAnalogKeys();
         }
 
         /// <summary>
@@ -812,6 +961,7 @@ namespace AuroraPAR
                 SelectApproach(selectedApproach, keepDecisionHeight: true);
             }
             KnobPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
+            BuildAnalogControls();
             LayoutDisplay();
             UpdateKnobs();
             UpdateAnalogButtons();
@@ -1399,6 +1549,7 @@ namespace AuroraPAR
             runway.MDH = Math.Clamp(Math.Round(feet), 0, 5000);
             DhTextBox.Text = FormatHeight(runway.MDH);
             InvalidateViews();
+            UpdateAnalogKeys();
         }
 
         private void ApplyDecisionHeightText()
@@ -1532,7 +1683,13 @@ namespace AuroraPAR
             // Beam off (advanced function not in use): the controls stay, a hint says how to turn it on.
             if (!radar.BeamEnabled)
             {
-                ShowTiltHint(viewOptions.Analog ? (elevationSteps != 0 ? elevationKnob : azimuthKnob) : TiltPanel);
+                FrameworkElement analogTarget = settings.Active.TiltControl switch
+                {
+                    AnalogTiltControl.Knobs => elevationSteps != 0 ? elevationKnob : azimuthKnob,
+                    AnalogTiltControl.Joystick => tiltStick,
+                    _ => KnobPanel
+                };
+                ShowTiltHint(viewOptions.Analog ? analogTarget : TiltPanel);
                 return;
             }
             if (radar.Tilt(elevationSteps, azimuthSteps))
@@ -1682,6 +1839,8 @@ namespace AuroraPAR
                 runway.Distance = d;
                 // Redraw now with the last known traffic: the range change is immediate.
                 InvalidateViews();
+                rangeKnob.Index = Math.Max(0, DistanceComboBox.SelectedIndex);
+                UpdateAnalogKeys();
             }
         }
         private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)

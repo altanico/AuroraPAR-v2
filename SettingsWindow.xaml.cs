@@ -80,6 +80,7 @@ namespace AuroraPAR
                 ScanEffectSpeed speed = Enum.GetValues<ScanEffectSpeed>()[ScanEffectSpeedComboBox.SelectedIndex];
                 SetProfileValue(p => p.ScanEffectSpeed == speed, p => p.ScanEffectSpeed = speed);
             };
+            BuildAnalogControlFields();
             SmoothingComboBox.ItemsSource = Enum.GetValues<TrackSmoothing>().Select(s => s.ToString()).ToList();
             SmoothingComboBox.SelectionChanged += (s, e) =>
             {
@@ -150,6 +151,12 @@ namespace AuroraPAR
                 ModernRadio.IsChecked = Active.DisplayMode == DisplayMode.Modern;
                 AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
                 LockModeCheck.IsChecked = Active.LockDisplayMode;
+                RangeControlComboBox.SelectedIndex = (int)Active.RangeControl;
+                if (!RangeKeyTextBox.IsKeyboardFocused) RangeKeyTextBox.Text = Active.RangeDefaultKey;
+                RangeKeyTextBox.IsEnabled = Active.RangeControl == AnalogRangeControl.StepKeys;
+                TiltControlComboBox.SelectedIndex = (int)Active.TiltControl;
+                DhControlComboBox.SelectedIndex = (int)Active.DhControl;
+                BrightnessControlComboBox.SelectedIndex = (int)Active.BrightnessControl;
                 RunwayLeftRadio.IsChecked = Active.RunwaySide == RunwaySide.Left;
                 RunwayRightRadio.IsChecked = Active.RunwaySide == RunwaySide.Right;
                 StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;
@@ -302,6 +309,47 @@ namespace AuroraPAR
         /// <summary>
         /// Changes a profile option from a radio button or check box, unless it already has that value.
         /// </summary>
+        /// <summary>Analog console: knob or keys for each control group (the tilt also as a small joystick).</summary>
+        private void BuildAnalogControlFields()
+        {
+            RangeControlComboBox.ItemsSource = new[] { "Knob", "One key per range", "Keys  <  middle  >" };
+            TiltControlComboBox.ItemsSource = new[] { "Knobs (EL, AZ)", "Keys (UP 0 DN, L 0 R)", "Small joystick (4 ways)" };
+            DhControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  RWY  +)" };
+            BrightnessControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  100  +)" };
+            RangeControlComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || RangeControlComboBox.SelectedIndex < 0) return;
+                AnalogRangeControl value = (AnalogRangeControl)RangeControlComboBox.SelectedIndex;
+                RangeKeyTextBox.IsEnabled = value == AnalogRangeControl.StepKeys;
+                SetProfileValue(p => p.RangeControl == value, p => p.RangeControl = value);
+            };
+            TiltControlComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || TiltControlComboBox.SelectedIndex < 0) return;
+                AnalogTiltControl value = (AnalogTiltControl)TiltControlComboBox.SelectedIndex;
+                SetProfileValue(p => p.TiltControl == value, p => p.TiltControl = value);
+            };
+            DhControlComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || DhControlComboBox.SelectedIndex < 0) return;
+                AnalogControl value = (AnalogControl)DhControlComboBox.SelectedIndex;
+                SetProfileValue(p => p.DhControl == value, p => p.DhControl = value);
+            };
+            BrightnessControlComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || BrightnessControlComboBox.SelectedIndex < 0) return;
+                AnalogControl value = (AnalogControl)BrightnessControlComboBox.SelectedIndex;
+                SetProfileValue(p => p.BrightnessControl == value, p => p.BrightnessControl = value);
+            };
+            RangeKeyTextBox.TextChanged += (s, e) =>
+            {
+                if (refreshing) return;
+                string text = RangeKeyTextBox.Text.Trim().ToUpperInvariant();
+                if (text.Length == 0) return;
+                SetProfileValue(p => p.RangeDefaultKey == text, p => p.RangeDefaultKey = text);
+            };
+        }
+
         private void SetProfileValue(Func<Profile, bool> alreadySet, Action<Profile> set)
         {
             if (refreshing || alreadySet(Active)) return;
