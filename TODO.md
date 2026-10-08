@@ -2,7 +2,7 @@
 
 ## Next update
 
-(nothing planned)
+- Test traffic: rename the button *Final TRK + GP* to **Final CRS + GP** (CRS as on the rest of the interface; also the tooltip and the manual).
 
 ## Done, to be tested
 
