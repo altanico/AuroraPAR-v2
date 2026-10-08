@@ -88,7 +88,7 @@ namespace AuroraPAR
             ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.Manual;
 
-            StackPanel root = new() { Margin = new Thickness(10), Width = 430 };
+            StackPanel root = new() { Margin = new Thickness(10), Width = 456 };
 
             // New aircraft.
             StackPanel newPanel = new();
