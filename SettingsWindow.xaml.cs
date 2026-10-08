@@ -306,9 +306,6 @@ namespace AuroraPAR
             Commit();
         }
 
-        /// <summary>
-        /// Changes a profile option from a radio button or check box, unless it already has that value.
-        /// </summary>
         /// <summary>Analog console: knob or keys for each control group (the tilt also as a small joystick).</summary>
         private void BuildAnalogControlFields()
         {
@@ -350,6 +347,9 @@ namespace AuroraPAR
             };
         }
 
+        /// <summary>
+        /// Changes a profile option from a radio button or check box, unless it already has that value.
+        /// </summary>
         private void SetProfileValue(Func<Profile, bool> alreadySet, Action<Profile> set)
         {
             if (refreshing || alreadySet(Active)) return;

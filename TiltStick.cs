@@ -39,6 +39,8 @@ namespace AuroraPAR
         private (int Elevation, int Azimuth) direction;
         private Vector deflection;
         private bool pressed;
+        /// <summary>A direction was taken during this press (then the release is not a centre click).</summary>
+        private bool movedThisPress;
 
         /// <summary>Name written above the stick.</summary>
         public string Title { get; set; } = "TILT";
@@ -73,6 +75,7 @@ namespace AuroraPAR
             if (offset.Length > PlateRadius) return;
             CaptureMouse();
             pressed = true;
+            movedThisPress = false;
             Follow(offset);
             e.Handled = true;
         }
@@ -85,7 +88,7 @@ namespace AuroraPAR
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {
             if (!pressed) return;
-            bool centreClick = direction == (0, 0);
+            bool centreClick = !movedThisPress;
             Release();
             if (IsMouseCaptured) ReleaseMouseCapture();
             if (centreClick) Centred?.Invoke();
@@ -113,6 +116,7 @@ namespace AuroraPAR
             repeat.Stop();
             if (direction != (0, 0))
             {
+                movedThisPress = true;
                 Moved?.Invoke(direction.Elevation, direction.Azimuth);
                 repeat.Interval = TimeSpan.FromSeconds(RepeatDelay);
                 repeat.Start();

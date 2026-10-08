@@ -103,9 +103,6 @@ namespace AuroraPAR
         }
     }
 
-    /// <summary>
-    /// Display ranges available, in NM.
-    /// </summary>
     /// <summary>A control group of the analog console: a knob or keys.</summary>
     internal enum AnalogControl
     {
@@ -129,6 +126,9 @@ namespace AuroraPAR
         Joystick
     }
 
+    /// <summary>
+    /// Display ranges available, in NM.
+    /// </summary>
     internal static class Ranges
     {
         public static readonly double[] Values = [1, 2.5, 5, 10, 15, 20];
@@ -468,11 +468,11 @@ namespace AuroraPAR
             return symbol;
         }
 
+        public const int MaxRangeKeyText = 5;
+
         /// <summary>
         /// Deep copy (through JSON, so it stays correct when nested settings are added).
         /// </summary>
-        public const int MaxRangeKeyText = 5;
-
         public Profile Clone()
         {
             return JsonSerializer.Deserialize<Profile>(JsonSerializer.Serialize(this, SettingsStore.JsonOptions), SettingsStore.JsonOptions)!;

@@ -228,7 +228,7 @@ namespace AuroraPAR
                     }
                     Fly(plane, runway, seconds, windAlong, windRight);
                     // Landed (past the touchdown point near the centreline), or far away: removed.
-                    bool landed = plane.Distance < 0 && Math.Abs(plane.Lateral) < 0.3;
+                    bool landed = plane.Distance < 0 && Math.Abs(plane.Lateral) < 0.3 && plane.Height < 100;
                     if (landed || plane.Distance < -10 || plane.Distance > 80 || Math.Abs(plane.Lateral) > 40)
                     {
                         planes.Remove(plane);
@@ -272,7 +272,8 @@ namespace AuroraPAR
                 int side = plane.TargetTurn != 0 ? plane.TargetTurn : Math.Sign(difference);
                 // Degrees still to turn on that side.
                 double remaining = side > 0 ? (difference + 360) % 360 : (-difference + 360) % 360;
-                if (side == 0 || remaining <= rate * seconds + 1e-6)
+                // Reached (also a heading within a degree on the other side: no full circle for a rounded readout).
+                if (side == 0 || remaining <= rate * seconds + 1e-6 || remaining > 359)
                 {
                     if (seconds > 0 || side == 0)
                     {

@@ -133,7 +133,8 @@ namespace AuroraPAR
             aircraftPanel.Children.Add(info);
             list.SelectionChanged += (s, e) =>
             {
-                // The joystick held over goes to the aircraft now selected.
+                // Keys or stick held on the previous aircraft: let it go. The joystick held over goes to the aircraft now selected.
+                ReleaseManual();
                 ApplyJoystick();
                 if (!updatingList) ShowSelected();
             };
@@ -413,14 +414,43 @@ namespace AuroraPAR
             return key;
         }
 
+        /// <summary>Aircraft moved by the keys or the stick of the window (released there, even if the selection changed).</summary>
+        private string? manualCallsign;
+
+        /// <summary>The selection changed while keys or the stick were held: the previous aircraft keeps its heading and vertical speed.</summary>
+        private void ReleaseManual()
+        {
+            if (manualCallsign == null || manualCallsign == list.SelectedItem as string) return;
+            traffic.Change(manualCallsign, p =>
+            {
+                p.StickX = 0;
+                p.StickY = 0;
+                p.StickHeld = 0;
+            });
+            manualCallsign = null;
+            keyX = keyY = 0;
+            if (pad.IsMouseCaptured) pad.ReleaseMouseCapture();
+            CentreKnob();
+        }
+
         /// <summary>Deflection of the keys: given to the selected aircraft and shown by the knob.</summary>
         private void SetKeyStick(double x, double y)
         {
             keyX = x;
             keyY = y;
-            if (x != 0 || y != 0) ShowKnob(x, y);
-            else if (joystickCallsign == null && !pad.IsMouseCaptured) CentreKnob();
-            ChangeSelected(p =>
+            if (x != 0 || y != 0)
+            {
+                ShowKnob(x, y);
+                manualCallsign = list.SelectedItem as string;
+            }
+            else if (joystickCallsign == null && !pad.IsMouseCaptured)
+            {
+                CentreKnob();
+            }
+            string? target = x == 0 && y == 0 ? manualCallsign ?? list.SelectedItem as string : list.SelectedItem as string;
+            if (x == 0 && y == 0) manualCallsign = null;
+            if (target == null) return;
+            traffic.Change(target, p =>
             {
                 p.StickX = x;
                 p.StickY = y;
@@ -439,6 +469,12 @@ namespace AuroraPAR
                     p.HoldGlidePath = false;
                 }
             });
+            // Keys released: a real joystick still deflected takes over again.
+            if (x == 0 && y == 0 && (joystickX != 0 || joystickY != 0))
+            {
+                joystickCallsign = null;
+                ApplyJoystick();
+            }
         }
 
         private static Button SmallButton(string text) => new() { Content = text, Margin = new Thickness(0, 0, 6, 4), Padding = new Thickness(8, 2, 8, 2) };
@@ -504,6 +540,12 @@ namespace AuroraPAR
             if (TryNumber(windFromBox, 0, 360, out double from)) traffic.WindFrom = from % 360;
             if (TryNumber(windSpeedBox, 0, 100, out double speed)) traffic.WindSpeed = speed;
             if (TryNumber(windGustBox, 0, 50, out double gust)) traffic.WindGust = gust;
+            ShowWindMagnetic();
+        }
+
+        /// <summary>Magnetic direction of the wind (the variation follows the runway in use).</summary>
+        private void ShowWindMagnetic()
+        {
             int magnetic = (int)Math.Round(traffic.WindFrom - variation(), MidpointRounding.AwayFromZero);
             magnetic = (magnetic % 360 + 360) % 360;
             windMagnetic.Text = $"({(magnetic == 0 ? 360 : magnetic):000}°M)";
@@ -734,6 +776,7 @@ namespace AuroraPAR
                 updatingList = false;
             }
             ShowSelected();
+            ShowWindMagnetic();
         }
 
         private void ShowSelected()
@@ -801,11 +844,12 @@ namespace AuroraPAR
             // A small dead zone in the middle, so a click on the centre does nothing.
             if (Math.Abs(x) < 0.08) x = 0;
             if (Math.Abs(y) < 0.08) y = 0;
+            manualCallsign = list.SelectedItem as string;
             ChangeSelected(p =>
             {
                 p.StickX = x;
                 p.StickY = y;
-                p.Auto = false;
+                if (x != 0 || y != 0) p.Auto = false;
                 if (x != 0) p.TargetHeading = double.NaN;
                 if (y != 0) p.HoldGlidePath = false;
             });
@@ -816,12 +860,16 @@ namespace AuroraPAR
             if (pad.IsMouseCaptured) pad.ReleaseMouseCapture();
             CentreKnob();
             // The heading and the vertical speed reached stay.
-            ChangeSelected(p =>
+            if ((manualCallsign ?? list.SelectedItem as string) is string released)
             {
-                p.StickX = 0;
-                p.StickY = 0;
-                p.StickHeld = 0;
-            });
+                traffic.Change(released, p =>
+                {
+                    p.StickX = 0;
+                    p.StickY = 0;
+                    p.StickHeld = 0;
+                });
+            }
+            manualCallsign = null;
             // A real joystick still deflected takes over again.
             if (joystickCallsign != null || joystickX != 0 || joystickY != 0)
             {
