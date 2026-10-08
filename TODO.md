@@ -2,7 +2,7 @@
 
 ## Next update
 
-- **Test traffic: the stick follows the keys** (visual confirmation): while ◀ L / R ▶ are held the stick knob moves to the left / right edge (and back to the centre when released); the rate of descent keys and Final CRS could show a short movement of the knob up / down / towards the centre too.
+- **Test traffic: the stick follows the keys** (visual confirmation): while ◀ L / R ▶ are held the stick knob moves to the left / right edge (and back to the centre when released); the same for climb / descent. **New keys ▲ UP / ▼ DN** with the same logic as L / R: held = stick at its top / bottom edge (vertical speed changing while held), a click = at least 1 s; released, the vertical speed reached stays; the knob moves with them. Place them in line with the stick (e.g. above and below it, or beside the turn rate / Final CRS rows) — decide with a mockup.
 
 - **Analog: each control group as a knob or as keys** (Settings, analog only, per profile; groups can be mixed). Keys in the style of the RWY / GP keys; each key also has a keyboard key (for a programmable USB keypad, see "External controls"). **Also a virtual keypad on a phone / tablet** (later): a web page like the coordination phone panel (same relay, same pairing/QR link) with the same keys, sending the commands to AuroraPAR — so every key needs a named command, not only a keyboard key.
   - **RANGE:** choice of (a) one key per range (1, 2.5, 5, 10, 15, 20 NM, the one in use lit) or (b) three keys `<` `#` `>`: steps down / up, `#` back to the default range (set in Settings, e.g. the profile's preferred range); the text of `#` is free, **max 5 characters**, default "DEF".
