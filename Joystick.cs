@@ -168,15 +168,16 @@ namespace AuroraPAR
         }
 
         /// <summary>Looks for the devices again, in the background (the functions can be slow with nothing connected).</summary>
-        public static void Rescan()
+        public static void Rescan(bool force = false)
         {
+            bool configChanged = force || devices.Count == 0;
             if (Interlocked.Exchange(ref scanning, 1) == 1) return;
             lastScan = DateTime.UtcNow;
             Task.Run(() =>
             {
                 try
                 {
-                    devices = Scan();
+                    devices = Scan(configChanged);
                 }
                 catch
                 {
@@ -229,8 +230,10 @@ namespace AuroraPAR
             return state;
         }
 
-        private static List<Device> Scan()
+        private static List<Device> Scan(bool configChanged)
         {
+            // Devices plugged in after the start are seen only after this (not at every scan: it may disturb a device in use).
+            if (configChanged) joyConfigChanged(0);
             List<Device> found = [];
             int count = (int)Math.Min(16, joyGetNumDevs());
             for (int id = 0; id < count; id++)
@@ -343,6 +346,9 @@ namespace AuroraPAR
         private static extern uint joyGetNumDevs();
 
         [DllImport("winmm.dll")]
+        private static extern int joyConfigChanged(int dwFlags);
+
+        [DllImport("winmm.dll")]
         private static extern int joyGetPosEx(int uJoyID, ref JOYINFOEX pji);
 
         [DllImport("winmm.dll", CharSet = CharSet.Unicode, EntryPoint = "joyGetDevCapsW")]
@@ -371,6 +377,9 @@ namespace AuroraPAR
         private readonly Dictionary<int, DateTime> held = [];
         private readonly Dictionary<int, DateTime> nextRepeat = [];
         private JoystickRole? sessionRole;
+        /// <summary>Role in the settings when the switch button was pressed: changed there, the switch is forgotten.</summary>
+        private JoystickRole sessionBase;
+        private bool resync = true;
         private double sentX;
         private double sentY;
         private TestTrafficWindow? sentTo;
@@ -401,6 +410,7 @@ namespace AuroraPAR
         {
             get
             {
+                if (sessionRole != null && settings().Role != sessionBase) sessionRole = null;
                 JoystickRole role = sessionRole ?? settings().Role;
                 if (role != JoystickRole.Automatic) return role;
                 return aircraftWindow()?.HasSelection == true ? JoystickRole.TestAircraft : JoystickRole.AntennaTilt;
@@ -420,9 +430,20 @@ namespace AuroraPAR
             if (state == null)
             {
                 SendStick(0, 0);
+                resync = true;
+                return;
+            }
+            if (resync)
+            {
+                // After a pause (button being assigned, device away): what is already held does nothing until released.
+                resync = false;
                 held.Clear();
                 nextRepeat.Clear();
-                return;
+                foreach (int input in state.Pressed())
+                {
+                    held[input] = now;
+                    nextRepeat[input] = DateTime.MaxValue;
+                }
             }
             double x = Shape(state.X, options.DeadZone);
             double y = Shape(state.Y, options.DeadZone);
@@ -517,6 +538,7 @@ namespace AuroraPAR
                 case JoystickCommand.TiltNeutral: neutral(); return;
                 case JoystickCommand.SwitchRole:
                     sessionRole = CurrentRole == JoystickRole.TestAircraft ? JoystickRole.AntennaTilt : JoystickRole.TestAircraft;
+                    sessionBase = settings().Role;
                     banner(sessionRole == JoystickRole.TestAircraft
                         ? (aircraftWindow()?.HasSelection == true ? "JOYSTICK: TEST AIRCRAFT" : "JOYSTICK: TEST AIRCRAFT (NONE SELECTED)")
                         : "JOYSTICK: ANTENNA TILT");

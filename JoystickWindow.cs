@@ -73,7 +73,7 @@ namespace AuroraPAR
             StackPanel deviceRow = new() { Orientation = Orientation.Horizontal };
             deviceRow.Children.Add(deviceBox);
             Button rescan = new() { Content = "Search again", Margin = new Thickness(8, 0, 0, 0), Padding = new Thickness(8, 2, 8, 2) };
-            rescan.Click += (s, e) => Joystick.Rescan();
+            rescan.Click += (s, e) => Joystick.Rescan(force: true);
             deviceRow.Children.Add(rescan);
             devicePanel.Children.Add(deviceRow);
             devicePanel.Children.Add(status);

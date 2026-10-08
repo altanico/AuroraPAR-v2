@@ -665,6 +665,12 @@ namespace AuroraPAR
                 p.StickY = 0;
                 p.StickHeld = 0;
             });
+            // A real joystick still deflected takes over again.
+            if (joystickCallsign != null || joystickX != 0 || joystickY != 0)
+            {
+                joystickCallsign = null;
+                ApplyJoystick();
+            }
         }
     }
 }
