@@ -499,7 +499,8 @@ namespace AuroraPAR
             // History: a dot every HistoryInterval seconds, at a new position given by Aurora.
             bool changed = aircraft.Latitude != track.LastLatitude || aircraft.Longitude != track.LastLongitude || aircraft.Altitude != track.LastAltitude;
             double now = HistoryClock.Elapsed.TotalSeconds;
-            bool inside = Radar.IsInsideScan(aircraft, Runway);
+            // Seen by the antenna of this view (each view has its own beam).
+            bool inside = Radar.IsInsideBeam(aircraft, Runway, IsElevation);
             if (changed)
             {
                 // Recent positions for the afterglow of the analog scope (a few seconds are enough).
@@ -537,7 +538,7 @@ namespace AuroraPAR
                 track.BeamFixTime = now;
                 track.OutOfBeamSince = double.NaN;
                 // Analog: an echo near the edge of the beam is weaker (soft edge of the beam).
-                track.EdgeFactor = Options.Analog ? Math.Clamp(Radar.BeamMargin(aircraft, Runway) / SoftEdgeDegrees, 0, 1) : 1;
+                track.EdgeFactor = Options.Analog ? Math.Clamp(Radar.BeamMargin(aircraft, Runway, IsElevation) / SoftEdgeDegrees, 0, 1) : 1;
             }
             else if (Options.Analog)
             {

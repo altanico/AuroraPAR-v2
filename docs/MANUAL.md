@@ -90,7 +90,7 @@ Both views are drawn as seen from the side of the runway, with the **antenna** (
 - **Touchdown point** (small yellow mark on the runway): all distances are measured **from the touchdown point**, as controllers give them on final. It is where the glide path meets the runway (about 290 m from the threshold for 50 ft TCH and 3°), or a value set for the runway.
 - **Range marks**: vertical lines at fixed distances from touchdown, with the distance written below them in the elevation view. Which marks are drawn at each range is configurable ([section 11.1](#111-range-marks)).
 - **Scan limits** (blue lines from the antenna): the physical limits of the antenna, fixed.
-- **Antenna beam**: the part the antenna is looking at now, moved by the antenna tilt inside the scan limits. **A track is seen only inside the beam.** It is shown by the range marks, **thicker inside the beam**; its edges can also be drawn as lines (*Settings → Radar → Draw the edges of the beam*, off by default) ([section 7](#7-antenna-tilt)).
+- **Antenna beam**: the part the antenna is looking at now, moved by the antenna tilt inside the scan limits. **A track is seen only inside the beam**, and each view has its own antenna, as on a real PAR: the elevation view shows it inside the elevation beam, the azimuth view inside the azimuth beam — leaving one beam it disappears only from that view. It is shown by the range marks, **thicker inside the beam**; its edges can also be drawn as lines (*Settings → Radar → Draw the edges of the beam*, off by default) ([section 7](#7-antenna-tilt)).
 - **Approach limits** (red lines from the touchdown point): the tolerance around the glide path / centreline. Inside them a track is **green**, outside **red**.
 - Between touchdown and threshold the glide path, centreline and approach limits are **dashed**; beyond the threshold they are solid.
 
@@ -211,7 +211,7 @@ Keys are ignored while you are typing in a text box (e.g. the DH box).
 On the old PAR the antenna beam was narrow, and the antenna was tilted to point it where the aircraft was. This is an **advanced function**, off in a new profile: the radar then sees everything inside the scan limits (default −1° to +10° in elevation, ±15° in azimuth) and the tilt controls only show a hint on how to turn it on. Turn it on with *Settings → Radar → Narrow antenna beam moved by the tilt*: the beam is then set a few degrees narrower than the scan limits (4° in elevation, 6° in azimuth), so the tilt works at once; then set it as you like. With the beam on, AuroraPAR has two sets of lines:
 
 - the **scan limits**: the physical limits, as far as the antenna can look; they never move;
-- the **antenna beam**: what the antenna looks at now, with its own width in elevation and azimuth (*Settings → Radar → Antenna beam*). Only the traffic inside the beam is seen, and the range marks are thicker inside it (as on the real scopes).
+- the **antenna beam**: what the antenna looks at now, with its own width in elevation and azimuth (*Settings → Radar → Antenna beam*). Only the traffic inside the beam is seen (each view with its own beam: leaving the elevation beam a track disappears from the elevation view only, and the other way round), and the range marks are thicker inside it (as on the real scopes).
 
 The tilt moves the **beam** inside the scan limits; the glide path, centreline and approach limits do not move.
 

@@ -1693,7 +1693,7 @@ namespace AuroraPAR
             // Track filter (modern display): smoothed positions of the tracks at this moment.
             trackFilter.Apply(aircrafts, DateTime.UtcNow, viewOptions.Analog ? TrackSmoothing.Off : settings.Active.TrackSmoothing);
             // Fictitious IDs: given to the tracks inside the scan.
-            viewOptions.Identities.Update(aircrafts.Where(a => radar.IsInsideScan(a, runway)).Select(a => a.Callsign), DateTime.UtcNow);
+            viewOptions.Identities.Update(aircrafts.Where(a => radar.IsSeen(a, runway)).Select(a => a.Callsign), DateTime.UtcNow);
             UpdateInfo();
             profileView.Render(aircrafts);
             horizontalView.Render(aircrafts);

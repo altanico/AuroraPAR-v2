@@ -235,36 +235,50 @@ namespace AuroraPAR
         }
 
         /// <summary>
-        /// True when the aircraft is inside the antenna beam (as drawn; the beam is inside the scan limits): in front
-        /// of the antenna, within the displayed range, between the azimuth and elevation edges of the beam and above
-        /// the ground. Only these aircraft are seen by the radar.
+        /// True when the aircraft is seen in a view. Each view has its own antenna, as on a real PAR: the elevation
+        /// view needs the aircraft inside the elevation beam (and inside the azimuth scan limits), the azimuth view
+        /// inside the azimuth beam (and inside the elevation scan limits). So an aircraft leaving one beam disappears
+        /// only from that view. Always also in front of the antenna, within the displayed range and above the ground.
         /// </summary>
-        public bool IsInsideScan(Aircraft aircraft, Runway runway)
+        /// <param name="elevationView">True for the elevation view, false for the azimuth view.</param>
+        public bool IsInsideBeam(Aircraft aircraft, Runway runway, bool elevationView)
         {
+            if (!Angles(aircraft, runway, out double azimuth, out double elevation)) return false;
+            if (aircraft.Altitude - runway.Elevation <= 0) return false;
+            return elevationView
+                ? elevation >= ElevationLower && elevation <= ElevationUpper && azimuth >= ScanLeftEdge && azimuth <= ScanRightEdge
+                : azimuth >= AzimuthLeftEdge && azimuth <= AzimuthRightEdge && elevation >= ScanDown && elevation <= ScanUp;
+        }
+
+        /// <summary>True when the aircraft is seen in at least one view (see <see cref="IsInsideBeam"/>).</summary>
+        public bool IsSeen(Aircraft aircraft, Runway runway) => IsInsideBeam(aircraft, runway, true) || IsInsideBeam(aircraft, runway, false);
+
+        /// <summary>
+        /// Azimuth and elevation of the aircraft from the antenna (degrees); false when it is behind the antenna or
+        /// beyond the displayed range.
+        /// </summary>
+        private static bool Angles(Aircraft aircraft, Runway runway, out double azimuth, out double elevation)
+        {
+            azimuth = elevation = 0;
             double fromRunwayEnd = runway.LengthNM + aircraft.AlongTrackDistance(runway);
             if (fromRunwayEnd > runway.LengthNM + runway.Distance) return false;
             double fromAntenna = fromRunwayEnd - AntennaFromRunwayEnd(runway);
             if (fromAntenna <= 0) return false;
-            double azimuth = Math.Atan2(aircraft.LateralOffset(runway), fromAntenna) * 180 / Math.PI;
-            if (azimuth < AzimuthLeftEdge || azimuth > AzimuthRightEdge) return false;
+            azimuth = Math.Atan2(aircraft.LateralOffset(runway), fromAntenna) * 180 / Math.PI;
             double height = aircraft.Altitude - runway.Elevation;
-            if (height <= 0) return false;
-            double elevation = Math.Atan2(height / Runway.FeetPerNM, fromAntenna) * 180 / Math.PI;
-            return elevation >= ElevationLower && elevation <= ElevationUpper;
+            elevation = Math.Atan2(height / Runway.FeetPerNM, fromAntenna) * 180 / Math.PI;
+            return true;
         }
 
         /// <summary>
-        /// Angle (degrees) between the aircraft and the nearest edge of the antenna beam, elevation or azimuth
-        /// (positive inside). The lower edge counts only above the ground.
+        /// Angle (degrees) between the aircraft and the nearest edge of the beam of a view (positive inside): the
+        /// elevation beam (lower edge only above the ground) or the azimuth beam.
         /// </summary>
-        public double BeamMargin(Aircraft aircraft, Runway runway)
+        public double BeamMargin(Aircraft aircraft, Runway runway, bool elevationView)
         {
-            double fromAntenna = runway.LengthNM + aircraft.AlongTrackDistance(runway) - AntennaFromRunwayEnd(runway);
-            if (fromAntenna <= 0) return 0;
-            double azimuth = Math.Atan2(aircraft.LateralOffset(runway), fromAntenna) * 180 / Math.PI;
-            double height = aircraft.Altitude - runway.Elevation;
-            double elevation = Math.Atan2(height / Runway.FeetPerNM, fromAntenna) * 180 / Math.PI;
-            double margin = Math.Min(Math.Min(azimuth - AzimuthLeftEdge, AzimuthRightEdge - azimuth), ElevationUpper - elevation);
+            if (!Angles(aircraft, runway, out double azimuth, out double elevation)) return 0;
+            if (!elevationView) return Math.Min(azimuth - AzimuthLeftEdge, AzimuthRightEdge - azimuth);
+            double margin = ElevationUpper - elevation;
             if (ElevationLower > 0) margin = Math.Min(margin, elevation - ElevationLower);
             return margin;
         }

@@ -8,6 +8,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Fix: each view has its own beam.** A track leaving the elevation beam disappears (or coasts) only in the elevation view, and the same for azimuth. Check: tilt one beam away from a track, the other view keeps it.
 - **Analog uses the line width and dash style** set in Colours & lines (only the colour is the phosphor). Check: scan limits at 1 px on the analog scope.
 - **Profile keys:** P = next profile, Shift+P = previous (in a circle), name shown for 2 s; one profile: "ONLY ONE PROFILE". Check: not active while typing in ICAO / GP / APT, mode change when the profiles differ.
 - **Show / hide each line** (Display style → Colours & lines, columns Modern and Analog; not the range marks). Check: hide the approach limits on the analog scope only; altitude scale hidden also hides its values.
