@@ -221,6 +221,7 @@ namespace AuroraPAR
             DisplayArea.SizeChanged += (s, e) => ConsoleHost.MaxWidth = Math.Max(90, Math.Min(DisplayArea.ActualWidth * 0.26, 300));
             ConsoleViewbox.Child = consolePanel;
             PreviewKeyDown += MainWindow_PreviewKeyDown;
+            StartJoystick();
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
             DhDownButton.Click += (s, e) => SetDecisionHeight(runway.MDH - DecisionHeightStep);
             DhTextBox.KeyDown += (s, e) =>
@@ -658,7 +659,7 @@ namespace AuroraPAR
         {
             if (testTrafficWindow == null)
             {
-                testTrafficWindow = new TestTrafficWindow(testTraffic) { Owner = this };
+                testTrafficWindow = new TestTrafficWindow(testTraffic, OpenJoystick) { Owner = this };
                 testTrafficWindow.Left = Math.Max(0, Left + 40);
                 testTrafficWindow.Top = Math.Max(0, Top + 60);
                 testTrafficWindow.Closed += (s, e) =>
@@ -673,6 +674,38 @@ namespace AuroraPAR
                 if (testTrafficWindow.WindowState == WindowState.Minimized) testTrafficWindow.WindowState = WindowState.Normal;
                 testTrafficWindow.Activate();
             }
+        }
+
+        /// <summary>Joystick settings and live test (modal over the window that opens them).</summary>
+        private void OpenJoystick(Window owner)
+        {
+            new JoystickWindow(settings) { Owner = owner }.ShowDialog();
+        }
+
+        private JoystickController? joystick;
+        private readonly System.Windows.Threading.DispatcherTimer joystickTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+
+        /// <summary>The joystick is read about 25 times a second (while the program runs, also in background).</summary>
+        private void StartJoystick()
+        {
+            joystick = new JoystickController(
+                () => settings.Joystick,
+                () => testTrafficWindow,
+                (elevation, azimuth) => TiltAntenna(elevation, azimuth * AzimuthSign),
+                NeutralAntenna,
+                ShowBanner);
+            joystickTimer.Tick += (s, e) =>
+            {
+                try
+                {
+                    joystick.Tick();
+                }
+                catch
+                {
+                    // A device removed in the middle of a reading: the next tick tries again.
+                }
+            };
+            joystickTimer.Start();
         }
 
         private Border? testTrafficSign;
@@ -938,6 +971,7 @@ namespace AuroraPAR
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             coordinationWindow?.Close();
+            joystickTimer.Stop();
             Open = false;
             timer.Stop();
             aurora.Close();
@@ -1439,7 +1473,7 @@ namespace AuroraPAR
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            SettingsWindow window = new(settings, ApplyProfile, OpenRunwayEditor, OpenTestTraffic)
+            SettingsWindow window = new(settings, ApplyProfile, OpenRunwayEditor, OpenTestTraffic, OpenJoystick)
             {
                 Owner = this
             };

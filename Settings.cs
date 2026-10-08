@@ -484,6 +484,8 @@ namespace AuroraPAR
         public Dictionary<string, List<DistanceReminder>> RunwayReminders { get; set; } = [];
         /// <summary>Coordination light panel with the tower.</summary>
         public CoordinationSettings Coordination { get; set; } = new();
+        /// <summary>Joystick or gamepad: test aircraft and antenna tilt.</summary>
+        public JoystickSettings Joystick { get; set; } = new();
 
         /// <summary>Reminders of a runway (created empty if needed).</summary>
         public List<DistanceReminder> RemindersOf(string runway)
@@ -527,6 +529,8 @@ namespace AuroraPAR
             RunwayReminders ??= [];
             Coordination ??= new();
             Coordination.Normalize();
+            Joystick ??= new();
+            Joystick.Normalize();
             foreach (string key in RunwayReminders.Keys.ToList())
             {
                 if (RunwayReminders[key] == null || RunwayReminders[key].Count == 0) RunwayReminders.Remove(key);

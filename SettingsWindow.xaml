@@ -149,8 +149,12 @@
         </Grid>
         <Button Name="EditRunwaysButton" Content="Edit the runways file (runways.par)..." HorizontalAlignment="Left" Height="26" Padding="12,0" Margin="0,10,0,0"
                 ToolTip="Runway editor: add, change, duplicate or delete runways and approaches; the previous file is kept as runways.par.bak."/>
-        <Button Name="TestTrafficButton" Content="Test traffic... (T)" HorizontalAlignment="Left" Height="26" Padding="12,0" Margin="0,6,0,0"
-                ToolTip="Virtual aircraft on the glide path, moved with a joystick, to test the radar without real traffic (also without Aurora)."/>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+            <Button Name="TestTrafficButton" Content="Test traffic... (T)" Height="26" Padding="12,0"
+                    ToolTip="Virtual aircraft on the glide path, moved with a joystick, to test the radar without real traffic (also without Aurora)."/>
+            <Button Name="JoystickButton" Content="Joystick..." Height="26" Padding="12,0" Margin="8,0,0,0"
+                    ToolTip="A real joystick or gamepad (USB) for the test aircraft and the antenna tilt: device, buttons, live test."/>
+        </StackPanel>
         <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
         <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
     </StackPanel>

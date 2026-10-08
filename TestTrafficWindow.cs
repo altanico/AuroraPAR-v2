@@ -52,7 +52,7 @@ namespace AuroraPAR
         private readonly DispatcherTimer refresh = new() { Interval = TimeSpan.FromSeconds(0.25) };
         private bool updatingList;
 
-        internal TestTrafficWindow(TestTraffic traffic)
+        internal TestTrafficWindow(TestTraffic traffic, Action<Window>? openJoystick = null)
         {
             this.traffic = traffic;
             Title = "Aurora PAR - Test traffic";
@@ -94,6 +94,8 @@ namespace AuroraPAR
             aircraftPanel.Children.Add(info);
             list.SelectionChanged += (s, e) =>
             {
+                // The joystick held over goes to the aircraft now selected.
+                ApplyJoystick();
                 if (!updatingList) ShowSelected();
             };
             root.Children.Add(Group("Aircraft", aircraftPanel));
@@ -141,26 +143,12 @@ namespace AuroraPAR
             stickArea.Children.Add(turnRow);
             StackPanel vertical = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
             Button less = WideButton("− rate of desc.", "Reduce rate of descent: 100 ft/min less, on the steps through the best vertical speed.");
-            less.Click += (s, e) => ChangeSelected(p =>
-            {
-                p.HoldGlidePath = false;
-                p.Auto = false;
-                p.VerticalSpeed = TestTraffic.StepVerticalSpeed(p.VerticalSpeed, p.BestVerticalSpeed, up: true);
-            });
+            less.Click += (s, e) => StepRate(up: true);
             Button optimal = WideButton("= rate of desc.", "Resume normal rate of descent: the vertical speed of the glide path for this speed, kept also when the speed or course change. The offset from the glide path stays.");
             optimal.FontWeight = FontWeights.SemiBold;
-            optimal.Click += (s, e) => ChangeSelected(p =>
-            {
-                p.HoldGlidePath = true;
-                p.Auto = false;
-            });
+            optimal.Click += (s, e) => NormalRate();
             Button more = WideButton("+ rate of desc.", "Increase rate of descent: 100 ft/min more, on the steps through the best vertical speed.");
-            more.Click += (s, e) => ChangeSelected(p =>
-            {
-                p.HoldGlidePath = false;
-                p.Auto = false;
-                p.VerticalSpeed = TestTraffic.StepVerticalSpeed(p.VerticalSpeed, p.BestVerticalSpeed, up: false);
-            });
+            more.Click += (s, e) => StepRate(up: false);
             vertical.Children.Add(less);
             vertical.Children.Add(optimal);
             vertical.Children.Add(more);
@@ -203,11 +191,7 @@ namespace AuroraPAR
                 HorizontalAlignment = HorizontalAlignment.Center,
                 ToolTip = "Turns back to the final course at the turn rate chosen (3°/s with Free). The offset from the centreline stays."
             };
-            finalCourse.Click += (s, e) => ChangeSelected(p =>
-            {
-                p.BackToFinal = true;
-                p.Auto = false;
-            });
+            finalCourse.Click += (s, e) => FinalCourse();
             finalCourse.Margin = new Thickness(2, 0, 2, 0);
             finalCourse.Padding = new Thickness(2, 3, 2, 3);
             finalCourse.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -233,16 +217,7 @@ namespace AuroraPAR
             WrapPanel service = new() { Margin = new Thickness(0, 2, 0, 0) };
             Button onPath = SmallButton("On GP / CL");
             onPath.ToolTip = "Puts the aircraft exactly on the centreline and the glide path, on the final course, at once.";
-            onPath.Click += (s, e) => ChangeSelected(p =>
-            {
-                p.Lateral = 0;
-                p.Height = double.NaN;
-                p.VerticalSpeed = 0;
-                p.Course = 0;
-                p.TurnRate = 0;
-                p.BackToFinal = false;
-                p.HoldGlidePath = true;
-            });
+            onPath.Click += (s, e) => OnPath();
             service.Children.Add(onPath);
             autoCheck.Click += (s, e) => ChangeSelected(p =>
             {
@@ -250,11 +225,7 @@ namespace AuroraPAR
                 p.BackToFinal = false;
             });
             service.Children.Add(autoCheck);
-            pauseButton.Click += (s, e) =>
-            {
-                traffic.Paused = !traffic.Paused;
-                pauseButton.Content = traffic.Paused ? "Resume" : "Pause";
-            };
+            pauseButton.Click += (s, e) => TogglePause();
             service.Children.Add(pauseButton);
             Button remove = SmallButton("Remove");
             remove.Click += (s, e) =>
@@ -270,6 +241,10 @@ namespace AuroraPAR
                 RefreshList();
             };
             service.Children.Add(removeAll);
+            Button joystickButton = SmallButton("Joystick...");
+            joystickButton.ToolTip = "A real joystick or gamepad for the test aircraft and the antenna tilt: device, buttons, live test.";
+            joystickButton.Click += (s, e) => openJoystick?.Invoke(this);
+            if (openJoystick != null) service.Children.Add(joystickButton);
             root.Children.Add(service);
 
             root.Children.Add(auroraCheck);
@@ -443,6 +418,140 @@ namespace AuroraPAR
             string callsign = traffic.Add(distance, speed, squawk, lateral, height);
             RefreshList();
             list.SelectedItem = callsign;
+        }
+
+        /// <summary>An aircraft is selected (the joystick moves it in the automatic role).</summary>
+        internal bool HasSelection => list.SelectedItem is string;
+
+        private void FinalCourse() => ChangeSelected(p =>
+        {
+            p.BackToFinal = true;
+            p.Auto = false;
+        });
+
+        private void NormalRate() => ChangeSelected(p =>
+        {
+            p.HoldGlidePath = true;
+            p.Auto = false;
+        });
+
+        /// <summary>Reduce (up) or increase (down) the rate of descent by one step.</summary>
+        private void StepRate(bool up) => ChangeSelected(p =>
+        {
+            p.HoldGlidePath = false;
+            p.Auto = false;
+            p.VerticalSpeed = TestTraffic.StepVerticalSpeed(p.VerticalSpeed, p.BestVerticalSpeed, up);
+        });
+
+        private void OnPath() => ChangeSelected(p =>
+        {
+            p.Lateral = 0;
+            p.Height = double.NaN;
+            p.VerticalSpeed = 0;
+            p.Course = 0;
+            p.TurnRate = 0;
+            p.BackToFinal = false;
+            p.HoldGlidePath = true;
+        });
+
+        private void TogglePause()
+        {
+            traffic.Paused = !traffic.Paused;
+            pauseButton.Content = traffic.Paused ? "Resume" : "Pause";
+        }
+
+        /// <summary>A command from a joystick button.</summary>
+        internal void RunJoystickCommand(JoystickCommand command)
+        {
+            switch (command)
+            {
+                case JoystickCommand.FinalCourse: FinalCourse(); break;
+                case JoystickCommand.NormalRate: NormalRate(); break;
+                case JoystickCommand.ReduceRate: StepRate(up: true); break;
+                case JoystickCommand.IncreaseRate: StepRate(up: false); break;
+                case JoystickCommand.OnPath: OnPath(); break;
+                case JoystickCommand.Pause: TogglePause(); break;
+                case JoystickCommand.TurnRate:
+                    traffic.TurnMode = traffic.TurnMode switch
+                    {
+                        TestTurnMode.Half => TestTurnMode.Standard,
+                        TestTurnMode.Standard => TestTurnMode.Free,
+                        _ => TestTurnMode.Half
+                    };
+                    ShowTurnMode();
+                    break;
+                case JoystickCommand.NextAircraft:
+                    if (list.ItemsSource is List<string> callsigns && callsigns.Count > 0)
+                    {
+                        int index = list.SelectedItem is string selected ? callsigns.IndexOf(selected) : -1;
+                        list.SelectedItem = callsigns[(index + 1) % callsigns.Count];
+                    }
+                    break;
+            }
+        }
+
+        // Joystick deflection last given (pad: x right, y up) and the aircraft it moves.
+        private double joystickX;
+        private double joystickY;
+        private string? joystickCallsign;
+
+        /// <summary>
+        /// The real joystick moved (only when it changes): as the stick of the window, which follows it. Released
+        /// (0, 0), the course and vertical speed reached stay. Ignored while the stick is held with the mouse.
+        /// </summary>
+        internal void JoystickStick(double x, double y)
+        {
+            joystickX = x;
+            joystickY = y;
+            ApplyJoystick();
+        }
+
+        private void ApplyJoystick()
+        {
+            if (pad.IsMouseCaptured) return;
+            string? selected = list.SelectedItem as string;
+            // Another aircraft was moved: let it go first.
+            if (joystickCallsign != null && joystickCallsign != selected)
+            {
+                traffic.Change(joystickCallsign, p =>
+                {
+                    p.StickX = 0;
+                    p.StickY = 0;
+                    p.StickHeld = 0;
+                });
+                joystickCallsign = null;
+                CentreKnob();
+            }
+            if (selected == null) return;
+            double x = joystickX;
+            double y = joystickY;
+            if (x == 0 && y == 0)
+            {
+                if (joystickCallsign == null) return;
+                joystickCallsign = null;
+                CentreKnob();
+                traffic.Change(selected, p =>
+                {
+                    p.StickX = 0;
+                    p.StickY = 0;
+                    p.StickHeld = 0;
+                });
+                return;
+            }
+            joystickCallsign = selected;
+            // The knob shows the deflection (inside the circle of the pad).
+            double length = Math.Sqrt(x * x + y * y);
+            double scale = length > 1 ? PadReach / length : PadReach;
+            Canvas.SetLeft(knob, PadSize / 2 + x * scale - KnobSize / 2);
+            Canvas.SetTop(knob, PadSize / 2 - y * scale - KnobSize / 2);
+            traffic.Change(selected, p =>
+            {
+                p.StickX = x;
+                p.StickY = y;
+                p.Auto = false;
+                if (x != 0) p.BackToFinal = false;
+                if (y != 0) p.HoldGlidePath = false;
+            });
         }
 
         private void ChangeSelected(Action<TestTraffic.Plane> change)

@@ -24,7 +24,8 @@ namespace AuroraPAR
         /// </summary>
         private readonly List<Action> refreshers = [];
 
-        internal SettingsWindow(AppSettings settings, Action applyToScreen, Action<Window>? editRunways = null, Action? openTestTraffic = null)
+        internal SettingsWindow(AppSettings settings, Action applyToScreen, Action<Window>? editRunways = null, Action? openTestTraffic = null,
+            Action<Window>? openJoystick = null)
         {
             InitializeComponent();
             this.settings = settings;
@@ -38,6 +39,8 @@ namespace AuroraPAR
                 Close();
                 if (openTestTraffic != null) Dispatcher.BeginInvoke(openTestTraffic);
             };
+            JoystickButton.Visibility = openJoystick == null ? Visibility.Collapsed : Visibility.Visible;
+            JoystickButton.Click += (s, e) => openJoystick?.Invoke(this);
             ProfileComboBox.SelectionChanged += ProfileComboBox_SelectionChanged;
             RenameButton.Click += (s, e) => RenameProfile();
             ProfileNameTextBox.KeyDown += (s, e) =>
