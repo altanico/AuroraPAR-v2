@@ -43,11 +43,18 @@ namespace AuroraPAR
         private readonly TextBox windGustBox = NumberBox("0");
         private readonly TextBlock windMagnetic = new() { VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 4, 0) };
         private readonly TextBox headingBox = NumberBox("");
+        private readonly TextBox rateBox = NumberBox("");
         private readonly TextBox reactionBox = NumberBox("0.5");
-        /// <summary>Pilot reaction: the heading instruction is carried out this long after it is given.</summary>
-        private readonly DispatcherTimer reaction = new();
-        private int pendingSide;
-        private string? pendingCallsign;
+        private readonly Button finalCourseButton = new() { Content = "Final CRS", FontWeight = FontWeights.SemiBold, Padding = new Thickness(2, 3, 2, 3), ToolTip = "The final course in the heading box, carried out after the pilot reaction (with a crosswind the aircraft then drifts: correct the heading)." };
+        private readonly Button normalButton = new() { Content = "Normal", FontWeight = FontWeights.SemiBold, Padding = new Thickness(2, 3, 2, 3), ToolTip = "Normal rate of descent: the best rate for this GP and ground speed, kept also when the speed, heading or wind change; after the pilot reaction. The offset from the glide path stays." };
+        /// <summary>Pilot reaction: instructions are carried out this long after they are given.</summary>
+        private readonly DispatcherTimer headingReaction = new();
+        private readonly DispatcherTimer rateReaction = new();
+        private string? pendingHeadingCallsign;
+        private string? pendingRateCallsign;
+        private bool pendingNormal;
+        /// <summary>The fields are filled with the values of the selected aircraft at the next refresh.</summary>
+        private bool fillFields = true;
         private readonly ListBox list = new() { Height = 64, Width = 110 };
         private readonly TextBlock info = new() { Margin = new Thickness(10, 0, 0, 0), TextWrapping = TextWrapping.Wrap };
         private readonly TextBlock bestLabel = ReadoutCaption("BEST VS");
@@ -69,9 +76,6 @@ namespace AuroraPAR
         private readonly Ellipse knob = new() { Width = KnobSize, Height = KnobSize, Fill = Frozen(Color.FromRgb(0x70, 0xD0, 0x70)), Stroke = Brushes.Black, IsHitTestVisible = false };
         private readonly DispatcherTimer refresh = new() { Interval = TimeSpan.FromSeconds(0.25) };
         private bool updatingList;
-        // Deflection given by the keys ◀ L / R ▶ / ▲ UP / ▼ DN (the knob shows it).
-        private double keyX;
-        private double keyY;
 
         internal TestTrafficWindow(TestTraffic traffic, Action<Window>? openJoystick = null, Func<double>? variation = null, Func<string?>? metar = null)
         {
@@ -141,11 +145,12 @@ namespace AuroraPAR
                 // Keys or stick held on the previous aircraft: let it go. The joystick held over goes to the aircraft now selected.
                 ReleaseManual();
                 ApplyJoystick();
+                fillFields = true;
                 if (!updatingList) ShowSelected();
             };
             root.Children.Add(Group("Aircraft", aircraftPanel));
 
-            // Control.
+            // Control: readouts, then the instructions of the controller (left) and the manual stick (right).
             StackPanel control = new();
             Grid readouts = new() { Background = ReadoutBack, Margin = new Thickness(0, 0, 0, 8) };
             for (int i = 0; i < 5; i++) readouts.ColumnDefinitions.Add(new ColumnDefinition());
@@ -156,18 +161,146 @@ namespace AuroraPAR
             AddReadout(readouts, 4, ReadoutCaption("DRIFT"), driftValue, "° (wind)");
             control.Children.Add(readouts);
 
-            // Turn rate keys over the stick, as wide as it.
+            Grid columns = new();
+            columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            columns.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            // Instructions: heading (◀ L, box, R ▶) and rate (▲ UP, box, ▼ DN), carried out after the pilot reaction.
+            StackPanel instructions = new();
+            Grid fields = new();
+            fields.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            fields.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            DockPanel headingColumn = new() { Margin = new Thickness(0, 0, 6, 0), LastChildFill = false };
+            TextBlock headingCaption = FieldCaption("HEADING °M");
+            DockPanel.SetDock(headingCaption, Dock.Top);
+            headingColumn.Children.Add(headingCaption);
+            DockPanel.SetDock(finalCourseButton, Dock.Bottom);
+            finalCourseButton.Click += (s, e) => FinalCourse();
+            headingColumn.Children.Add(finalCourseButton);
+            TextBlock headingHint = FieldHint("keys 1°");
+            DockPanel.SetDock(headingHint, Dock.Bottom);
+            headingColumn.Children.Add(headingHint);
+            StackPanel headingKeys = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            RepeatButton left = StepKey("◀ L", "Heading 1° left (held: repeats). Carried out after the pilot reaction.");
+            left.Click += (s, e) => StepHeading(-1);
+            RepeatButton right = StepKey("R ▶", "Heading 1° right (held: repeats). Carried out after the pilot reaction.");
+            right.Click += (s, e) => StepHeading(1);
+            headingKeys.Children.Add(left);
+            headingKeys.Children.Add(headingBox);
+            headingKeys.Children.Add(right);
+            DockPanel.SetDock(headingKeys, Dock.Top);
+            headingColumn.Children.Add(headingKeys);
+            fields.Children.Add(headingColumn);
+
+            StackPanel rateColumn = new() { Margin = new Thickness(6, 0, 0, 0) };
+            rateColumn.Children.Add(FieldCaption("RATE ft/min"));
+            RepeatButton up = StepKey("▲ UP", "Rate 50 ft/min up: less descent (held: repeats; stops once at the best rate). Carried out after the pilot reaction.");
+            up.Click += (s, e) => StepRate(RateKeyStep);
+            up.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rateColumn.Children.Add(up);
+            rateBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rateBox.Margin = new Thickness(0, 3, 0, 3);
+            rateColumn.Children.Add(rateBox);
+            RepeatButton down = StepKey("▼ DN", "Rate 50 ft/min down: more descent (held: repeats; stops once at the best rate). Carried out after the pilot reaction.");
+            down.Click += (s, e) => StepRate(-RateKeyStep);
+            down.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rateColumn.Children.Add(down);
+            rateColumn.Children.Add(FieldHint("keys 50"));
+            normalButton.Click += (s, e) => NormalRate();
+            rateColumn.Children.Add(normalButton);
+            Grid.SetColumn(rateColumn, 1);
+            fields.Children.Add(rateColumn);
+            instructions.Children.Add(fields);
+
+            foreach (TextBox box in new[] { headingBox, rateBox })
+            {
+                box.Width = box == headingBox ? 48 : double.NaN;
+                box.Height = 26;
+                box.FontFamily = new FontFamily("Consolas");
+                box.FontSize = 15;
+                box.FontWeight = FontWeights.Bold;
+                box.HorizontalContentAlignment = HorizontalAlignment.Center;
+                box.Margin = box == headingBox ? new Thickness(3, 0, 3, 0) : box.Margin;
+            }
+            headingBox.MaxLength = 3;
+            headingBox.ToolTip = "Heading given by the controller, magnetic. Mouse wheel: 1° per step (+Shift: 10°). Enter: carry out. The aircraft turns the shortest way after the pilot reaction.";
+            rateBox.MaxLength = 5;
+            rateBox.ToolTip = "Rate (vertical speed) given by the controller, ft/min (negative = descent). Mouse wheel: 100 ft/min per step (+Shift: 500), stopping once at the best rate. Enter: carry out, after the pilot reaction.";
+            headingBox.KeyDown += (s, e) =>
+            {
+                if (e.Key != Key.Enter) return;
+                GiveHeading();
+                e.Handled = true;
+            };
+            rateBox.KeyDown += (s, e) =>
+            {
+                if (e.Key != Key.Enter) return;
+                GiveRate(normal: false);
+                e.Handled = true;
+            };
+            headingBox.PreviewMouseWheel += (s, e) =>
+            {
+                StepHeading((e.Delta > 0 ? 1 : -1) * (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 10 : 1));
+                e.Handled = true;
+            };
+            rateBox.PreviewMouseWheel += (s, e) =>
+            {
+                StepRate((e.Delta > 0 ? 1 : -1) * (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 500 : 100));
+                e.Handled = true;
+            };
+            headingReaction.Tick += (s, e) =>
+            {
+                headingReaction.Stop();
+                TurnToHeading(pendingHeadingCallsign);
+            };
+            rateReaction.Tick += (s, e) =>
+            {
+                rateReaction.Stop();
+                ApplyRate(pendingRateCallsign, pendingNormal);
+            };
+
+            Border wheelNote = new()
+            {
+                Background = Frozen(Color.FromRgb(0xEE, 0xF5, 0xFC)),
+                BorderBrush = Frozen(Color.FromRgb(0xB9, 0xD5, 0xEF)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(6, 3, 6, 3),
+                Margin = new Thickness(0, 8, 0, 0),
+                Child = new TextBlock
+                {
+                    Text = "Mouse wheel over the HEADING and RATE fields changes the value: heading 1° (+Shift 10°), rate 100 ft/min (+Shift 500).",
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    FontSize = 11,
+                    Foreground = Frozen(Color.FromRgb(0x00, 0x4C, 0x8C))
+                }
+            };
+            instructions.Children.Add(wheelNote);
+            StackPanel reactionRow = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0) };
+            reactionRow.ToolTip = "Pilots are not instantaneous: every instruction (heading, rate, Final CRS, Normal) is carried out this long after it is given; with the wheel or held keys, after the last step (0 to 5 s).";
+            reactionRow.Children.Add(Caption("Pilot reaction"));
+            reactionRow.Children.Add(reactionBox);
+            reactionRow.Children.Add(Caption("s"));
+            instructions.Children.Add(reactionRow);
+            GroupBox instructionsGroup = Group("Instructions (controller)", instructions);
+            instructionsGroup.Margin = new Thickness(0, 0, 8, 0);
+            columns.Children.Add(instructionsGroup);
+
+            // Manual: turn rate and the stick (also a real joystick), at once.
+            StackPanel manual = new() { Width = PadSize + 4 };
+            manual.Children.Add(new TextBlock { Text = "Turn rate", Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 0, 2) });
             UniformGrid turnRow = new() { Columns = 3, Margin = new Thickness(0, 0, 0, 6) };
             (string Text, TestTurnMode Mode, string Tip)[] modes =
             [
-                ("1.5°/s", TestTurnMode.Half, "Half rate: 1.5°/s with the stick at its edge."),
-                ("3°/s", TestTurnMode.Standard, "Rate one: 3°/s with the stick at its edge."),
-                ("Free", TestTurnMode.Free, "The longer the stick is held at its edge, the faster the turn (up to 10°/s).")
+                ("1.5°/s", TestTurnMode.Half, "Half rate: 1.5°/s with the stick at its edge, and for the heading instructions."),
+                ("3°/s", TestTurnMode.Standard, "Rate one: 3°/s with the stick at its edge, and for the heading instructions."),
+                ("Free", TestTurnMode.Free, "The longer the stick is held at its edge, the faster the turn (up to 10°/s); heading instructions at 3°/s.")
             ];
             for (int i = 0; i < modes.Length; i++)
             {
                 TestTurnMode mode = modes[i].Mode;
-                Button button = new() { Content = modes[i].Text, ToolTip = modes[i].Tip, Padding = new Thickness(2, 2, 2, 2), Margin = new Thickness(1, 0, 1, 0) };
+                Button button = new() { Content = modes[i].Text, ToolTip = modes[i].Tip, Padding = new Thickness(2, 2, 2, 2) };
                 button.Click += (s, e) =>
                 {
                     traffic.TurnMode = mode;
@@ -176,32 +309,8 @@ namespace AuroraPAR
                 turnButtons[i] = button;
                 turnRow.Children.Add(button);
             }
-            // Stick in the middle column: turn rate keys over it; ▲ UP, ▼ DN and ◀ L / Final CRS / R ▶ under it, as
-            // wide as it; the rate of descent keys on its left.
-            Grid stickArea = new() { HorizontalAlignment = HorizontalAlignment.Center };
-            stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(PadSize + 2) });
-            for (int i = 0; i < 5; i++) stickArea.RowDefinitions.Add(new RowDefinition { Height = i == 1 ? new GridLength(PadSize + 2) : GridLength.Auto });
-            TextBlock turnLabel = new() { Text = "Turn rate:", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 8, 6) };
-            stickArea.Children.Add(turnLabel);
-            Grid.SetColumn(turnRow, 1);
-            stickArea.Children.Add(turnRow);
-            StackPanel vertical = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            Button less = WideButton("Reduce rate of desc.", "Reduce rate of descent: 100 ft/min less, on the steps through the best vertical speed.");
-            less.Click += (s, e) => StepRate(up: true);
-            Button optimal = WideButton("Normal rate of desc.", "Resume normal rate of descent: the vertical speed of the glide path for this ground speed, kept also when the speed, heading or wind change. The offset from the glide path stays.");
-            optimal.FontWeight = FontWeights.SemiBold;
-            optimal.Click += (s, e) => NormalRate();
-            Button more = WideButton("Increase rate of desc.", "Increase rate of descent: 100 ft/min more, on the steps through the best vertical speed.");
-            more.Click += (s, e) => StepRate(up: false);
-            vertical.Children.Add(less);
-            vertical.Children.Add(optimal);
-            vertical.Children.Add(more);
-            Grid.SetColumn(vertical, 0);
-            Grid.SetRow(vertical, 1);
-            stickArea.Children.Add(vertical);
-
-            Border padBorder = new() { BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1), Child = pad };
+            manual.Children.Add(turnRow);
+            Border padBorder = new() { BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1), Child = pad, HorizontalAlignment = HorizontalAlignment.Left };
             pad.Children.Add(new Line { X1 = PadSize / 2, Y1 = 4, X2 = PadSize / 2, Y2 = PadSize - 4, Stroke = Brushes.DimGray });
             pad.Children.Add(new Line { X1 = 4, Y1 = PadSize / 2, X2 = PadSize - 4, Y2 = PadSize / 2, Stroke = Brushes.DimGray });
             pad.Children.Add(PadText("UP", PadSize / 2 - 8, 2));
@@ -210,7 +319,7 @@ namespace AuroraPAR
             pad.Children.Add(PadText("R", PadSize - 12, PadSize / 2 - 16));
             pad.Children.Add(knob);
             CentreKnob();
-            pad.ToolTip = "Control stick: hold left/right to turn the selected aircraft at the turn rate chosen above, up/down to change its vertical speed. Released, the heading and the vertical speed reached stay.";
+            pad.ToolTip = "Control stick: hold left/right to turn the selected aircraft at the turn rate chosen above, up/down to change its vertical speed, at once (no pilot reaction). Released, the heading and the vertical speed reached stay, and the fields on the left follow.";
             pad.MouseLeftButtonDown += (s, e) =>
             {
                 pad.CaptureMouse();
@@ -223,92 +332,21 @@ namespace AuroraPAR
             };
             pad.MouseLeftButtonUp += (s, e) => ReleaseKnob();
             pad.LostMouseCapture += (s, e) => ReleaseKnob();
-            Grid.SetColumn(padBorder, 1);
-            Grid.SetRow(padBorder, 1);
-            stickArea.Children.Add(padBorder);
-
-            // ▲ UP right above ▼ DN, under the stick: held = stick at its top / bottom edge.
-            Button up = StickKey("▲ UP", 0, 1, "Climb / reduce the descent as the stick at its top edge while held (a click: at least 1 s). Released, the vertical speed reached stays.");
-            up.Margin = new Thickness(2, 6, 2, 0);
-            Grid.SetColumn(up, 1);
-            Grid.SetRow(up, 2);
-            stickArea.Children.Add(up);
-            Button down = StickKey("▼ DN", 0, -1, "Increase the descent as the stick at its bottom edge while held (a click: at least 1 s). Released, the vertical speed reached stays.");
-            down.Margin = new Thickness(2, 2, 2, 0);
-            Grid.SetColumn(down, 1);
-            Grid.SetRow(down, 3);
-            stickArea.Children.Add(down);
-
-            Button finalCourse = new()
+            manual.Children.Add(padBorder);
+            manual.Children.Add(new TextBlock
             {
-                Content = "Final CRS",
-                FontWeight = FontWeights.SemiBold,
-                Padding = new Thickness(2, 3, 2, 3),
-                Margin = new Thickness(2, 0, 2, 0),
-                ToolTip = "Turns the heading back to the final course at the turn rate chosen (3°/s with Free). With a crosswind the aircraft then drifts: correct the heading. The offset from the centreline stays."
-            };
-            finalCourse.Click += (s, e) => FinalCourse();
-            // Turn keys: held, as the stick at its edge (left or right); a short click turns for at least 1 s.
-            Grid lateral = new() { Margin = new Thickness(0, 6, 0, 0) };
-            lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
-            lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
-            Button left = StickKey("◀ L", -1, 0, "Turn left at the turn rate chosen while held (a click: at least 1 s). Released, the heading reached stays.");
-            Button rightKey = StickKey("R ▶", 1, 0, "Turn right at the turn rate chosen while held (a click: at least 1 s). Released, the heading reached stays.");
-            Grid.SetColumn(finalCourse, 1);
-            Grid.SetColumn(rightKey, 2);
-            lateral.Children.Add(left);
-            lateral.Children.Add(finalCourse);
-            lateral.Children.Add(rightKey);
-            Grid.SetColumn(lateral, 1);
-            Grid.SetRow(lateral, 4);
-            stickArea.Children.Add(lateral);
-            control.Children.Add(stickArea);
-
-            // Heading given by the controller.
-            StackPanel headingRow = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
-            headingRow.Children.Add(Caption("Heading"));
-            headingBox.MaxLength = 3;
-            headingBox.ToolTip = "Heading given by the controller, magnetic (e.g. 275). Enter: turn the shortest way. Mouse wheel: 1° per step (Shift: 10°), the aircraft turns the shortest way after the pilot reaction.";
-            headingBox.KeyDown += (s, e) =>
-            {
-                if (e.Key == Key.Enter)
-                {
-                    GiveHeading(0);
-                    e.Handled = true;
-                }
-            };
-            headingBox.PreviewMouseWheel += (s, e) =>
-            {
-                WheelHeading(e.Delta > 0 ? 1 : -1);
-                e.Handled = true;
-            };
-            reaction.Tick += (s, e) =>
-            {
-                reaction.Stop();
-                TurnToHeading(pendingSide, pendingCallsign);
-            };
-            headingRow.Children.Add(headingBox);
-            headingRow.Children.Add(Caption("°M"));
-            foreach ((string text, int side, string tip) in new[]
-            {
-                ("Turn L", -1, "Turn left to the heading."),
-                ("HDG", 0, "Turn to the heading, the shortest way."),
-                ("Turn R", 1, "Turn right to the heading.")
-            })
-            {
-                Button button = new() { Content = text, ToolTip = tip + " At the turn rate chosen (3°/s with Free); the stick cancels it.", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(4, 0, 0, 0) };
-                button.Click += (s, e) => GiveHeading(side);
-                headingRow.Children.Add(button);
-            }
-            control.Children.Add(headingRow);
-            StackPanel reactionRow = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
-            reactionRow.ToolTip = "Pilots are not instantaneous: a heading given (box, wheel, Turn L / HDG / Turn R) is carried out this long after it is given (0 to 5 s).";
-            reactionRow.Children.Add(Caption("Pilot reaction to the heading:"));
-            reactionRow.Children.Add(reactionBox);
-            reactionRow.Children.Add(Caption("s"));
-            control.Children.Add(reactionRow);
-            root.Children.Add(Group("Control", control));
+                Text = "Stick or real joystick: at once, no reaction delay. Released, heading and rate stay; the fields follow.",
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = 11,
+                Foreground = Brushes.Gray,
+                Margin = new Thickness(0, 6, 0, 0)
+            });
+            GroupBox manualGroup = Group("Manual (pilot flying)", manual);
+            Grid.SetColumn(manualGroup, 1);
+            columns.Children.Add(manualGroup);
+            control.Children.Add(columns);
+            GroupBox controlGroup = Group("Control", control);
+            root.Children.Add(controlGroup);
 
             // Service buttons.
             WrapPanel service = new() { Margin = new Thickness(0, 2, 0, 0) };
@@ -320,6 +358,7 @@ namespace AuroraPAR
             {
                 p.Auto = autoCheck.IsChecked == true;
                 p.TargetHeading = double.NaN;
+                fillFields = true;
             });
             service.Children.Add(autoCheck);
             pauseButton.Click += (s, e) => TogglePause();
@@ -356,6 +395,8 @@ namespace AuroraPAR
             Closed += (s, e) =>
             {
                 refresh.Stop();
+                headingReaction.Stop();
+                rateReaction.Stop();
                 traffic.Clear();
                 traffic.Paused = false;
             };
@@ -386,94 +427,42 @@ namespace AuroraPAR
             HorizontalContentAlignment = HorizontalAlignment.Right
         };
 
-        /// <summary>Shortest action of a click on ▲ UP / ▼ DN (seconds at full stick).</summary>
-        private const double StickKeySeconds = 1;
-        /// <summary>A press of ◀ L / R ▶ shorter than this is a click: the heading changes by <see cref="TurnClickDegrees"/>.</summary>
-        private const double TurnClickSeconds = 0.35;
-        private const double TurnClickDegrees = 1;
+        /// <summary>Steps of the rate keys (ft/min).</summary>
+        private const double RateKeyStep = 50;
 
-        /// <summary>
-        /// Key that acts as the stick at one of its edges while held (x: left −1 / right +1, or y: down −1 / up +1); a
-        /// short click still acts for <see cref="StickKeySeconds"/>. The knob of the stick moves with it. Released,
-        /// the heading and vertical speed reached stay.
-        /// </summary>
-        private Button StickKey(string text, int x, int y, string tip)
+        private static RepeatButton StepKey(string text, string tip) => new()
         {
-            Button key = new() { Content = text, Padding = new Thickness(2, 3, 2, 3), ToolTip = tip };
-            DateTime pressed = DateTime.MinValue;
-            DispatcherTimer stop = new();
-            // Turn keys: heading when pressed, so that a click turns exactly 1°.
-            double pressHeading = double.NaN;
-            string? pressCallsign = null;
-            void Set(int value)
-            {
-                if (x != 0) SetKeyStick(value * x, keyY);
-                else SetKeyStick(keyX, value * y);
-            }
-            stop.Tick += (s, e) =>
-            {
-                stop.Stop();
-                if (key.IsPressed) return;
-                if (x != 0)
-                {
-                    // End of the short show of a click: the knob back to the centre.
-                    if (keyX == 0 && keyY == 0 && joystickCallsign == null && !pad.IsMouseCaptured) CentreKnob();
-                }
-                else
-                {
-                    Set(0);
-                }
-            };
-            key.PreviewMouseLeftButtonDown += (s, e) =>
-            {
-                pressed = DateTime.UtcNow;
-                stop.Stop();
-                pressCallsign = list.SelectedItem as string;
-                pressHeading = double.NaN;
-                // Several quick clicks add up: from the heading still being reached, if any.
-                if (pressCallsign != null) traffic.Change(pressCallsign, p => pressHeading = double.IsNaN(p.TargetHeading) ? p.Heading : p.TargetHeading);
-                Set(1);
-            };
-            void Release()
-            {
-                if (pressed == DateTime.MinValue) return;
-                double held = (DateTime.UtcNow - pressed).TotalSeconds;
-                pressed = DateTime.MinValue;
-                if (x != 0 && held < TurnClickSeconds && pressCallsign != null && !double.IsNaN(pressHeading))
-                {
-                    // A click on ◀ L / R ▶: exactly 1° from the heading when pressed; the knob shows it for a moment.
-                    Set(0);
-                    double target = TestTraffic.Wrap(pressHeading + x * TurnClickDegrees);
-                    traffic.Change(pressCallsign, p =>
-                    {
-                        p.TargetHeading = target;
-                        p.TargetTurn = 0;
-                        p.Auto = false;
-                    });
-                    ShowKnob(x, 0);
-                    stop.Interval = TimeSpan.FromSeconds(0.3);
-                    stop.Start();
-                    return;
-                }
-                if (x != 0 || held >= StickKeySeconds)
-                {
-                    Set(0);
-                }
-                else
-                {
-                    stop.Interval = TimeSpan.FromSeconds(StickKeySeconds - held);
-                    stop.Start();
-                }
-            }
-            key.PreviewMouseLeftButtonUp += (s, e) => Release();
-            key.LostMouseCapture += (s, e) => Release();
-            return key;
-        }
+            Content = text,
+            ToolTip = tip,
+            FontWeight = FontWeights.SemiBold,
+            Padding = new Thickness(5, 3, 5, 3),
+            Delay = 400,
+            Interval = 120
+        };
+
+        private static TextBlock FieldCaption(string text) => new()
+        {
+            Text = text,
+            FontSize = 10,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.DimGray,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 3)
+        };
+
+        private static TextBlock FieldHint(string text) => new()
+        {
+            Text = text,
+            FontSize = 11,
+            Foreground = Brushes.Gray,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 2, 0, 6)
+        };
 
         /// <summary>Aircraft moved by the keys or the stick of the window (released there, even if the selection changed).</summary>
         private string? manualCallsign;
 
-        /// <summary>The selection changed while keys or the stick were held: the previous aircraft keeps its heading and vertical speed.</summary>
+        /// <summary>The selection changed while the stick was held: the previous aircraft keeps its heading and vertical speed.</summary>
         private void ReleaseManual()
         {
             if (manualCallsign == null || manualCallsign == list.SelectedItem as string) return;
@@ -484,66 +473,11 @@ namespace AuroraPAR
                 p.StickHeld = 0;
             });
             manualCallsign = null;
-            keyX = keyY = 0;
             if (pad.IsMouseCaptured) pad.ReleaseMouseCapture();
             CentreKnob();
         }
 
-        /// <summary>Deflection of the keys: given to the selected aircraft and shown by the knob.</summary>
-        private void SetKeyStick(double x, double y)
-        {
-            keyX = x;
-            keyY = y;
-            if (x != 0 || y != 0)
-            {
-                ShowKnob(x, y);
-                manualCallsign = list.SelectedItem as string;
-            }
-            else if (joystickCallsign == null && !pad.IsMouseCaptured)
-            {
-                CentreKnob();
-            }
-            string? target = x == 0 && y == 0 ? manualCallsign ?? list.SelectedItem as string : list.SelectedItem as string;
-            if (x == 0 && y == 0) manualCallsign = null;
-            if (target == null) return;
-            traffic.Change(target, p =>
-            {
-                p.StickX = x;
-                p.StickY = y;
-                if (x != 0)
-                {
-                    p.Auto = false;
-                    p.TargetHeading = double.NaN;
-                }
-                else
-                {
-                    p.StickHeld = 0;
-                }
-                if (y != 0)
-                {
-                    p.Auto = false;
-                    p.HoldGlidePath = false;
-                }
-            });
-            // Keys released: a real joystick still deflected takes over again.
-            if (x == 0 && y == 0 && (joystickX != 0 || joystickY != 0))
-            {
-                joystickCallsign = null;
-                ApplyJoystick();
-            }
-        }
-
         private static Button SmallButton(string text) => new() { Content = text, Margin = new Thickness(0, 0, 6, 4), Padding = new Thickness(8, 2, 8, 2) };
-
-        /// <summary>Rate of descent key: the column as wide as the stick, all the same width, text centred.</summary>
-        private static Button WideButton(string text, string tip) => new()
-        {
-            Content = text,
-            ToolTip = tip,
-            Height = 28,
-            Margin = new Thickness(0, 3, 0, 3),
-            HorizontalContentAlignment = HorizontalAlignment.Center
-        };
 
         private static TextBlock Caption(string text) => new() { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0) };
 
@@ -649,62 +583,70 @@ namespace AuroraPAR
         /// <summary>An aircraft is selected (the joystick moves it in the automatic role).</summary>
         internal bool HasSelection => list.SelectedItem is string;
 
-        private void FinalCourse() => ChangeSelected(p =>
+        /// <summary>Final CRS: the final course in the heading box, carried out after the pilot reaction.</summary>
+        private void FinalCourse()
         {
-            p.TargetHeading = 0;
-            p.TargetTurn = 0;
-            p.Auto = false;
-        });
+            TestTraffic.Plane? plane = Selected();
+            if (plane == null || plane.GroundSpeed <= 0) return;
+            headingBox.Text = Magnetic(plane.FinalTrue).ToString("000", CultureInfo.InvariantCulture);
+            GiveHeading();
+        }
 
-        /// <summary>Turns the selected aircraft to the heading of the box (magnetic): left −1, right 1, shortest 0.</summary>
-        /// <summary>A heading instruction (box, wheel, buttons): carried out after the pilot reaction; a new one replaces it.</summary>
-        private void GiveHeading(int side)
+        /// <summary>The selected aircraft (a copy), or null.</summary>
+        private TestTraffic.Plane? Selected() => traffic.List().FirstOrDefault(p => p.Callsign == list.SelectedItem as string);
+
+        /// <summary>Magnetic direction 1–360 of a true one.</summary>
+        private int Magnetic(double trueDegrees)
+        {
+            int magnetic = (int)Math.Round(trueDegrees - variation(), MidpointRounding.AwayFromZero);
+            magnetic = (magnetic % 360 + 360) % 360;
+            return magnetic == 0 ? 360 : magnetic;
+        }
+
+        /// <summary>Heading box changed by keys or wheel (degrees, + right), then carried out after the pilot reaction.</summary>
+        private void StepHeading(int degrees)
+        {
+            if (!int.TryParse(headingBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360)
+            {
+                if (Selected() is not TestTraffic.Plane plane)
+                {
+                    System.Media.SystemSounds.Beep.Play();
+                    return;
+                }
+                heading = Magnetic(plane.HeadingTrue);
+            }
+            heading = ((heading + degrees) % 360 + 360) % 360;
+            if (heading == 0) heading = 360;
+            headingBox.Text = heading.ToString("000", CultureInfo.InvariantCulture);
+            headingBox.CaretIndex = headingBox.Text.Length;
+            GiveHeading();
+        }
+
+        private double ReactionSeconds => TryNumber(reactionBox, 0, 5, out double seconds) ? seconds : 0.5;
+
+        /// <summary>A heading instruction: carried out after the pilot reaction; a new one (or one more step) replaces it.</summary>
+        private void GiveHeading()
         {
             if (list.SelectedItem is not string callsign)
             {
                 System.Media.SystemSounds.Beep.Play();
                 return;
             }
-            pendingSide = side;
-            pendingCallsign = callsign;
-            reaction.Stop();
-            double delay = TryNumber(reactionBox, 0, 5, out double seconds) ? seconds : 0.5;
-            if (delay <= 0)
+            pendingHeadingCallsign = callsign;
+            headingReaction.Stop();
+            if (ReactionSeconds <= 0)
             {
-                TurnToHeading(side, callsign);
+                TurnToHeading(callsign);
                 return;
             }
-            reaction.Interval = TimeSpan.FromSeconds(delay);
-            reaction.Start();
+            headingReaction.Interval = TimeSpan.FromSeconds(ReactionSeconds);
+            headingReaction.Start();
         }
 
-        /// <summary>Mouse wheel over the heading box: 1° per step (Shift: 10°), from the heading of the aircraft when empty.</summary>
-        private void WheelHeading(int direction)
+        /// <summary>Turns the aircraft the shortest way to the heading of the box (magnetic).</summary>
+        private void TurnToHeading(string? callsign)
         {
-            int step = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 10 : 1;
-            if (!int.TryParse(headingBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360)
-            {
-                TestTraffic.Plane? plane = traffic.List().FirstOrDefault(p => p.Callsign == list.SelectedItem as string);
-                if (plane == null)
-                {
-                    System.Media.SystemSounds.Beep.Play();
-                    return;
-                }
-                heading = (int)Math.Round(plane.HeadingTrue - variation(), MidpointRounding.AwayFromZero);
-                step = 0;
-            }
-            heading = ((heading + direction * step) % 360 + 360) % 360;
-            if (heading == 0) heading = 360;
-            headingBox.Text = heading.ToString("000", CultureInfo.InvariantCulture);
-            headingBox.CaretIndex = headingBox.Text.Length;
-            GiveHeading(0);
-        }
-
-        /// <summary>Turns the aircraft to the heading of the box (magnetic): left −1, right 1, shortest 0.</summary>
-        private void TurnToHeading(int side, string? callsign)
-        {
-            string text = headingBox.Text.Trim();
-            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360 || callsign == null)
+            if (!int.TryParse(headingBox.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360 || callsign == null)
             {
                 System.Media.SystemSounds.Beep.Play();
                 return;
@@ -713,27 +655,90 @@ namespace AuroraPAR
             traffic.Change(callsign, p =>
             {
                 p.TargetHeading = TestTraffic.Wrap(heading + magneticVariation - p.FinalTrue);
-                p.TargetTurn = side;
+                p.TargetTurn = 0;
                 p.Auto = false;
             });
         }
 
-        private void NormalRate() => ChangeSelected(p =>
+        /// <summary>
+        /// Rate box changed by keys or wheel (ft/min, + up), stopping once at the best rate when a step would cross it;
+        /// then carried out after the pilot reaction.
+        /// </summary>
+        private void StepRate(double step)
         {
-            p.HoldGlidePath = true;
-            p.Auto = false;
-        });
+            if (Selected() is not TestTraffic.Plane plane)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+            double current = TryNumber(rateBox, TestTraffic.MaxDescent, TestTraffic.MaxClimb, out double value) ? value : plane.VerticalSpeed;
+            double best = Math.Round(plane.BestVerticalSpeed / 10) * 10;
+            double next = current + step;
+            if ((current < best && next > best) || (current > best && next < best)) next = best;
+            next = Math.Clamp(next, TestTraffic.MaxDescent, TestTraffic.MaxClimb);
+            rateBox.Text = FormatRate(next);
+            rateBox.CaretIndex = rateBox.Text.Length;
+            GiveRate(normal: false);
+        }
 
-        /// <summary>Reduce (up) or increase (down) the rate of descent by one step.</summary>
-        private void StepRate(bool up) => ChangeSelected(p =>
+        /// <summary>Normal rate of descent: the best rate in the box, kept while speed, heading or wind change.</summary>
+        private void NormalRate()
         {
-            p.HoldGlidePath = false;
-            p.Auto = false;
-            p.VerticalSpeed = TestTraffic.StepVerticalSpeed(p.VerticalSpeed, p.BestVerticalSpeed, up);
-        });
+            if (Selected() is not TestTraffic.Plane plane) return;
+            rateBox.Text = FormatRate(Math.Round(plane.BestVerticalSpeed / 10) * 10);
+            GiveRate(normal: true);
+        }
+
+        private static string FormatRate(double feetPerMinute) => feetPerMinute.ToString("+0;-0;0", CultureInfo.InvariantCulture);
+
+        /// <summary>A rate instruction: carried out after the pilot reaction; a new one replaces it.</summary>
+        private void GiveRate(bool normal)
+        {
+            if (list.SelectedItem is not string callsign)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+            pendingRateCallsign = callsign;
+            pendingNormal = normal;
+            rateReaction.Stop();
+            if (ReactionSeconds <= 0)
+            {
+                ApplyRate(callsign, normal);
+                return;
+            }
+            rateReaction.Interval = TimeSpan.FromSeconds(ReactionSeconds);
+            rateReaction.Start();
+        }
+
+        private void ApplyRate(string? callsign, bool normal)
+        {
+            if (callsign == null) return;
+            if (normal)
+            {
+                traffic.Change(callsign, p =>
+                {
+                    p.HoldGlidePath = true;
+                    p.Auto = false;
+                });
+                return;
+            }
+            if (!TryNumber(rateBox, TestTraffic.MaxDescent, TestTraffic.MaxClimb, out double rate))
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+            traffic.Change(callsign, p =>
+            {
+                p.VerticalSpeed = rate;
+                p.HoldGlidePath = false;
+                p.Auto = false;
+            });
+        }
 
         private void OnPath() => ChangeSelected(p =>
         {
+            fillFields = true;
             p.Lateral = 0;
             p.Height = double.NaN;
             p.VerticalSpeed = 0;
@@ -756,8 +761,8 @@ namespace AuroraPAR
             {
                 case JoystickCommand.FinalCourse: FinalCourse(); break;
                 case JoystickCommand.NormalRate: NormalRate(); break;
-                case JoystickCommand.ReduceRate: StepRate(up: true); break;
-                case JoystickCommand.IncreaseRate: StepRate(up: false); break;
+                case JoystickCommand.ReduceRate: StepRate(100); break;
+                case JoystickCommand.IncreaseRate: StepRate(-100); break;
                 case JoystickCommand.OnPath: OnPath(); break;
                 case JoystickCommand.Pause: TogglePause(); break;
                 case JoystickCommand.TurnRate:
@@ -818,6 +823,7 @@ namespace AuroraPAR
             {
                 if (joystickCallsign == null) return;
                 joystickCallsign = null;
+                fillFields = true;
                 CentreKnob();
                 traffic.Change(selected, p =>
                 {
@@ -884,6 +890,8 @@ namespace AuroraPAR
             TestTraffic.Plane? plane = traffic.List().FirstOrDefault(p => p.Callsign == list.SelectedItem as string);
             if (plane == null)
             {
+                finalCourseButton.Content = "Final CRS";
+                normalButton.Content = "Normal";
                 info.Text = traffic.Count == 0 ? "No test aircraft:\nAdd one above." : "";
                 bestValue.Text = actualValue.Text = turnValue.Text = headingValue.Text = driftValue.Text = "---";
                 bestLabel.Text = "BEST VS";
@@ -902,6 +910,20 @@ namespace AuroraPAR
             int drift = (int)Math.Round(plane.Drift);
             driftValue.Text = drift == 0 ? "0" : $"{Math.Abs(drift)} {(drift > 0 ? "R" : "L")}";
             if (autoCheck.IsChecked != plane.Auto) autoCheck.IsChecked = plane.Auto;
+            double best = Math.Round(plane.BestVerticalSpeed / 10) * 10;
+            if (plane.GroundSpeed > 0)
+            {
+                finalCourseButton.Content = $"Final CRS ({Magnetic(plane.FinalTrue):000})";
+                normalButton.Content = $"Normal ({FormatRate(best).Replace('-', '−')})";
+            }
+            // The fields start from the values of the aircraft (instructed heading and rate), not while typing in them.
+            if (fillFields && plane.GroundSpeed > 0)
+            {
+                fillFields = false;
+                double heading = double.IsNaN(plane.TargetHeading) ? plane.HeadingTrue : plane.FinalTrue + plane.TargetHeading;
+                if (!headingBox.IsKeyboardFocused) headingBox.Text = Magnetic(heading).ToString("000", CultureInfo.InvariantCulture);
+                if (!rateBox.IsKeyboardFocused) rateBox.Text = FormatRate(plane.HoldGlidePath ? best : Math.Round(plane.VerticalSpeed / 10) * 10);
+            }
         }
 
         private static string Rounded(double feetPerMinute)
@@ -970,6 +992,7 @@ namespace AuroraPAR
                 });
             }
             manualCallsign = null;
+            fillFields = true;
             // A real joystick still deflected takes over again.
             if (joystickCallsign != null || joystickX != 0 || joystickY != 0)
             {
