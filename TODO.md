@@ -2,6 +2,8 @@
 
 ## Next update
 
+- **Test traffic: rate of descent keys with full names** (mockup testtraffic7): **Reduce rate of desc.**, **Normal rate of desc.** (bold), **Increase rate of desc.**; the column of these keys as wide as the stick (150), all three keys the same width, text centred.
+
 - **Test traffic: the stick follows the keys** (visual confirmation): while ◀ L / R ▶ are held the stick knob moves to the left / right edge (and back to the centre when released); the same for climb / descent. **New keys ▲ UP / ▼ DN** with the same logic as L / R: held = stick at its top / bottom edge (vertical speed changing while held), a click = at least 1 s; released, the vertical speed reached stays; the knob moves with them. Placed **under the stick, UP right above DN** (decided, less mouse travel; mockup testtraffic6): turn rate / stick / ▲ UP / ▼ DN / ◀ L · Final CRS · R ▶, all as wide as the stick.
 
 - **Analog: each control group as a knob or as keys** (Settings, analog only, per profile; groups can be mixed). Keys in the style of the RWY / GP keys; each key also has a keyboard key (for a programmable USB keypad, see "External controls"). **Also a virtual keypad on a phone / tablet** (later): a web page like the coordination phone panel (same relay, same pairing/QR link) with the same keys, sending the commands to AuroraPAR — so every key needs a named command, not only a keyboard key.
