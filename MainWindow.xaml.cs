@@ -659,7 +659,10 @@ namespace AuroraPAR
         {
             if (testTrafficWindow == null)
             {
-                testTrafficWindow = new TestTrafficWindow(testTraffic, OpenJoystick) { Owner = this };
+                testTrafficWindow = new TestTrafficWindow(testTraffic, OpenJoystick,
+                    () => runway.MagneticVariation ?? settings.Active.MagneticVariation,
+                    () => aurora.LastMetar is MetarReport report && string.Equals(report.Icao, runway.ICAO, StringComparison.OrdinalIgnoreCase) ? report.Text : null)
+                { Owner = this };
                 testTrafficWindow.Left = Math.Max(0, Left + 40);
                 testTrafficWindow.Top = Math.Max(0, Top + 60);
                 testTrafficWindow.Closed += (s, e) =>

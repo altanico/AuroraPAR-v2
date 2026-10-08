@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -10,11 +11,12 @@ using System.Windows.Threading;
 namespace AuroraPAR
 {
     /// <summary>
-    /// Window of the test traffic (key T). Top: new aircraft (distance, speed, SSR, initial offsets) and the list.
-    /// Control: the readouts the instructor needs while flying (best vertical speed of the glide path, actual vertical
-    /// speed, actual turn rate), the turn rate (1.5°/s, 3°/s, Free), the vertical buttons (less descent / Optimal GP /
-    /// more descent, in steps aligned on the best vertical speed) beside the stick, Final CRS under it. Closing the
-    /// window removes the test traffic.
+    /// Window of the test traffic (key T). Top: new aircraft (distance, speed, SSR, initial offsets), the wind and the
+    /// list. Control: the readouts the instructor needs while flying (best vertical speed of the glide path, actual
+    /// vertical speed, actual turn rate, heading, drift), the turn rate (1.5°/s, 3°/s, Free), the rate of descent keys
+    /// (reduce / normal / increase, in steps aligned on the best vertical speed) beside the stick, ▲ UP / ▼ DN and
+    /// ◀ L / Final CRS / R ▶ under it, and the heading given by the controller. Closing the window removes the test
+    /// traffic.
     /// </summary>
     internal sealed class TestTrafficWindow : Window
     {
@@ -25,19 +27,30 @@ namespace AuroraPAR
         private static readonly Brush ReadoutText = Frozen(Color.FromRgb(0xFF, 0xB8, 0x40));
         private static readonly Brush ReadoutLabel = Frozen(Color.FromRgb(0x9A, 0x9A, 0x90));
         private static readonly Brush SelectedBack = Frozen(Color.FromRgb(0x00, 0x78, 0xD4));
+        /// <summary>Wind in a METAR: 27015KT, 27015G25KT, VRB03KT, 27008MPS.</summary>
+        private static readonly Regex MetarWind = new(@"\b(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS|KMH)\b");
 
         private readonly TestTraffic traffic;
+        private readonly Func<double> variation;
+        private readonly Func<string?> metar;
         private readonly TextBox distanceBox = NumberBox("10");
         private readonly TextBox speedBox = NumberBox("140");
         private readonly TextBox squawkBox = NumberBox("7001");
         private readonly TextBox lateralBox = NumberBox("0");
         private readonly TextBox heightBox = NumberBox("0");
+        private readonly TextBox windFromBox = NumberBox("0");
+        private readonly TextBox windSpeedBox = NumberBox("0");
+        private readonly TextBox windGustBox = NumberBox("0");
+        private readonly TextBlock windMagnetic = new() { VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 4, 0) };
+        private readonly TextBox headingBox = NumberBox("");
         private readonly ListBox list = new() { Height = 64, Width = 110 };
         private readonly TextBlock info = new() { Margin = new Thickness(10, 0, 0, 0), TextWrapping = TextWrapping.Wrap };
         private readonly TextBlock bestLabel = ReadoutCaption("BEST VS");
         private readonly TextBlock bestValue = ReadoutNumber();
         private readonly TextBlock actualValue = ReadoutNumber();
         private readonly TextBlock turnValue = ReadoutNumber();
+        private readonly TextBlock headingValue = ReadoutNumber();
+        private readonly TextBlock driftValue = ReadoutNumber();
         private readonly Button[] turnButtons = new Button[3];
         private readonly CheckBox autoCheck = new() { Content = "Auto (intercepts centreline and GP)", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
         private readonly CheckBox auroraCheck = new()
@@ -51,17 +64,22 @@ namespace AuroraPAR
         private readonly Ellipse knob = new() { Width = KnobSize, Height = KnobSize, Fill = Frozen(Color.FromRgb(0x70, 0xD0, 0x70)), Stroke = Brushes.Black, IsHitTestVisible = false };
         private readonly DispatcherTimer refresh = new() { Interval = TimeSpan.FromSeconds(0.25) };
         private bool updatingList;
+        // Deflection given by the keys ◀ L / R ▶ / ▲ UP / ▼ DN (the knob shows it).
+        private double keyX;
+        private double keyY;
 
-        internal TestTrafficWindow(TestTraffic traffic, Action<Window>? openJoystick = null)
+        internal TestTrafficWindow(TestTraffic traffic, Action<Window>? openJoystick = null, Func<double>? variation = null, Func<string?>? metar = null)
         {
             this.traffic = traffic;
+            this.variation = variation ?? (() => 0);
+            this.metar = metar ?? (() => null);
             Title = "Aurora PAR - Test traffic";
             SizeToContent = SizeToContent.WidthAndHeight;
             ResizeMode = ResizeMode.NoResize;
             ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.Manual;
 
-            StackPanel root = new() { Margin = new Thickness(10), Width = 400 };
+            StackPanel root = new() { Margin = new Thickness(10), Width = 430 };
 
             // New aircraft.
             StackPanel newPanel = new();
@@ -88,6 +106,27 @@ namespace AuroraPAR
             newPanel.Children.Add(second);
             root.Children.Add(Group("New aircraft", newPanel));
 
+            // Wind (all the test aircraft).
+            WrapPanel windPanel = new();
+            windPanel.Children.Add(Caption("From"));
+            windPanel.Children.Add(windFromBox);
+            windPanel.Children.Add(Caption("°T"));
+            windPanel.Children.Add(windMagnetic);
+            windPanel.Children.Add(windSpeedBox);
+            windPanel.Children.Add(Caption("kt   gusts +"));
+            windPanel.Children.Add(windGustBox);
+            windPanel.Children.Add(Caption("kt"));
+            Button fromMetar = new() { Content = "From METAR", Margin = new Thickness(6, 0, 0, 0), Padding = new Thickness(6, 1, 6, 1), ToolTip = "Copies the wind of the METAR of the airport in use (received from Aurora). A METAR gives the direction in degrees true." };
+            fromMetar.Click += (s, e) => WindFromMetar();
+            windPanel.Children.Add(fromMetar);
+            windFromBox.Text = traffic.WindFrom.ToString("000", CultureInfo.InvariantCulture);
+            windSpeedBox.Text = traffic.WindSpeed.ToString("0", CultureInfo.InvariantCulture);
+            windGustBox.Text = traffic.WindGust.ToString("0", CultureInfo.InvariantCulture);
+            foreach (TextBox box in new[] { windFromBox, windSpeedBox, windGustBox }) box.TextChanged += (s, e) => ApplyWind();
+            GroupBox windGroup = Group("Wind (rough: the same at all heights)", windPanel);
+            windGroup.ToolTip = "The aircraft fly their heading through the air: a crosswind makes them drift off the centreline unless the heading is corrected, a headwind lowers the ground speed and so the rate of descent on the glide path. Gusts: the wind grows at random up to this much more.";
+            root.Children.Add(windGroup);
+
             // Aircraft.
             StackPanel aircraftPanel = new() { Orientation = Orientation.Horizontal };
             aircraftPanel.Children.Add(list);
@@ -103,10 +142,12 @@ namespace AuroraPAR
             // Control.
             StackPanel control = new();
             Grid readouts = new() { Background = ReadoutBack, Margin = new Thickness(0, 0, 0, 8) };
-            for (int i = 0; i < 3; i++) readouts.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = 0; i < 5; i++) readouts.ColumnDefinitions.Add(new ColumnDefinition());
             AddReadout(readouts, 0, bestLabel, bestValue, "ft/min");
             AddReadout(readouts, 1, ReadoutCaption("ACTUAL VS"), actualValue, "ft/min");
-            AddReadout(readouts, 2, ReadoutCaption("TURN"), turnValue, "actual");
+            AddReadout(readouts, 2, ReadoutCaption("TURN"), turnValue, "°/s");
+            AddReadout(readouts, 3, ReadoutCaption("HDG"), headingValue, "°M");
+            AddReadout(readouts, 4, ReadoutCaption("DRIFT"), driftValue, "° (wind)");
             control.Children.Add(readouts);
 
             // Turn rate keys over the stick, as wide as it.
@@ -129,25 +170,23 @@ namespace AuroraPAR
                 turnButtons[i] = button;
                 turnRow.Children.Add(button);
             }
-            // Stick in the middle column: turn rate keys over it, turn keys and Final CRS under it (as wide as it),
-            // vertical speed keys on its left.
+            // Stick in the middle column: turn rate keys over it; ▲ UP, ▼ DN and ◀ L / Final CRS / R ▶ under it, as
+            // wide as it; the rate of descent keys on its left.
             Grid stickArea = new() { HorizontalAlignment = HorizontalAlignment.Center };
-            stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
             stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(PadSize + 2) });
-            stickArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            stickArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(PadSize + 2) });
-            stickArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            for (int i = 0; i < 5; i++) stickArea.RowDefinitions.Add(new RowDefinition { Height = i == 1 ? new GridLength(PadSize + 2) : GridLength.Auto });
             TextBlock turnLabel = new() { Text = "Turn rate:", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 8, 6) };
             stickArea.Children.Add(turnLabel);
             Grid.SetColumn(turnRow, 1);
             stickArea.Children.Add(turnRow);
             StackPanel vertical = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            Button less = WideButton("− rate of desc.", "Reduce rate of descent: 100 ft/min less, on the steps through the best vertical speed.");
+            Button less = WideButton("Reduce rate of desc.", "Reduce rate of descent: 100 ft/min less, on the steps through the best vertical speed.");
             less.Click += (s, e) => StepRate(up: true);
-            Button optimal = WideButton("= rate of desc.", "Resume normal rate of descent: the vertical speed of the glide path for this speed, kept also when the speed or course change. The offset from the glide path stays.");
+            Button optimal = WideButton("Normal rate of desc.", "Resume normal rate of descent: the vertical speed of the glide path for this ground speed, kept also when the speed, heading or wind change. The offset from the glide path stays.");
             optimal.FontWeight = FontWeights.SemiBold;
             optimal.Click += (s, e) => NormalRate();
-            Button more = WideButton("+ rate of desc.", "Increase rate of descent: 100 ft/min more, on the steps through the best vertical speed.");
+            Button more = WideButton("Increase rate of desc.", "Increase rate of descent: 100 ft/min more, on the steps through the best vertical speed.");
             more.Click += (s, e) => StepRate(up: false);
             vertical.Children.Add(less);
             vertical.Children.Add(optimal);
@@ -165,7 +204,7 @@ namespace AuroraPAR
             pad.Children.Add(PadText("R", PadSize - 12, PadSize / 2 - 16));
             pad.Children.Add(knob);
             CentreKnob();
-            pad.ToolTip = "Control stick: hold left/right to turn the selected aircraft at the turn rate chosen above, up/down to change its vertical speed. Released, the course and the vertical speed reached stay.";
+            pad.ToolTip = "Control stick: hold left/right to turn the selected aircraft at the turn rate chosen above, up/down to change its vertical speed. Released, the heading and the vertical speed reached stay.";
             pad.MouseLeftButtonDown += (s, e) =>
             {
                 pad.CaptureMouse();
@@ -182,47 +221,83 @@ namespace AuroraPAR
             Grid.SetRow(padBorder, 1);
             stickArea.Children.Add(padBorder);
 
+            // ▲ UP right above ▼ DN, under the stick: held = stick at its top / bottom edge.
+            Button up = StickKey("▲ UP", 0, 1, "Climb / reduce the descent as the stick at its top edge while held (a click: at least 1 s). Released, the vertical speed reached stays.");
+            up.Margin = new Thickness(2, 6, 2, 0);
+            Grid.SetColumn(up, 1);
+            Grid.SetRow(up, 2);
+            stickArea.Children.Add(up);
+            Button down = StickKey("▼ DN", 0, -1, "Increase the descent as the stick at its bottom edge while held (a click: at least 1 s). Released, the vertical speed reached stays.");
+            down.Margin = new Thickness(2, 2, 2, 0);
+            Grid.SetColumn(down, 1);
+            Grid.SetRow(down, 3);
+            stickArea.Children.Add(down);
+
             Button finalCourse = new()
             {
                 Content = "Final CRS",
                 FontWeight = FontWeights.SemiBold,
-                Padding = new Thickness(14, 3, 14, 3),
-                Margin = new Thickness(0, 6, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                ToolTip = "Turns back to the final course at the turn rate chosen (3°/s with Free). The offset from the centreline stays."
+                Padding = new Thickness(2, 3, 2, 3),
+                Margin = new Thickness(2, 0, 2, 0),
+                ToolTip = "Turns the heading back to the final course at the turn rate chosen (3°/s with Free). With a crosswind the aircraft then drifts: correct the heading. The offset from the centreline stays."
             };
             finalCourse.Click += (s, e) => FinalCourse();
-            finalCourse.Margin = new Thickness(2, 0, 2, 0);
-            finalCourse.Padding = new Thickness(2, 3, 2, 3);
-            finalCourse.HorizontalAlignment = HorizontalAlignment.Stretch;
             // Turn keys: held, as the stick at its edge (left or right); a short click turns for at least 1 s.
             Grid lateral = new() { Margin = new Thickness(0, 6, 0, 0) };
             lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
             lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
-            Button left = TurnKey("◀ L", -1);
-            Button rightKey = TurnKey("R ▶", 1);
+            Button left = StickKey("◀ L", -1, 0, "Turn left at the turn rate chosen while held (a click: at least 1 s). Released, the heading reached stays.");
+            Button rightKey = StickKey("R ▶", 1, 0, "Turn right at the turn rate chosen while held (a click: at least 1 s). Released, the heading reached stays.");
             Grid.SetColumn(finalCourse, 1);
             Grid.SetColumn(rightKey, 2);
             lateral.Children.Add(left);
             lateral.Children.Add(finalCourse);
             lateral.Children.Add(rightKey);
             Grid.SetColumn(lateral, 1);
-            Grid.SetRow(lateral, 2);
+            Grid.SetRow(lateral, 4);
             stickArea.Children.Add(lateral);
             control.Children.Add(stickArea);
+
+            // Heading given by the controller.
+            StackPanel headingRow = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
+            headingRow.Children.Add(Caption("Heading"));
+            headingBox.MaxLength = 3;
+            headingBox.ToolTip = "Heading given by the controller, magnetic (e.g. 275). Enter: turn the shortest way.";
+            headingBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    TurnToHeading(0);
+                    e.Handled = true;
+                }
+            };
+            headingRow.Children.Add(headingBox);
+            headingRow.Children.Add(Caption("°M"));
+            foreach ((string text, int side, string tip) in new[]
+            {
+                ("Turn L", -1, "Turn left to the heading."),
+                ("HDG", 0, "Turn to the heading, the shortest way."),
+                ("Turn R", 1, "Turn right to the heading.")
+            })
+            {
+                Button button = new() { Content = text, ToolTip = tip + " At the turn rate chosen (3°/s with Free); the stick cancels it.", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(4, 0, 0, 0) };
+                button.Click += (s, e) => TurnToHeading(side);
+                headingRow.Children.Add(button);
+            }
+            control.Children.Add(headingRow);
             root.Children.Add(Group("Control", control));
 
             // Service buttons.
             WrapPanel service = new() { Margin = new Thickness(0, 2, 0, 0) };
             Button onPath = SmallButton("On GP / CL");
-            onPath.ToolTip = "Puts the aircraft exactly on the centreline and the glide path, on the final course, at once.";
+            onPath.ToolTip = "Puts the aircraft exactly on the centreline and the glide path at once, with the heading that holds the final course in this wind.";
             onPath.Click += (s, e) => OnPath();
             service.Children.Add(onPath);
             autoCheck.Click += (s, e) => ChangeSelected(p =>
             {
                 p.Auto = autoCheck.IsChecked == true;
-                p.BackToFinal = false;
+                p.TargetHeading = double.NaN;
             });
             service.Children.Add(autoCheck);
             pauseButton.Click += (s, e) => TogglePause();
@@ -253,6 +328,7 @@ namespace AuroraPAR
             Content = root;
 
             ShowTurnMode();
+            ApplyWind();
             refresh.Tick += (s, e) => RefreshList();
             refresh.Start();
             Closed += (s, e) =>
@@ -288,46 +364,47 @@ namespace AuroraPAR
             HorizontalContentAlignment = HorizontalAlignment.Right
         };
 
-        /// <summary>Shortest turn of a click on a turn key (seconds at full stick).</summary>
-        private const double TurnKeySeconds = 1;
+        /// <summary>Shortest action of a click on a stick key (seconds at full stick).</summary>
+        private const double StickKeySeconds = 1;
 
         /// <summary>
-        /// Key that turns the selected aircraft as the stick at its edge while held (left −1, right +1); a short click
-        /// still turns for <see cref="TurnKeySeconds"/>. Released, the course reached stays.
+        /// Key that acts as the stick at one of its edges while held (x: left −1 / right +1, or y: down −1 / up +1); a
+        /// short click still acts for <see cref="StickKeySeconds"/>. The knob of the stick moves with it. Released,
+        /// the heading and vertical speed reached stay.
         /// </summary>
-        private Button TurnKey(string text, int side)
+        private Button StickKey(string text, int x, int y, string tip)
         {
-            Button key = new()
-            {
-                Content = text,
-                Padding = new Thickness(2, 3, 2, 3),
-                ToolTip = $"Turn {(side < 0 ? "left" : "right")} at the turn rate chosen while held (a click: at least 1 s). Released, the course reached stays."
-            };
+            Button key = new() { Content = text, Padding = new Thickness(2, 3, 2, 3), ToolTip = tip };
             DateTime pressed = DateTime.MinValue;
             DispatcherTimer stop = new();
+            void Set(int value)
+            {
+                if (x != 0) SetKeyStick(value * x, keyY);
+                else SetKeyStick(keyX, value * y);
+            }
             stop.Tick += (s, e) =>
             {
                 stop.Stop();
-                if (!key.IsPressed) SetStickX(0);
+                if (!key.IsPressed) Set(0);
             };
             key.PreviewMouseLeftButtonDown += (s, e) =>
             {
                 pressed = DateTime.UtcNow;
                 stop.Stop();
-                SetStickX(side);
+                Set(1);
             };
             void Release()
             {
                 if (pressed == DateTime.MinValue) return;
                 double held = (DateTime.UtcNow - pressed).TotalSeconds;
                 pressed = DateTime.MinValue;
-                if (held >= TurnKeySeconds)
+                if (held >= StickKeySeconds)
                 {
-                    SetStickX(0);
+                    Set(0);
                 }
                 else
                 {
-                    stop.Interval = TimeSpan.FromSeconds(TurnKeySeconds - held);
+                    stop.Interval = TimeSpan.FromSeconds(StickKeySeconds - held);
                     stop.Start();
                 }
             }
@@ -336,28 +413,44 @@ namespace AuroraPAR
             return key;
         }
 
-        private void SetStickX(double x) => ChangeSelected(p =>
+        /// <summary>Deflection of the keys: given to the selected aircraft and shown by the knob.</summary>
+        private void SetKeyStick(double x, double y)
         {
-            p.StickX = x;
-            if (x != 0)
+            keyX = x;
+            keyY = y;
+            if (x != 0 || y != 0) ShowKnob(x, y);
+            else if (joystickCallsign == null && !pad.IsMouseCaptured) CentreKnob();
+            ChangeSelected(p =>
             {
-                p.Auto = false;
-                p.BackToFinal = false;
-            }
-            else
-            {
-                p.StickHeld = 0;
-            }
-        });
+                p.StickX = x;
+                p.StickY = y;
+                if (x != 0)
+                {
+                    p.Auto = false;
+                    p.TargetHeading = double.NaN;
+                }
+                else
+                {
+                    p.StickHeld = 0;
+                }
+                if (y != 0)
+                {
+                    p.Auto = false;
+                    p.HoldGlidePath = false;
+                }
+            });
+        }
 
         private static Button SmallButton(string text) => new() { Content = text, Margin = new Thickness(0, 0, 6, 4), Padding = new Thickness(8, 2, 8, 2) };
 
+        /// <summary>Rate of descent key: the column as wide as the stick, all the same width, text centred.</summary>
         private static Button WideButton(string text, string tip) => new()
         {
             Content = text,
             ToolTip = tip,
             Height = 28,
-            Margin = new Thickness(0, 3, 0, 3)
+            Margin = new Thickness(0, 3, 0, 3),
+            HorizontalContentAlignment = HorizontalAlignment.Center
         };
 
         private static TextBlock Caption(string text) => new() { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0) };
@@ -375,7 +468,7 @@ namespace AuroraPAR
         {
             Text = "---",
             FontFamily = new FontFamily("Consolas"),
-            FontSize = 20,
+            FontSize = 18,
             FontWeight = FontWeights.Bold,
             Foreground = ReadoutText,
             HorizontalAlignment = HorizontalAlignment.Center
@@ -383,7 +476,7 @@ namespace AuroraPAR
 
         private static void AddReadout(Grid grid, int column, TextBlock caption, TextBlock value, string unit)
         {
-            StackPanel cell = new() { Margin = new Thickness(4, 6, 4, 6) };
+            StackPanel cell = new() { Margin = new Thickness(2, 6, 2, 6) };
             cell.Children.Add(caption);
             cell.Children.Add(value);
             cell.Children.Add(new TextBlock { Text = unit, FontSize = 10, Foreground = ReadoutLabel, HorizontalAlignment = HorizontalAlignment.Center });
@@ -403,6 +496,41 @@ namespace AuroraPAR
         {
             return double.TryParse(box.Text.Trim().Replace(',', '.').Replace('−', '-'), NumberStyles.Float, CultureInfo.InvariantCulture, out value)
                 && value >= min && value <= max;
+        }
+
+        /// <summary>Wind of the boxes to the traffic (each box only when valid); the magnetic direction beside it.</summary>
+        private void ApplyWind()
+        {
+            if (TryNumber(windFromBox, 0, 360, out double from)) traffic.WindFrom = from % 360;
+            if (TryNumber(windSpeedBox, 0, 100, out double speed)) traffic.WindSpeed = speed;
+            if (TryNumber(windGustBox, 0, 50, out double gust)) traffic.WindGust = gust;
+            int magnetic = (int)Math.Round(traffic.WindFrom - variation(), MidpointRounding.AwayFromZero);
+            magnetic = (magnetic % 360 + 360) % 360;
+            windMagnetic.Text = $"({(magnetic == 0 ? 360 : magnetic):000}°M)";
+        }
+
+        private void WindFromMetar()
+        {
+            Match match = metar() is string text ? MetarWind.Match(text) : Match.Empty;
+            if (!match.Success)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                MessageBox.Show(this, "No METAR wind received from Aurora for the airport in use.", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            double factor = match.Groups[4].Value switch
+            {
+                "MPS" => 1.94384,
+                "KMH" => 0.539957,
+                _ => 1
+            };
+            double speed = double.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) * factor;
+            double gust = match.Groups[3].Success ? double.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture) * factor - speed : 0;
+            // Variable: the direction stays.
+            if (match.Groups[1].Value != "VRB") windFromBox.Text = match.Groups[1].Value;
+            windSpeedBox.Text = Math.Round(speed).ToString(CultureInfo.InvariantCulture);
+            windGustBox.Text = Math.Round(Math.Max(0, gust)).ToString(CultureInfo.InvariantCulture);
+            ApplyWind();
         }
 
         private void AddPlane()
@@ -425,9 +553,28 @@ namespace AuroraPAR
 
         private void FinalCourse() => ChangeSelected(p =>
         {
-            p.BackToFinal = true;
+            p.TargetHeading = 0;
+            p.TargetTurn = 0;
             p.Auto = false;
         });
+
+        /// <summary>Turns the selected aircraft to the heading of the box (magnetic): left −1, right 1, shortest 0.</summary>
+        private void TurnToHeading(int side)
+        {
+            string text = headingBox.Text.Trim();
+            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int heading) || heading < 0 || heading > 360 || list.SelectedItem is not string)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+            double magneticVariation = variation();
+            ChangeSelected(p =>
+            {
+                p.TargetHeading = TestTraffic.Wrap(heading + magneticVariation - p.FinalTrue);
+                p.TargetTurn = side;
+                p.Auto = false;
+            });
+        }
 
         private void NormalRate() => ChangeSelected(p =>
         {
@@ -448,9 +595,9 @@ namespace AuroraPAR
             p.Lateral = 0;
             p.Height = double.NaN;
             p.VerticalSpeed = 0;
-            p.Course = 0;
+            p.Heading = p.CrabHeading;
             p.TurnRate = 0;
-            p.BackToFinal = false;
+            p.TargetHeading = double.NaN;
             p.HoldGlidePath = true;
         });
 
@@ -497,7 +644,7 @@ namespace AuroraPAR
 
         /// <summary>
         /// The real joystick moved (only when it changes): as the stick of the window, which follows it. Released
-        /// (0, 0), the course and vertical speed reached stay. Ignored while the stick is held with the mouse.
+        /// (0, 0), the heading and vertical speed reached stay. Ignored while the stick is held with the mouse.
         /// </summary>
         internal void JoystickStick(double x, double y)
         {
@@ -539,17 +686,13 @@ namespace AuroraPAR
                 return;
             }
             joystickCallsign = selected;
-            // The knob shows the deflection (inside the circle of the pad).
-            double length = Math.Sqrt(x * x + y * y);
-            double scale = length > 1 ? PadReach / length : PadReach;
-            Canvas.SetLeft(knob, PadSize / 2 + x * scale - KnobSize / 2);
-            Canvas.SetTop(knob, PadSize / 2 - y * scale - KnobSize / 2);
+            ShowKnob(x, y);
             traffic.Change(selected, p =>
             {
                 p.StickX = x;
                 p.StickY = y;
                 p.Auto = false;
-                if (x != 0) p.BackToFinal = false;
+                if (x != 0) p.TargetHeading = double.NaN;
                 if (y != 0) p.HoldGlidePath = false;
             });
         }
@@ -599,17 +742,22 @@ namespace AuroraPAR
             if (plane == null)
             {
                 info.Text = traffic.Count == 0 ? "No test aircraft:\nAdd one above." : "";
-                bestValue.Text = actualValue.Text = turnValue.Text = "---";
+                bestValue.Text = actualValue.Text = turnValue.Text = headingValue.Text = driftValue.Text = "---";
                 bestLabel.Text = "BEST VS";
                 return;
             }
-            info.Text = string.Format(CultureInfo.InvariantCulture, "{0}\n{1:0.0} NM from touchdown\n{2:0} kt{3}",
-                plane.Callsign, plane.Distance, plane.Speed, plane.Squawk != null ? " · SSR A" + plane.Squawk : "");
-            bestLabel.Text = string.Format(CultureInfo.InvariantCulture, "BEST VS (GP {0:0.0#}°)", plane.GlideSlope);
+            info.Text = string.Format(CultureInfo.InvariantCulture, "{0}\n{1:0.0} NM from touchdown\n{2:0} kt, ground speed {3:0} kt{4}",
+                plane.Callsign, plane.Distance, plane.Speed, plane.GroundSpeed, plane.Squawk != null ? "\nSSR A" + plane.Squawk : "");
+            bestLabel.Text = string.Format(CultureInfo.InvariantCulture, "BEST VS {0:0.0#}°", plane.GlideSlope);
             bestValue.Text = Rounded(plane.BestVerticalSpeed);
             actualValue.Text = Rounded(plane.VerticalSpeed);
-            turnValue.Text = Math.Abs(plane.TurnRate) < 0.05 ? "0.0°/s"
-                : string.Format(CultureInfo.InvariantCulture, "{0:0.0}°/s {1}", Math.Abs(plane.TurnRate), plane.TurnRate > 0 ? "R" : "L");
+            turnValue.Text = Math.Abs(plane.TurnRate) < 0.05 ? "0.0"
+                : string.Format(CultureInfo.InvariantCulture, "{0:0.0} {1}", Math.Abs(plane.TurnRate), plane.TurnRate > 0 ? "R" : "L");
+            int magnetic = (int)Math.Round(plane.HeadingTrue - variation(), MidpointRounding.AwayFromZero);
+            magnetic = (magnetic % 360 + 360) % 360;
+            headingValue.Text = (magnetic == 0 ? 360 : magnetic).ToString("000", CultureInfo.InvariantCulture);
+            int drift = (int)Math.Round(plane.Drift);
+            driftValue.Text = drift == 0 ? "0" : $"{Math.Abs(drift)} {(drift > 0 ? "R" : "L")}";
             if (autoCheck.IsChecked != plane.Auto) autoCheck.IsChecked = plane.Auto;
         }
 
@@ -623,6 +771,15 @@ namespace AuroraPAR
         {
             Canvas.SetLeft(knob, PadSize / 2 - KnobSize / 2);
             Canvas.SetTop(knob, PadSize / 2 - KnobSize / 2);
+        }
+
+        /// <summary>The knob at a deflection (x right, y up, −1..1), inside the circle of the pad.</summary>
+        private void ShowKnob(double x, double y)
+        {
+            double length = Math.Sqrt(x * x + y * y);
+            double scale = length > 1 ? PadReach / length : PadReach;
+            Canvas.SetLeft(knob, PadSize / 2 + x * scale - KnobSize / 2);
+            Canvas.SetTop(knob, PadSize / 2 - y * scale - KnobSize / 2);
         }
 
         /// <summary>Stick moved: X turns, Y changes the vertical speed, proportionally (inside a circle).</summary>
@@ -649,7 +806,7 @@ namespace AuroraPAR
                 p.StickX = x;
                 p.StickY = y;
                 p.Auto = false;
-                if (x != 0) p.BackToFinal = false;
+                if (x != 0) p.TargetHeading = double.NaN;
                 if (y != 0) p.HoldGlidePath = false;
             });
         }
@@ -658,7 +815,7 @@ namespace AuroraPAR
         {
             if (pad.IsMouseCaptured) pad.ReleaseMouseCapture();
             CentreKnob();
-            // The course and the vertical speed reached stay.
+            // The heading and the vertical speed reached stay.
             ChangeSelected(p =>
             {
                 p.StickX = 0;

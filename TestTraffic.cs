@@ -14,12 +14,16 @@ namespace AuroraPAR
     /// <summary>
     /// Test traffic: virtual aircraft for testing the radar without waiting for real traffic (also without Aurora).
     ///
-    /// Each aircraft has a course (relative to the final course of the runway in use), a vertical speed and a speed,
+    /// Each aircraft has a heading (relative to the final course of the runway in use), a vertical speed and a speed,
     /// and keeps them until changed, as a real one: the joystick of <see cref="TestTrafficWindow"/> turns it (at the
-    /// selected turn rate) and changes its vertical speed; released, course and vertical speed stay. Buttons bring it
-    /// back to the final course or to the vertical speed of the glide path (the "best" one for its speed), or move
-    /// the vertical speed in steps aligned on that best value. In Auto it intercepts the centreline and the glide
-    /// path by itself.
+    /// selected turn rate) and changes its vertical speed; released, heading and vertical speed stay. Buttons turn it
+    /// to a heading (or back to the final course) or set the vertical speed of the glide path (the "best" one for its
+    /// ground speed), or move the vertical speed in steps aligned on that best value. In Auto it intercepts the
+    /// centreline and the glide path by itself.
+    ///
+    /// Wind (rough model, the same at all heights, optional gusts): the aircraft flies its heading through the air,
+    /// so a crosswind makes it drift off the centreline unless the heading is corrected, and a headwind lowers the
+    /// ground speed and so the rate of descent needed on the glide path.
     ///
     /// Positions are given as if they came from Aurora (merged into the traffic list), optionally with Aurora's
     /// irregular rhythm (positions every 0.5 s, altitude in steps) to test the track smoothing.
@@ -38,16 +42,17 @@ namespace AuroraPAR
             public double Height;
             public double Speed = 140;
             public string? Squawk;
-            /// <summary>Course relative to the final course (degrees, positive to the right).</summary>
-            public double Course;
+            /// <summary>Heading relative to the final course (degrees, −180..180, positive to the right).</summary>
+            public double Heading;
             /// <summary>Vertical speed (ft/min, negative descending).</summary>
             public double VerticalSpeed;
             /// <summary>Turn rate now (°/s, positive to the right).</summary>
             public double TurnRate;
             /// <summary>Keeps the vertical speed of the glide path (Optimal GP), also when the speed or course change.</summary>
             public bool HoldGlidePath = true;
-            /// <summary>Turning back to the final course (Final CRS).</summary>
-            public bool BackToFinal;
+            /// <summary>Heading to turn to (relative to the final course; NaN: none) and the side (−1 left, 1 right, 0 shortest).</summary>
+            public double TargetHeading = double.NaN;
+            public int TargetTurn;
             /// <summary>Intercepts the centreline and the glide path by itself.</summary>
             public bool Auto;
             /// <summary>Joystick deflection (−1..1, X right, Y up) and for how long X has been at its edge (Free).</summary>
@@ -57,6 +62,14 @@ namespace AuroraPAR
             /// <summary>For the window: vertical speed of the glide path for this aircraft now, and the GP angle.</summary>
             public double BestVerticalSpeed;
             public double GlideSlope = 3;
+            /// <summary>For the window: true heading, true final course, drift (track − heading), ground speed, and the
+            /// heading (relative to the final course) that holds the final course with this wind.</summary>
+            public double HeadingTrue;
+            public double FinalTrue;
+            public double Drift;
+            public double GroundSpeed;
+            public double Track;
+            public double CrabHeading;
             // Aurora-like data: last positions given and when.
             public double GivenLatitude = double.NaN;
             public double GivenLongitude = double.NaN;
@@ -67,8 +80,6 @@ namespace AuroraPAR
             public Plane Copy() => (Plane)MemberwiseClone();
         }
 
-        /// <summary>Largest course off the final course (degrees).</summary>
-        public const double MaxCourse = 60;
         /// <summary>Vertical speed limits (ft/min) and how fast the full stick changes it (ft/min per second).</summary>
         public const double MaxClimb = 2000;
         public const double MaxDescent = -3000;
@@ -92,6 +103,17 @@ namespace AuroraPAR
         /// <summary>Positions every about 0.5 s (a little irregular) and the altitude every 3 s, as with Aurora.</summary>
         public bool AuroraLike { get; set; }
         public TestTurnMode TurnMode { get; set; } = TestTurnMode.Standard;
+        /// <summary>Wind: direction it blows from (degrees true), speed and gusts above it (kt).</summary>
+        public double WindFrom { get; set; }
+        public double WindSpeed { get; set; }
+        public double WindGust { get; set; }
+        // Gusts: the extra wind now, the one it moves to, and when a new one is drawn.
+        private double gustNow;
+        private double gustTarget;
+        private DateTime gustNext = DateTime.MinValue;
+
+        /// <summary>Angle in −180..180.</summary>
+        public static double Wrap(double degrees) => ((degrees + 180) % 360 + 360) % 360 - 180;
 
         public int Count
         {
@@ -159,10 +181,10 @@ namespace AuroraPAR
             return Math.Clamp(best + next * VerticalStep, MaxDescent, MaxClimb);
         }
 
-        /// <summary>Vertical speed that keeps the glide path at this speed and course (ft/min, negative).</summary>
-        private static double BestVerticalSpeed(Plane plane, Runway runway)
+        /// <summary>Vertical speed that keeps the glide path at this heading and wind (ft/min, negative): from the ground speed along the centreline.</summary>
+        private static double BestVerticalSpeed(Plane plane, Runway runway, double windAlong)
         {
-            double alongKt = plane.Speed * Math.Cos(plane.Course * Math.PI / 180);
+            double alongKt = Math.Max(0, plane.Speed * Math.Cos(plane.Heading * Math.PI / 180) + windAlong);
             return -alongKt * FeetPerMinutePerKnot * Math.Tan(runway.GlideSlope * Math.PI / 180);
         }
 
@@ -177,6 +199,24 @@ namespace AuroraPAR
                 double seconds = lastTime == DateTime.MinValue ? 0 : Math.Clamp((now - lastTime).TotalSeconds, 0, 1);
                 lastTime = now;
                 if (Paused) seconds = 0;
+                // Wind towards the final course (along, + towards touchdown) and to its right; gusts drawn every few seconds.
+                if (WindGust > 0)
+                {
+                    if (now >= gustNext)
+                    {
+                        gustTarget = random.NextDouble() * WindGust;
+                        gustNext = now.AddSeconds(2 + 3 * random.NextDouble());
+                    }
+                    gustNow += (gustTarget - gustNow) * Math.Min(1, seconds);
+                }
+                else
+                {
+                    gustNow = 0;
+                }
+                double wind = Math.Max(0, WindSpeed + gustNow);
+                double towards = (WindFrom + 180 - runway.Heading) * Math.PI / 180;
+                double windAlong = wind * Math.Cos(towards);
+                double windRight = wind * Math.Sin(towards);
                 List<Aircraft> result = [];
                 foreach (Plane plane in planes.ToList())
                 {
@@ -184,10 +224,12 @@ namespace AuroraPAR
                     if (double.IsNaN(plane.Height))
                     {
                         plane.Height = Math.Max(0, runway.GlidePathHeight(plane.Distance) + plane.VerticalSpeed);
-                        plane.VerticalSpeed = BestVerticalSpeed(plane, runway);
+                        plane.VerticalSpeed = BestVerticalSpeed(plane, runway, windAlong);
                     }
-                    Fly(plane, runway, seconds);
-                    if (plane.Distance < 0)
+                    Fly(plane, runway, seconds, windAlong, windRight);
+                    // Landed (past the touchdown point near the centreline), or far away: removed.
+                    bool landed = plane.Distance < 0 && Math.Abs(plane.Lateral) < 0.3;
+                    if (landed || plane.Distance < -10 || plane.Distance > 80 || Math.Abs(plane.Lateral) > 40)
                     {
                         planes.Remove(plane);
                         continue;
@@ -198,8 +240,10 @@ namespace AuroraPAR
             }
         }
 
-        private void Fly(Plane plane, Runway runway, double seconds)
+        private void Fly(Plane plane, Runway runway, double seconds, double windAlong, double windRight)
         {
+            // Heading that holds the final course with this crosswind (wind correction angle into the wind).
+            plane.CrabHeading = -Math.Asin(Math.Clamp(windRight / Math.Max(plane.Speed, 1), -0.9, 0.9)) * 180 / Math.PI;
             // Turn.
             double stickRate = TurnMode switch
             {
@@ -211,33 +255,46 @@ namespace AuroraPAR
             if (plane.StickX != 0)
             {
                 plane.TurnRate = plane.StickX * stickRate;
+                plane.TargetHeading = double.NaN;
             }
             else if (plane.Auto)
             {
-                // Intercept the centreline: a course towards it, the closer the smaller (at most 20°).
-                double target = Math.Clamp(-plane.Lateral * 150, -20, 20);
-                plane.TurnRate = Math.Clamp((target - plane.Course) / 2, -3, 3);
+                // Intercept the centreline: a track towards it, the closer the smaller (at most 20°), with the heading
+                // corrected for the crosswind.
+                double target = Math.Clamp(-plane.Lateral * 150, -20, 20) + plane.CrabHeading;
+                plane.TurnRate = Math.Clamp(Wrap(target - plane.Heading) / 2, -3, 3);
             }
-            else if (plane.BackToFinal)
+            else if (!double.IsNaN(plane.TargetHeading))
             {
+                // Turning to a heading (or back to the final course) at the turn rate chosen (3°/s with Free).
                 double rate = TurnMode == TestTurnMode.Half ? 1.5 : 3;
-                plane.TurnRate = -Math.Sign(plane.Course) * Math.Min(rate, Math.Abs(plane.Course) / Math.Max(seconds, 1e-3));
-                if (Math.Abs(plane.Course) < 0.01)
+                double difference = Wrap(plane.TargetHeading - plane.Heading);
+                int side = plane.TargetTurn != 0 ? plane.TargetTurn : Math.Sign(difference);
+                // Degrees still to turn on that side.
+                double remaining = side > 0 ? (difference + 360) % 360 : (-difference + 360) % 360;
+                if (side == 0 || remaining <= rate * seconds + 1e-6)
                 {
-                    plane.Course = 0;
+                    if (seconds > 0 || side == 0)
+                    {
+                        plane.Heading = Wrap(plane.TargetHeading);
+                        plane.TargetHeading = double.NaN;
+                    }
                     plane.TurnRate = 0;
-                    plane.BackToFinal = false;
+                }
+                else
+                {
+                    plane.TurnRate = side * rate;
                 }
             }
             else
             {
-                // Stick released: the course reached stays.
+                // Stick released: the heading reached stays.
                 plane.TurnRate = 0;
             }
-            plane.Course = Math.Clamp(plane.Course + plane.TurnRate * seconds, -MaxCourse, MaxCourse);
+            plane.Heading = Wrap(plane.Heading + plane.TurnRate * seconds);
 
             // Vertical speed.
-            double best = BestVerticalSpeed(plane, runway);
+            double best = BestVerticalSpeed(plane, runway, windAlong);
             plane.BestVerticalSpeed = best;
             plane.GlideSlope = runway.GlideSlope;
             if (plane.StickY != 0)
@@ -255,11 +312,17 @@ namespace AuroraPAR
                 plane.VerticalSpeed = best;
             }
 
-            // Move.
-            double course = plane.Course * Math.PI / 180;
-            double nm = plane.Speed * seconds / 3600;
-            plane.Distance -= nm * Math.Cos(course);
-            plane.Lateral += nm * Math.Sin(course);
+            // Move: the speed along the heading plus the wind.
+            double heading = plane.Heading * Math.PI / 180;
+            double alongKt = plane.Speed * Math.Cos(heading) + windAlong;
+            double rightKt = plane.Speed * Math.Sin(heading) + windRight;
+            plane.Distance -= alongKt * seconds / 3600;
+            plane.Lateral += rightKt * seconds / 3600;
+            plane.GroundSpeed = Math.Sqrt(alongKt * alongKt + rightKt * rightKt);
+            plane.Track = plane.GroundSpeed > 0.5 ? Math.Atan2(rightKt, alongKt) * 180 / Math.PI : plane.Heading;
+            plane.Drift = Wrap(plane.Track - plane.Heading);
+            plane.FinalTrue = runway.Heading;
+            plane.HeadingTrue = (runway.Heading + plane.Heading + 720) % 360;
             plane.Height = Math.Max(0, plane.Height + plane.VerticalSpeed * seconds / 60);
         }
 
@@ -274,7 +337,7 @@ namespace AuroraPAR
             double latitude = runway.Latitude + northNM / 60;
             double longitude = runway.Longitude + eastNM / (60 * Math.Max(0.01, Math.Cos(runway.Latitude * Math.PI / 180)));
             double altitude = runway.Elevation + plane.Height;
-            double track = (runway.Heading + plane.Course + 360) % 360;
+            double track = (runway.Heading + plane.Track + 720) % 360;
             if (AuroraLike)
             {
                 // As Aurora: a new position every 0.4–0.65 s, a new altitude every 3 s; in between the last ones.
@@ -304,7 +367,7 @@ namespace AuroraPAR
                 Longitude = longitude,
                 Altitude = altitude,
                 Track = track,
-                Speed = plane.Speed,
+                Speed = plane.GroundSpeed,
                 Squawk = plane.Squawk,
                 IsTest = true
             };

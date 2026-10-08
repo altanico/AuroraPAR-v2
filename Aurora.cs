@@ -11,6 +11,9 @@ using System.Text.RegularExpressions;
 
 namespace AuroraPAR
 {
+    /// <summary>A METAR received from Aurora and its airport.</summary>
+    internal sealed record MetarReport(string Icao, string Text);
+
     internal class Aurora
     {
         /// <summary>
@@ -207,11 +210,15 @@ namespace AuroraPAR
             return fields.Length >= 2 && fields[1].Length > 0 ? fields[1].ToUpperInvariant() : null;
         }
 
+        /// <summary>Last METAR received and its airport (for the wind of the test traffic).</summary>
+        public MetarReport? LastMetar { get; private set; }
+
         public async Task<int> GetQNH(Runway runway)
         {
             string? message = await Request($"#METAR;{runway.ICAO}", m => StartsWithField(m, "#METAR"));
             if (message != null)
             {
+                LastMetar = new MetarReport(runway.ICAO, message);
                 Match q = QnhHpa.Match(message);
                 if (q.Success)
                 {
