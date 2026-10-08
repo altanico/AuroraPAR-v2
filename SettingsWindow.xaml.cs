@@ -24,13 +24,20 @@ namespace AuroraPAR
         /// </summary>
         private readonly List<Action> refreshers = [];
 
-        internal SettingsWindow(AppSettings settings, Action applyToScreen, Action<Window>? editRunways = null)
+        internal SettingsWindow(AppSettings settings, Action applyToScreen, Action<Window>? editRunways = null, Action? openTestTraffic = null)
         {
             InitializeComponent();
             this.settings = settings;
             this.applyToScreen = applyToScreen;
             EditRunwaysButton.Visibility = editRunways == null ? Visibility.Collapsed : Visibility.Visible;
             EditRunwaysButton.Click += (s, e) => editRunways?.Invoke(this);
+            TestTrafficButton.Visibility = openTestTraffic == null ? Visibility.Collapsed : Visibility.Visible;
+            TestTrafficButton.Click += (s, e) =>
+            {
+                // The settings are modal: closed first, then the test traffic window opens beside the radar.
+                Close();
+                openTestTraffic?.Invoke();
+            };
             ProfileComboBox.SelectionChanged += ProfileComboBox_SelectionChanged;
             RenameButton.Click += (s, e) => RenameProfile();
             ProfileNameTextBox.KeyDown += (s, e) =>
@@ -43,6 +50,8 @@ namespace AuroraPAR
             ExportButton.Click += (s, e) => ExportProfile();
             ModernRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Modern, p => p.DisplayMode = DisplayMode.Modern);
             AnalogRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Analog, p => p.DisplayMode = DisplayMode.Analog);
+            LockModeCheck.Checked += (s, e) => SetProfileValue(p => p.LockDisplayMode, p => p.LockDisplayMode = true);
+            LockModeCheck.Unchecked += (s, e) => SetProfileValue(p => !p.LockDisplayMode, p => p.LockDisplayMode = false);
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
             RunwayRightRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Right);
             FixedRangeComboBox.ItemsSource = Ranges.Values;
@@ -137,6 +146,7 @@ namespace AuroraPAR
                 DeleteButton.IsEnabled = settings.Profiles.Count > 1;
                 ModernRadio.IsChecked = Active.DisplayMode == DisplayMode.Modern;
                 AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
+                LockModeCheck.IsChecked = Active.LockDisplayMode;
                 RunwayLeftRadio.IsChecked = Active.RunwaySide == RunwaySide.Left;
                 RunwayRightRadio.IsChecked = Active.RunwaySide == RunwaySide.Right;
                 StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;

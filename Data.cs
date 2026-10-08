@@ -235,6 +235,8 @@ namespace AuroraPAR
         /// Estimated (smoothed) position of the track filter of the modern display, or null (see <see cref="TrackFilter"/>).
         /// </summary>
         public Aircraft? Filtered { get; set; }
+        /// <summary>Virtual aircraft of the test traffic (see <see cref="TestTraffic"/>), not from Aurora.</summary>
+        public bool IsTest { get; set; }
 
         /// <summary>Copy of the data (without <see cref="Filtered"/>).</summary>
         public Aircraft Copy() => new()
@@ -246,7 +248,8 @@ namespace AuroraPAR
             Track = Track,
             Speed = Speed,
             VerticalSpeedFpm = VerticalSpeedFpm,
-            Squawk = Squawk
+            Squawk = Squawk,
+            IsTest = IsTest
         };
         /// <summary>
         /// Distance to runway.

@@ -34,6 +34,8 @@
                     <RadioButton Name="ModernRadio" GroupName="DisplayMode" Content="Modern" Margin="0,0,20,0"/>
                     <RadioButton Name="AnalogRadio" GroupName="DisplayMode" Content="Analog (old radar scope)"/>
                 </StackPanel>
+                <CheckBox Name="LockModeCheck" Content="Lock the display mode in this profile (no button, key A off)" Margin="0,6,0,0"
+                          ToolTip="With two profiles, one Modern and one Analog, the mode cannot be switched by mistake: change profile instead (keys P / Shift+P)."/>
                 <TextBlock Text="Runway position on screen" Margin="0,10,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <RadioButton Name="RunwayLeftRadio" GroupName="RunwaySide" Content="Left" Margin="0,0,20,0"/>
@@ -147,6 +149,8 @@
         </Grid>
         <Button Name="EditRunwaysButton" Content="Edit the runways file (runways.par)..." HorizontalAlignment="Left" Height="26" Padding="12,0" Margin="0,10,0,0"
                 ToolTip="Runway editor: add, change, duplicate or delete runways and approaches; the previous file is kept as runways.par.bak."/>
+        <Button Name="TestTrafficButton" Content="Test traffic... (T)" HorizontalAlignment="Left" Height="26" Padding="12,0" Margin="0,6,0,0"
+                ToolTip="Virtual aircraft on the glide path, moved with a joystick, to test the radar without real traffic (also without Aurora)."/>
         <TextBlock Name="FileLocationText" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
         <Button Name="CloseButton" Content="Close" HorizontalAlignment="Right" Width="80" Height="26" Margin="0,10,0,0" IsCancel="True"/>
     </StackPanel>

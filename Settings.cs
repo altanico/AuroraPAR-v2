@@ -197,6 +197,11 @@ namespace AuroraPAR
         /// </summary>
         public bool BeamElevationNeutralAuto { get; set; } = true;
         /// <summary>
+        /// Display mode locked in this profile: no button and no key A to switch it (to change it, change profile or
+        /// untick this in the settings).
+        /// </summary>
+        public bool LockDisplayMode { get; set; }
+        /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).
         /// </summary>

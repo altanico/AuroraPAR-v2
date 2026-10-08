@@ -157,6 +157,8 @@ Each aircraft inside the antenna beam is shown with a **track symbol** (default:
 
 **Coasting track** (modern display). When an aircraft leaves the beam, the radar computer keeps it for a few seconds at an **estimated position**: straight on from the last position seen in the beam, at the same ground speed and vertical speed (the real position is not used). The symbol changes to the **coasting symbol** (default: diamond) so you know it is no longer seen; the label stays, with the estimated values; no new history dots. After **8 s** by default (*Settings → Radar → Coasting tracks*, 0–30 s, 0 = hidden at once) track, label and tail disappear. If the aircraft comes back into the beam it is shown again at its real position (it may jump a little). Symbol and colour of the coasting track: *Settings → Symbols* and *Display style → Coasting tracks*. On the analog scope there is no estimate: out of the beam the echo goes dark and its afterglow fades (about 6 s).
 
+**Test traffic** (key **T**, or *Settings → Test traffic...*). Virtual aircraft to test the radar without waiting for real traffic, also without Aurora. In the window: **Add** an aircraft at a distance from touchdown (default 10 NM), speed (140 kt) and SSR code; it appears as TEST1, TEST2... on the glide path and the centreline of the runway in use, and flies towards touchdown (then it disappears). **Auto**: it goes back onto the glide path and centreline by itself. The **joystick** moves the selected aircraft: drag left/right to move it across the centreline (as seen by the pilot), up/down above or below the glide path; on release the offset reached is kept (Auto is turned off). Quick buttons: *On GP / CL*, *+200 ft*, *−200 ft*, *Left 300 m*, *Right 300 m*, *Pause*, *Remove*, *Remove all*. **Aurora-like data**: positions every about 0.5 s and the altitude in steps, as the real data, to test the track smoothing. While test aircraft are flying, **TEST TRAFFIC** is shown at the top of the views. Closing the window removes them; nothing is saved.
+
 **Track smoothing** (modern display). Aurora sends the positions a little irregularly and the altitude in steps, so a raw track moves in small jumps. As the computer of a modern radar, AuroraPAR moves the track smoothly with the speed, direction and vertical speed of the aircraft (as the coasting track) and at every new position from Aurora pulls it part of the way towards the real one: the track stays on the aircraft and moves smoothly, and the label values are steadier. The history dots stay at the real positions (the "plots"). The estimated position is moved on at every frame of the screen, so the track glides instead of stepping. *Settings → Tracks and labels → Track smoothing*: **Off** (raw positions), **Light** (default), **Strong** (smoother, a little late in turns and rate changes). The analog scope always shows the raw echo.
 
 > Aurora interpolates the horizontal position between real network updates but the altitude changes only when a real update arrives (every few seconds). In the elevation view this can make the tail look like steps. A dot interval of about 3 s makes it less visible.
@@ -201,6 +203,7 @@ A label with no fields shows only the track symbol.
 | L | Hide / show all labels |
 | A | Modern / Analog display |
 | P / Shift+P | Next / previous profile (its name is shown for 2 s; runway and traffic stay, the antenna goes back to neutral) |
+| T | Test traffic window (virtual aircraft, see below) |
 
 Keys are ignored while you are typing in a text box (e.g. the DH box).
 
@@ -248,7 +251,7 @@ Some runways have approaches with different glide path angles. In `runways.par` 
 ![Analog console](images/analog-console.svg)
 
 
-**Analog (A)** turns the window into an old PAR console. Press it again (**Modern (A)**) to go back. The choice is saved in the profile.
+**Analog (A)** turns the window into an old PAR console. Press it again (**Modern (A)**) to go back. The choice is saved in the profile. *Settings → Display → Lock the display mode in this profile* removes the button and the key A for that profile (useful with one Modern and one Analog profile: change profile with P instead).
 
 ### 9.1 The scope
 
@@ -542,6 +545,6 @@ All profiles and options are in one file:
 | DH | − / + · type in the box · DH knob (double click on the centre = runway value) |
 | Glide path | GP box: published angles, or type an angle + Enter (unpublished, orange) · GP DEG keys (analog) |
 | Labels | L = all · drag = move · double click = back · right click = hide |
-| Display | A = Modern / Analog · P / Shift+P = next / previous profile |
+| Display | A = Modern / Analog (unless locked in the profile) · P / Shift+P = next / previous profile · T = test traffic |
 | Distances | Always from the **touchdown point** |
 | Colours | Green inside the approach limits, red outside |

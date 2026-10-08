@@ -113,6 +113,9 @@ namespace AuroraPAR
         private readonly Radar radar = new();
         private readonly ViewOptions viewOptions = new();
         private readonly TrackFilter trackFilter = new();
+        /// <summary>Virtual aircraft for tests (key T), merged with the traffic of Aurora.</summary>
+        private readonly TestTraffic testTraffic = new();
+        private TestTrafficWindow? testTrafficWindow;
         private readonly TextBlock statusText = new() { FontSize = 14 };
         private readonly TextBlock dataText = new() { FontSize = 14 };
         /// <summary>
@@ -650,9 +653,68 @@ namespace AuroraPAR
             bannerTimer.Start();
         }
 
+        /// <summary>Opens (or brings to front) the test traffic window, beside the main window.</summary>
+        private void OpenTestTraffic()
+        {
+            if (testTrafficWindow == null)
+            {
+                testTrafficWindow = new TestTrafficWindow(testTraffic) { Owner = this };
+                testTrafficWindow.Left = Math.Max(0, Left + 40);
+                testTrafficWindow.Top = Math.Max(0, Top + 60);
+                testTrafficWindow.Closed += (s, e) =>
+                {
+                    testTrafficWindow = null;
+                    Redraw();
+                };
+                testTrafficWindow.Show();
+            }
+            else
+            {
+                if (testTrafficWindow.WindowState == WindowState.Minimized) testTrafficWindow.WindowState = WindowState.Normal;
+                testTrafficWindow.Activate();
+            }
+        }
+
+        private Border? testTrafficSign;
+
+        /// <summary>"TEST TRAFFIC" at the top of the views while virtual aircraft are flying (never mixed up with real traffic).</summary>
+        private void UpdateTestTrafficSign()
+        {
+            bool on = testTraffic.Count > 0;
+            if (testTrafficSign == null)
+            {
+                if (!on) return;
+                testTrafficSign = new Border
+                {
+                    Background = CreateFrozenBrush(Color.FromArgb(0xD0, 0x30, 0x20, 0x00)),
+                    BorderBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0x8C, 0x00)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(3),
+                    Padding = new Thickness(10, 3, 10, 3),
+                    Margin = new Thickness(0, 8, 0, 0),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Top,
+                    IsHitTestVisible = false,
+                    Child = new TextBlock { Text = "TEST TRAFFIC", FontWeight = FontWeights.Bold, FontSize = 14, Foreground = CreateFrozenBrush(Color.FromRgb(0xFF, 0x8C, 0x00)) }
+                };
+                Panel.SetZIndex(testTrafficSign, 999);
+                if (Content is Grid root)
+                {
+                    Grid.SetColumn(testTrafficSign, 0);
+                    root.Children.Add(testTrafficSign);
+                }
+            }
+            testTrafficSign.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void ToggleDisplayMode()
         {
             Profile profile = settings.Active;
+            if (profile.LockDisplayMode)
+            {
+                ShowBanner("DISPLAY MODE LOCKED");
+                return;
+            }
             profile.DisplayMode = profile.DisplayMode == DisplayMode.Analog ? DisplayMode.Modern : DisplayMode.Analog;
             SettingsStore.Save(settings);
             ApplyProfile();
@@ -813,6 +875,14 @@ namespace AuroraPAR
             SystemPlate.Padding = analog ? new Thickness(0, 2, 0, 0) : new Thickness(0);
             // Lamp: the coordination key is lit while its panel is open. The mode key is a plain command.
             CoordinationButton.Tag = analog ? (coordinationWindow != null ? "Lit" : "Unlit") : null;
+            // Display mode locked in the profile: no mode button (analog: a blank key keeps the place of the others).
+            bool locked = settings.Active.LockDisplayMode;
+            ModeButton.Visibility = locked && !analog ? Visibility.Collapsed : Visibility.Visible;
+            if (locked && analog)
+            {
+                ModeButton.Content = "";
+                ModeButton.ToolTip = "Display mode locked in this profile (Settings): change profile with P / Shift+P.";
+            }
         }
 
         /// <summary>
@@ -1369,7 +1439,7 @@ namespace AuroraPAR
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            SettingsWindow window = new(settings, ApplyProfile, OpenRunwayEditor)
+            SettingsWindow window = new(settings, ApplyProfile, OpenRunwayEditor, OpenTestTraffic)
             {
                 Owner = this
             };
@@ -1396,6 +1466,7 @@ namespace AuroraPAR
                 case Key.L: ToggleLabels(); break;
                 case Key.A: ToggleDisplayMode(); break;
                 case Key.P: SwitchProfile(Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? -1 : 1); break;
+                case Key.T: OpenTestTraffic(); break;
                 default: return;
             }
             e.Handled = true;
@@ -1621,6 +1692,11 @@ namespace AuroraPAR
                         }
                     }
                 }
+                // Test traffic (key T): virtual aircraft added to the list, also without Aurora.
+                if (testTraffic.Count > 0)
+                {
+                    aircrafts.AddRange(testTraffic.Snapshot(current, DateTime.UtcNow));
+                }
                 if (!aurora.Connected && connectedCallsign != null)
                 {
                     connectedCallsign = null;
@@ -1630,7 +1706,8 @@ namespace AuroraPAR
                 verticalSpeed.Update(aircrafts, DateTime.UtcNow);
                 if (aurora.Connected)
                 {
-                    refreshMonitor.Update(aircrafts, DateTime.UtcNow);
+                    // Only the real traffic tells the refresh rate of Aurora.
+                    refreshMonitor.Update(aircrafts.Where(a => !a.IsTest).ToList(), DateTime.UtcNow);
                     dataInterval = refreshMonitor.IntervalSeconds;
                 }
                 else
@@ -1678,6 +1755,7 @@ namespace AuroraPAR
         {
             if (!Open) return;
             List<Aircraft> aircrafts = lastAircrafts;
+            UpdateTestTrafficSign();
             // Beam centre that follows the glide path: a new approach (angle) moves it.
             if (radar.GlidePathAngle != runway.GlideSlope)
             {
