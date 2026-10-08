@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -106,8 +107,8 @@ namespace AuroraPAR
             AddReadout(readouts, 2, ReadoutCaption("TURN"), turnValue, "actual");
             control.Children.Add(readouts);
 
-            StackPanel turnRow = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
-            turnRow.Children.Add(new TextBlock { Text = "Turn rate:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+            // Turn rate keys over the stick, as wide as it.
+            UniformGrid turnRow = new() { Columns = 3, Margin = new Thickness(0, 0, 0, 6) };
             (string Text, TestTurnMode Mode, string Tip)[] modes =
             [
                 ("1.5°/s", TestTurnMode.Half, "Half rate: 1.5°/s with the stick at its edge."),
@@ -117,7 +118,7 @@ namespace AuroraPAR
             for (int i = 0; i < modes.Length; i++)
             {
                 TestTurnMode mode = modes[i].Mode;
-                Button button = new() { Content = modes[i].Text, ToolTip = modes[i].Tip, Padding = new Thickness(10, 2, 10, 2), MinWidth = 54 };
+                Button button = new() { Content = modes[i].Text, ToolTip = modes[i].Tip, Padding = new Thickness(2, 2, 2, 2), Margin = new Thickness(1, 0, 1, 0) };
                 button.Click += (s, e) =>
                 {
                     traffic.TurnMode = mode;
@@ -126,29 +127,34 @@ namespace AuroraPAR
                 turnButtons[i] = button;
                 turnRow.Children.Add(button);
             }
-            control.Children.Add(turnRow);
-
+            // Stick in the middle column: turn rate keys over it, turn keys and Final CRS under it (as wide as it),
+            // vertical speed keys on its left.
             Grid stickArea = new() { HorizontalAlignment = HorizontalAlignment.Center };
             stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
             stickArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(PadSize + 2) });
+            stickArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             stickArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(PadSize + 2) });
             stickArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            TextBlock turnLabel = new() { Text = "Turn rate:", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 8, 6) };
+            stickArea.Children.Add(turnLabel);
+            Grid.SetColumn(turnRow, 1);
+            stickArea.Children.Add(turnRow);
             StackPanel vertical = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            Button less = WideButton("▲  −100 ft/min", "Less descent: next step up, on the steps through the best vertical speed.");
+            Button less = WideButton("− rate of desc.", "Reduce rate of descent: 100 ft/min less, on the steps through the best vertical speed.");
             less.Click += (s, e) => ChangeSelected(p =>
             {
                 p.HoldGlidePath = false;
                 p.Auto = false;
                 p.VerticalSpeed = TestTraffic.StepVerticalSpeed(p.VerticalSpeed, p.BestVerticalSpeed, up: true);
             });
-            Button optimal = WideButton("Optimal GP", "Vertical speed of the glide path for this speed, kept also when the speed or course change. The offset from the glide path stays.");
+            Button optimal = WideButton("= rate of desc.", "Resume normal rate of descent: the vertical speed of the glide path for this speed, kept also when the speed or course change. The offset from the glide path stays.");
             optimal.FontWeight = FontWeights.SemiBold;
             optimal.Click += (s, e) => ChangeSelected(p =>
             {
                 p.HoldGlidePath = true;
                 p.Auto = false;
             });
-            Button more = WideButton("▼  +100 ft/min", "More descent: next step down, on the steps through the best vertical speed.");
+            Button more = WideButton("+ rate of desc.", "Increase rate of descent: 100 ft/min more, on the steps through the best vertical speed.");
             more.Click += (s, e) => ChangeSelected(p =>
             {
                 p.HoldGlidePath = false;
@@ -159,6 +165,7 @@ namespace AuroraPAR
             vertical.Children.Add(optimal);
             vertical.Children.Add(more);
             Grid.SetColumn(vertical, 0);
+            Grid.SetRow(vertical, 1);
             stickArea.Children.Add(vertical);
 
             Border padBorder = new() { BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1), Child = pad };
@@ -184,6 +191,7 @@ namespace AuroraPAR
             pad.MouseLeftButtonUp += (s, e) => ReleaseKnob();
             pad.LostMouseCapture += (s, e) => ReleaseKnob();
             Grid.SetColumn(padBorder, 1);
+            Grid.SetRow(padBorder, 1);
             stickArea.Children.Add(padBorder);
 
             Button finalCourse = new()
@@ -200,15 +208,23 @@ namespace AuroraPAR
                 p.BackToFinal = true;
                 p.Auto = false;
             });
-            finalCourse.Margin = new Thickness(4, 0, 4, 0);
+            finalCourse.Margin = new Thickness(2, 0, 2, 0);
+            finalCourse.Padding = new Thickness(2, 3, 2, 3);
+            finalCourse.HorizontalAlignment = HorizontalAlignment.Stretch;
             // Turn keys: held, as the stick at its edge (left or right); a short click turns for at least 1 s.
-            StackPanel lateral = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0) };
-            lateral.Children.Add(TurnKey("◀ L", -1));
+            Grid lateral = new() { Margin = new Thickness(0, 6, 0, 0) };
+            lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
+            lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            lateral.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
+            Button left = TurnKey("◀ L", -1);
+            Button rightKey = TurnKey("R ▶", 1);
+            Grid.SetColumn(finalCourse, 1);
+            Grid.SetColumn(rightKey, 2);
+            lateral.Children.Add(left);
             lateral.Children.Add(finalCourse);
-            lateral.Children.Add(TurnKey("R ▶", 1));
-            Grid.SetColumn(lateral, 0);
-            Grid.SetColumnSpan(lateral, 2);
-            Grid.SetRow(lateral, 1);
+            lateral.Children.Add(rightKey);
+            Grid.SetColumn(lateral, 1);
+            Grid.SetRow(lateral, 2);
             stickArea.Children.Add(lateral);
             control.Children.Add(stickArea);
             root.Children.Add(Group("Control", control));
@@ -309,7 +325,7 @@ namespace AuroraPAR
             Button key = new()
             {
                 Content = text,
-                Padding = new Thickness(10, 3, 10, 3),
+                Padding = new Thickness(2, 3, 2, 3),
                 ToolTip = $"Turn {(side < 0 ? "left" : "right")} at the turn rate chosen while held (a click: at least 1 s). Released, the course reached stays."
             };
             DateTime pressed = DateTime.MinValue;

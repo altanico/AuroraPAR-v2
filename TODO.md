@@ -13,6 +13,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Test traffic panel:** turn rate keys over the stick and ◀ L / Final CRS / R ▶ under it, as wide as the stick; vertical keys renamed − / = / + rate of desc. (reduce / resume normal / increase rate of descent).
 - **Test traffic turn keys** ◀ L / R ▶ beside Final CRS: held = stick at its edge, a click = at least 1 s of turn.
 - **Test traffic joystick as a control stick:** held, it changes heading and climb/descent; released, they stay (no automatic return). New quick button *Final TRK + GP* (final track and GP rate, offset kept). Check: turn off the centreline and release, the aircraft keeps drifting.
 - **Test traffic** (key T / Settings): Add, Auto, joystick, quick buttons, Aurora-like data, TEST TRAFFIC sign; removed when the window closes. Check: without Aurora, with Aurora (mixed with real traffic), runway change, analog, coasting with the joystick out of the beam.
