@@ -8,7 +8,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
-- **Test traffic joystick as a control stick:** held, it changes heading and climb/descent; released, they stay (no automatic return). New quick button *Level / straight*. Check: turn off the centreline and release, the aircraft keeps drifting.
+- **Test traffic joystick as a control stick:** held, it changes heading and climb/descent; released, they stay (no automatic return). New quick button *Final TRK + GP* (final track and GP rate, offset kept). Check: turn off the centreline and release, the aircraft keeps drifting.
 - **Test traffic** (key T / Settings): Add, Auto, joystick, quick buttons, Aurora-like data, TEST TRAFFIC sign; removed when the window closes. Check: without Aurora, with Aurora (mixed with real traffic), runway change, analog, coasting with the joystick out of the beam.
 - **Lock display mode** per profile (Settings → Display): no mode button (analog: blank key), key A shows "DISPLAY MODE LOCKED".
 - **Fix: each view has its own beam.** A track leaving the elevation beam disappears (or coasts) only in the elevation view, and the same for azimuth. Check: tilt one beam away from a track, the other view keeps it.

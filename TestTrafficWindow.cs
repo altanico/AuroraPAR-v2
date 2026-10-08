@@ -90,7 +90,7 @@ namespace AuroraPAR
             pad.Children.Add(PadText("R", PadSize - 12, PadSize / 2 - 16));
             pad.Children.Add(knob);
             CentreKnob();
-            pad.ToolTip = "Like a control stick: hold left/right to turn the selected aircraft off the centreline heading (as seen by the pilot), up/down to climb or descend relative to the glide path. Released, the heading and the climb/descent reached stay. 'Level / straight': back parallel to the centreline and the glide path.";
+            pad.ToolTip = "Like a control stick: hold left/right to turn the selected aircraft off the centreline heading (as seen by the pilot), up/down to climb or descend relative to the glide path. Released, the heading and the climb/descent reached stay. 'Final TRK + GP': back parallel to the centreline and the glide path.";
             pad.MouseLeftButtonDown += (s, e) =>
             {
                 pad.CaptureMouse();
@@ -111,7 +111,7 @@ namespace AuroraPAR
             foreach ((string text, Action<TestTraffic.Plane> action) in new (string, Action<TestTraffic.Plane>)[]
             {
                 ("On GP / CL", p => { p.Lateral = 0; p.HeightOffset = 0; p.LateralRate = 0; p.HeightRate = 0; }),
-                ("Level / straight", p => { p.LateralRate = 0; p.HeightRate = 0; }),
+                ("Final TRK + GP", p => { p.LateralRate = 0; p.HeightRate = 0; }),
                 ("+200 ft", p => { p.HeightOffset += 200; p.Auto = false; }),
                 ("−200 ft", p => { p.HeightOffset -= 200; p.Auto = false; }),
                 ("Left 300 m", p => { p.Lateral -= 300 / 1852.0; p.Auto = false; }),
