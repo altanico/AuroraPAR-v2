@@ -88,7 +88,7 @@ namespace AuroraPAR
             ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.Manual;
 
-            StackPanel root = new() { Margin = new Thickness(10), Width = 456 };
+            StackPanel root = new() { Margin = new Thickness(10), Width = 486 };
 
             // New aircraft.
             StackPanel newPanel = new();
@@ -148,7 +148,26 @@ namespace AuroraPAR
                 fillFields = true;
                 if (!updatingList) ShowSelected();
             };
-            root.Children.Add(Group("Aircraft", aircraftPanel));
+            // Remove keys at the top of the Aircraft panel.
+            StackPanel aircraftGroup = new();
+            StackPanel removeRow = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
+            Button remove = SmallButton("Remove");
+            remove.Click += (s, e) =>
+            {
+                if (list.SelectedItem is string callsign) traffic.Remove(callsign);
+                RefreshList();
+            };
+            removeRow.Children.Add(remove);
+            Button removeAll = SmallButton("Remove all");
+            removeAll.Click += (s, e) =>
+            {
+                traffic.Clear();
+                RefreshList();
+            };
+            removeRow.Children.Add(removeAll);
+            aircraftGroup.Children.Add(removeRow);
+            aircraftGroup.Children.Add(aircraftPanel);
+            root.Children.Add(Group("Aircraft", aircraftGroup));
 
             // Control: readouts, then the instructions of the controller (left) and the manual stick (right).
             StackPanel control = new();
@@ -363,20 +382,6 @@ namespace AuroraPAR
             service.Children.Add(autoCheck);
             pauseButton.Click += (s, e) => TogglePause();
             service.Children.Add(pauseButton);
-            Button remove = SmallButton("Remove");
-            remove.Click += (s, e) =>
-            {
-                if (list.SelectedItem is string callsign) traffic.Remove(callsign);
-                RefreshList();
-            };
-            service.Children.Add(remove);
-            Button removeAll = SmallButton("Remove all");
-            removeAll.Click += (s, e) =>
-            {
-                traffic.Clear();
-                RefreshList();
-            };
-            service.Children.Add(removeAll);
             Button joystickButton = SmallButton("Joystick...");
             joystickButton.ToolTip = "A real joystick or gamepad for the test aircraft and the antenna tilt: device, buttons, live test.";
             joystickButton.Click += (s, e) => openJoystick?.Invoke(this);
@@ -435,7 +440,8 @@ namespace AuroraPAR
             Content = text,
             ToolTip = tip,
             FontWeight = FontWeights.SemiBold,
-            Padding = new Thickness(5, 3, 5, 3),
+            Padding = new Thickness(4, 3, 4, 3),
+            MinWidth = 36,
             Delay = 400,
             Interval = 120
         };
