@@ -2,7 +2,7 @@
 
 ## Next update
 
-- **Pressed effect on every button** (all windows: main, Settings, test traffic, joystick, editors...): a visible "pressed down" look while clicked. **Analog console keys:** the key stays **pressed in** (lower cap, shadow inside, as a latching key) while it is the selected one of its group (runway, GP, range keys, 0 / RWY / 100...), and pops out when another key of that group is selected; together with the backlight. Momentary keys (UP, DN, −, +, <, >, SETUP...) only go down while held.
+- **Pressed effect on every button** (all windows: main, Settings, test traffic, joystick, editors...): a visible "pressed down" look while clicked. **Analog console keys:** two kinds. **Latching** (selection keys: runway keys, GP keys, and the one-key-per-range RANGE keys): the selected key stays **pressed in** (lower cap, shadow inside) and lit, and pops out when another key of its group is selected. **Spring-loaded** (the control groups RANGE `<` DEF `>`, EL TILT UP 0 DN, AZ TILT L 0 R, DH − RWY +, BRT − 100 +, and SETUP, COORD, MODE...): they go down only while held and spring back up when released; DEF / 0 / RWY / 100 keep only their light (lit = state in use), never stay pressed.
 
 - **Scan effect line width settable** (Display style, with the other line widths): main beam line default **1 px** (now 2 px fixed); the trail lines (now 3 px, fading) scaled with it.
 
