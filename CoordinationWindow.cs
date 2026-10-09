@@ -31,6 +31,7 @@ namespace AuroraPAR
         private readonly DispatcherTimer flashTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
         private readonly DispatcherTimer linkTimer = new() { Interval = TimeSpan.FromSeconds(5) };
         private readonly Action save;
+        private bool pairingWired;
         private CoordinationState state = new();
         private string? callsign;
         private bool radarOnline;
@@ -215,6 +216,9 @@ namespace AuroraPAR
         {
             loading = true;
             options.Children.Clear();
+            // The boxes live in the previous (now detached) row: free them before putting them in the new one.
+            (airportBox.Parent as Panel)?.Children.Remove(airportBox);
+            (roleBox.Parent as Panel)?.Children.Remove(roleBox);
             StackPanel pairing = new() { Orientation = Orientation.Horizontal };
             pairing.Children.Add(Label("Airport:"));
             airportBox.Text = Options.Airport ?? "";
@@ -225,12 +229,16 @@ namespace AuroraPAR
             roleBox.SelectedIndex = Options.Role switch { CoordinationRole.Radar => 1, CoordinationRole.Tower => 2, CoordinationRole.Monitor => 3, _ => 0 };
             pairing.Children.Add(roleBox);
             options.Children.Add(pairing);
-            airportBox.LostFocus += (s, e) => PairingChanged();
-            airportBox.KeyDown += (s, e) =>
+            if (!pairingWired)
             {
-                if (e.Key == Key.Enter) PairingChanged();
-            };
-            roleBox.SelectionChanged += (s, e) => PairingChanged();
+                pairingWired = true;
+                airportBox.LostFocus += (s, e) => PairingChanged();
+                airportBox.KeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Enter) PairingChanged();
+                };
+                roleBox.SelectionChanged += (s, e) => PairingChanged();
+            }
 
             options.Children.Add(new TextBlock
             {
