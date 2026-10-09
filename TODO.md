@@ -2,6 +2,8 @@
 
 ## Next update
 
+- **Analog echo grows with distance** (option, analog scope; as on the real scopes: the beam widens with the distance, so a far aircraft gives a longer echo): echo height = Track size at the touchdown, growing with the distance (e.g. up to about 2–3× at the edge of the range); afterglow copies the same.
+
 - **(Built 9 Oct) Coordination panel as the real one**: default colours blue, white, yellow, red, green (reset stays black on the same row: phone layout); **sound at every press** (call, acknowledge, cancel, reset) — option *Sound*: every press on both panels (default) / only the presses of the other side; no sound for the state found on joining. Also on the phone page (setting + link parameter s=).
 
 - **(Built 9 Oct) Coordination role from the callsign always wins** when connected as a controller (bug: AuroraPAR panel showed RADAR while connected as LIBV_TWR, because of a role saved earlier in Options); Options airport / role only for observers or not connected; Monitor stays.
