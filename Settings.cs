@@ -292,6 +292,12 @@ namespace AuroraPAR
         /// <summary>Phosphor colour of the analog scope (#RRGGBB).</summary>
         public string AnalogColor { get; set; } = "#A8FF60";
         /// <summary>
+        /// Analog scope: length of the echo at the far end of the range, compared with the one at the touchdown
+        /// (1 = always the same; the beam widens with the distance on real scopes).
+        /// </summary>
+        public double EchoGrowth { get; set; } = 1;
+        public const double MaxEchoGrowth = 4;
+        /// <summary>
         /// Brightness of the radar picture, percent (100 = normal), modern display and analog scope. Above 100 the
         /// colours are boosted (for dim monitors).
         /// </summary>
@@ -344,6 +350,7 @@ namespace AuroraPAR
             Style ??= DisplayStyleSettings.CreateDefault();
             Style.Normalize();
             if (!ColorText.TryParse(AnalogColor, out _)) AnalogColor = "#A8FF60";
+            EchoGrowth = double.IsFinite(EchoGrowth) ? Math.Clamp(EchoGrowth, 1, MaxEchoGrowth) : 1;
             BrightnessModern = Math.Clamp(BrightnessModern, MinBrightness, MaxBrightness);
             BrightnessAnalog = Math.Clamp(BrightnessAnalog, MinBrightness, MaxBrightness);
             Reminders ??= [];

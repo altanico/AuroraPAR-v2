@@ -215,6 +215,9 @@ A label with no fields shows only the track symbol.
 | ↑ / ↓ | Antenna elevation tilt up / down |
 | ← / → | Antenna azimuth tilt left / right |
 | Home | Antenna back to neutral |
+| Page up / Page down | Range larger / smaller (also the mouse wheel); End = preferred range |
+| Shift+↑ / Shift+↓ | Decision height higher / lower; Shift+Home = runway value |
+| Ctrl+↑ / Ctrl+↓ | Brightness up / down; Ctrl+Home = 100% |
 | L | Hide / show all labels |
 | A | Modern / Analog display |
 | P / Shift+P | Next / previous profile (its name is shown for 2 s; runway and traffic stay, the antenna goes back to neutral) |
@@ -406,7 +409,7 @@ A profile holds all the display options, so that different controllers or differ
 ### 10.3 Tracks and labels
 
 - **History tails**: on/off, number of dots (3–100), one dot every *n* seconds (0.5–10).
-- **Symbols** (shape and size) of the track, history dots, threshold, touchdown point and antenna: circle, filled circle, circle with cross, square, diamond, triangle, inverted triangle, +, ×, capsule, line, none, or **Custom...**: the ✎ key (or choosing Custom in the list) opens the symbol editor: draw on a grid of 15 × 15 cells (click or drag; a drawn cell clears it) or type / correct the vector path (SVG syntax, box of 15 units centred on 0,0 = the position of the aircraft), filled or outline, with a preview at 12, 24 and 48 px. Colour and size stay those of the symbol; the custom symbol is saved in the profile (also in Export). The shapes are for the modern display: on the analog scope the track is the **phosphor echo**, a thin vertical bar as on the real PAR scopes, as tall as the **Track** size (12 px by default; e.g. 30 px for the long echoes of some scopes).
+- **Symbols** (shape and size) of the track, history dots, threshold, touchdown point and antenna: circle, filled circle, circle with cross, square, diamond, triangle, inverted triangle, +, ×, capsule, line, none, or **Custom...**: the ✎ key (or choosing Custom in the list) opens the symbol editor: draw on a grid of 15 × 15 cells (click or drag; a drawn cell clears it) or type / correct the vector path (SVG syntax, box of 15 units centred on 0,0 = the position of the aircraft), filled or outline, with a preview at 12, 24 and 48 px. Colour and size stay those of the symbol; the custom symbol is saved in the profile (also in Export). The shapes are for the modern display: on the analog scope the track is the **phosphor echo**, a thin vertical bar as on the real PAR scopes, as tall as the **Track** size (12 px by default; e.g. 30 px for the long echoes of some scopes). *Display style → Analog scope → Echo length at the far end* (1× to 4×, 1× = off) makes the echo grow with the distance, as the beam widens on the real scopes: the echo is the Track size at the touchdown and up to 2×, 3× or 4× that size at the end of the range; the afterglow follows.
 - **Edit labels...**: label layouts of the two views ([section 5.2](#52-labels)).
 - **Display style...**: range marks, colours, reminders ([section 11](#11-display-style-range-marks-colours-reminders)).
 
@@ -571,6 +574,7 @@ All profiles and options are in one file:
 |---|---|
 | Range | Mouse wheel · range list · RANGE knob |
 | Tilt | ↑ ↓ ← → · Home = neutral · tilt buttons · EL/AZ knobs |
+| Range · DH · brightness (keys) | Page up / down, End · Shift+↑ ↓, Shift+Home · Ctrl+↑ ↓, Ctrl+Home |
 | DH | − / + · type in the box · DH knob (double click on the centre = runway value) |
 | Glide path | GP box: published angles, or type an angle + Enter (unpublished, orange) · GP DEG keys (analog) |
 | Labels | L = all · drag = move · double click = back · right click = hide |

@@ -2,7 +2,8 @@
 
 ## Next update
 
-- **Analog echo grows with distance** (option, analog scope; as on the real scopes: the beam widens with the distance, so a far aircraft gives a longer echo): echo height = Track size at the touchdown, growing with the distance (e.g. up to about 2–3× at the edge of the range); afterglow copies the same.
+- **(Built 9 Oct, to be tested) Analog echo grows with distance** (option, Display style → Analog scope → *Echo length at the far end*, 1× to 4×, default 1× = off): the echo is the Track size at the touchdown and grows with the distance up to that factor at the end of the range; afterglow copies the same. Check: 1×, 2×, 4× at the 5, 10 and 20 NM ranges; modern display unchanged; switching A (modern / analog) with the option on.
+- **(Built 9 Oct, to be tested) Keyboard keys for the analog controls**: Page up / Page down = range larger / smaller, End = preferred range; Shift+↑ / ↓ = DH ± step, Shift+Home = runway DH; Ctrl+↑ / ↓ = brightness, Ctrl+Home = 100%. Only with the AuroraPAR window in front and not typing in a text box; fixed assignments (a customisation window only if asked). Tooltips of the analog keys name the key; manual (section 6 and 15). Check: each key in modern and analog, with the mouse wheel on the display and the DH box focused.
 
 - **(Built 9 Oct) Coordination panel as the real one**: default colours blue, white, yellow, red, green (reset stays black on the same row: phone layout); **sound at every press** (call, acknowledge, cancel, reset) — option *Sound*: every press on both panels (default) / only the presses of the other side; no sound for the state found on joining. Also on the phone page (setting + link parameter s=).
 
@@ -16,7 +17,7 @@
 
 - **Session code** of the coordination panel (decision pending: mandatory or optional).
 
-- **Analog keys, still to do:** a keyboard key for each analog key (for a programmable USB keypad, see "External controls"; fixed assignments, only with the AuroraPAR window in front; a customisation window only if asked). Range / DH / BRT keys repeating while held, if wanted.
+- **Analog keys, still to do:** a customisation window for the keyboard keys (only if asked; useful for a programmable USB keypad, see "External controls"). Range / DH / BRT keys repeating while held, if wanted.
 
 - **Quarantine (a proposal, to evaluate at the end or later; decided 9 Oct):** the **virtual keypad on a phone / tablet** (a web page like the coordination phone panel, same relay and pairing, sending named commands to AuroraPAR). Other free applications already do the same: worth it only if there is a real request.
 

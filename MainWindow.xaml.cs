@@ -390,11 +390,11 @@ namespace AuroraPAR
                 case AnalogRangeControl.StepKeys:
                     AddKeyGroup("RANGE NM",
                     [
-                        ("<", "Range down (smaller).", () => SetRangeIndex(DistanceComboBox.SelectedIndex - 1), null),
-                        (profile.RangeDefaultKey, "Back to the preferred range (Settings → Display).",
+                        ("<", "Range down (smaller) (key Page down).", () => SetRangeIndex(DistanceComboBox.SelectedIndex - 1), null),
+                        (profile.RangeDefaultKey, "Back to the preferred range (Settings → Display) (key End).",
                             () => SetRangeIndex(Ranges.IndexOfClosest(settings.Active.PreferredRange)),
                             () => DistanceComboBox.SelectedIndex == Ranges.IndexOfClosest(settings.Active.PreferredRange)),
-                        (">", "Range up (larger).", () => SetRangeIndex(DistanceComboBox.SelectedIndex + 1), null)
+                        (">", "Range up (larger) (key Page up).", () => SetRangeIndex(DistanceComboBox.SelectedIndex + 1), null)
                     ]);
                     break;
                 default:
@@ -429,9 +429,9 @@ namespace AuroraPAR
             {
                 AddKeyGroup("DH",
                 [
-                    ("−", $"Decision height {DecisionHeightStep} ft lower.", () => SetDecisionHeight(runway.MDH - DecisionHeightStep), null),
-                    ("RWY", "Decision height of the runway.", () => SetDecisionHeight(runway.DefaultMDH), () => runway.MDH == runway.DefaultMDH),
-                    ("+", $"Decision height {DecisionHeightStep} ft higher.", () => SetDecisionHeight(runway.MDH + DecisionHeightStep), null)
+                    ("−", $"Decision height {DecisionHeightStep} ft lower (Shift+↓).", () => SetDecisionHeight(runway.MDH - DecisionHeightStep), null),
+                    ("RWY", "Decision height of the runway (Shift+Home).", () => SetDecisionHeight(runway.DefaultMDH), () => runway.MDH == runway.DefaultMDH),
+                    ("+", $"Decision height {DecisionHeightStep} ft higher (Shift+↑).", () => SetDecisionHeight(runway.MDH + DecisionHeightStep), null)
                 ], repeat: true);
             }
             else
@@ -442,9 +442,9 @@ namespace AuroraPAR
             {
                 AddKeyGroup("BRT",
                 [
-                    ("−", "Scope brightness down.", () => ChangeBrightness(-1), null),
-                    ("100", "Scope brightness 100%.", () => SetBrightness(100), () => settings.Active.BrightnessAnalog == 100),
-                    ("+", "Scope brightness up (above 100% for dim monitors).", () => ChangeBrightness(1), null)
+                    ("−", "Scope brightness down (Ctrl+↓).", () => ChangeBrightness(-1), null),
+                    ("100", "Scope brightness 100% (Ctrl+Home).", () => SetBrightness(100), () => settings.Active.BrightnessAnalog == 100),
+                    ("+", "Scope brightness up, above 100% for dim monitors (Ctrl+↑).", () => ChangeBrightness(1), null)
                 ], repeat: true);
             }
             else
@@ -1697,8 +1697,26 @@ namespace AuroraPAR
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.FocusedElement is TextBox or AptEntry) return;
+            // Shift + arrows / Home: decision height; Ctrl + arrows / Home: brightness; Page up / down / End: range.
+            // (Same actions as the keys and knobs of the analog console, with the window in front.)
+            ModifierKeys modifiers = Keyboard.Modifiers & (ModifierKeys.Shift | ModifierKeys.Control | ModifierKeys.Alt);
+            if (modifiers == ModifierKeys.Shift && e.Key is Key.Up or Key.Down or Key.Home)
+            {
+                SetDecisionHeight(e.Key == Key.Up ? runway.MDH + DecisionHeightStep : e.Key == Key.Down ? runway.MDH - DecisionHeightStep : runway.DefaultMDH);
+                e.Handled = true;
+                return;
+            }
+            if (modifiers == ModifierKeys.Control && e.Key is Key.Up or Key.Down or Key.Home)
+            {
+                if (e.Key == Key.Home) SetBrightness(100); else ChangeBrightness(e.Key == Key.Up ? 1 : -1);
+                e.Handled = true;
+                return;
+            }
             switch (e.Key)
             {
+                case Key.PageUp when modifiers == 0: SetRangeIndex(DistanceComboBox.SelectedIndex + 1); break;
+                case Key.PageDown when modifiers == 0: SetRangeIndex(DistanceComboBox.SelectedIndex - 1); break;
+                case Key.End when modifiers == 0: SetRangeIndex(Ranges.IndexOfClosest(settings.Active.PreferredRange)); break;
                 case Key.Up: TiltAntenna(1, 0); break;
                 case Key.Down: TiltAntenna(-1, 0); break;
                 case Key.Left: TiltAntenna(0, -AzimuthSign); break;
@@ -1797,6 +1815,7 @@ namespace AuroraPAR
             viewOptions.Qfe = profile.PressureReference == PressureReference.QFE;
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             viewOptions.Analog = analog;
+            viewOptions.EchoGrowth = profile.EchoGrowth;
             viewOptions.Theme = analog
                 ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor), BrightnessBoost(profile), profile.Style)
                 : Theme.Modern(profile.Style, BrightnessBoost(profile));

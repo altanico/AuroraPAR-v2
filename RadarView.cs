@@ -43,6 +43,8 @@ namespace AuroraPAR
         public LabelLayout AzimuthLabel { get; set; } = LabelLayout.DefaultAzimuth();
         /// <summary>Analog scope: monochrome phosphor, echoes lit by the beam, no labels.</summary>
         public bool Analog { get; set; }
+        /// <summary>Analog scope: length of the echo at the far end of the range compared with the touchdown (1 = same).</summary>
+        public double EchoGrowth { get; set; } = 1;
         /// <summary>Colours, widths and dash styles of the elements.</summary>
         public Theme Theme { get; set; } = Theme.Modern(DisplayStyleSettings.CreateDefault());
         /// <summary>Range marks drawn at each range.</summary>
@@ -491,6 +493,7 @@ namespace AuroraPAR
                     continue;
                 }
                 ghost.Data = EchoGeometry;
+                SetEchoLength(ghost, track.Recent[index].Along);
                 ghost.Stroke = track.Color;
                 ghost.Fill = track.Color;
                 Canvas.SetLeft(ghost, ToScreenX(logical.X));
@@ -498,6 +501,27 @@ namespace AuroraPAR
                 track.GhostStrength[k] = GhostStrengths[k];
                 SetOpacity(ghost, GhostStrengths[k] * track.Symbol.Opacity);
                 ghost.Visibility = Visibility.Visible;
+            }
+        }
+
+        /// <summary>
+        /// Analog scope: the echo is longer the farther the aircraft (option): 1 at the touchdown, up to
+        /// <see cref="ViewOptions.EchoGrowth"/> at the end of the range. The bar grows around its centre.
+        /// </summary>
+        private void SetEchoLength(Path echo, double along)
+        {
+            double factor = 1;
+            if (Options.Analog && Options.EchoGrowth > 1.001)
+            {
+                factor = 1 + (Options.EchoGrowth - 1) * Math.Clamp(along / Math.Max(0.1, Runway.Distance), 0, 1);
+            }
+            if (echo.RenderTransform is ScaleTransform scale)
+            {
+                if (Math.Abs(scale.ScaleY - factor) > 0.01) scale.ScaleY = factor;
+            }
+            else if (factor != 1)
+            {
+                echo.RenderTransform = new ScaleTransform(1, factor);
             }
         }
 
@@ -613,6 +637,7 @@ namespace AuroraPAR
             }
             track.Symbol.Stroke = track.Color;
             track.Symbol.Fill = Options.Analog || Symbols.IsFilled(symbol) ? track.Color : Brushes.Transparent;
+            SetEchoLength(track.Symbol, along);
             Canvas.SetLeft(track.Symbol, track.Position.X);
             Canvas.SetTop(track.Symbol, track.Position.Y);
             track.Symbol.Visibility = Visibility.Visible;

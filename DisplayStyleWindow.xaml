@@ -36,6 +36,12 @@
                                 <TextBlock Text="Phosphor:" VerticalAlignment="Center"/>
                                 <ComboBox Name="PhosphorComboBox" Width="190" Margin="8,0,0,0"/>
                             </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                                        ToolTip="On real scopes the beam widens with the distance, so a far aircraft gives a longer echo. 1× = always the same length (the size of the Track symbol).">
+                                <TextBlock Text="Echo length at the far end:" VerticalAlignment="Center"/>
+                                <Slider Name="EchoGrowthSlider" Width="150" Minimum="1" Maximum="4" TickFrequency="0.5" IsSnapToTickEnabled="True" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Name="EchoGrowthText" Width="90" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

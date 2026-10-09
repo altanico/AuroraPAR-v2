@@ -64,6 +64,15 @@ namespace AuroraPAR
             };
             BuildStyles();
             BuildPhosphor();
+            EchoGrowthSlider.Value = Active.EchoGrowth;
+            void ShowEchoGrowth() => EchoGrowthText.Text = Active.EchoGrowth <= 1.001 ? "same (1×)" : $"up to {Active.EchoGrowth.ToString("0.#", CultureInfo.InvariantCulture)}×";
+            ShowEchoGrowth();
+            EchoGrowthSlider.ValueChanged += (s, e) =>
+            {
+                Active.EchoGrowth = EchoGrowthSlider.Value;
+                ShowEchoGrowth();
+                commit();
+            };
             RemindersHost.Content = new ReminderEditor(() => Active.Reminders, commit);
             MarkersAboveRadio.IsChecked = !Active.RangeTextBelowHorizon;
             MarkersBelowRadio.IsChecked = Active.RangeTextBelowHorizon;
