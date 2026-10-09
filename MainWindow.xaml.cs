@@ -1201,8 +1201,33 @@ namespace AuroraPAR
             };
         }
 
+        /// <summary>Aurora has been connected at least once in this session.</summary>
+        private bool auroraEverConnected;
+
+        /// <summary>
+        /// One minute after the start, still no connection to Aurora (STS FAIL): most likely the access of third-party
+        /// programs is off in Aurora. Said once per session.
+        /// </summary>
+        private void StartAuroraConnectionHint()
+        {
+            System.Windows.Threading.DispatcherTimer hint = new() { Interval = TimeSpan.FromMinutes(1) };
+            hint.Tick += (s, e) =>
+            {
+                hint.Stop();
+                if (aurora.Connected || auroraEverConnected || !IsLoaded) return;
+                MessageBox.Show(this,
+                    "AuroraPAR is not connected to Aurora yet (STS FAIL).\n\n" +
+                    "Start Aurora on this PC and allow the third-party programs to connect:\n" +
+                    "Aurora → Settings → Other → Software → 3rd Party software access (on).\n\n" +
+                    "The connection is retried automatically: STS OK appears as soon as it works.",
+                    "Aurora PAR - Connection to Aurora", MessageBoxButton.OK, MessageBoxImage.Information);
+            };
+            hint.Start();
+        }
+
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            StartAuroraConnectionHint();
             try
             {
                 runways = await DataFile.GetRunways(dataPath);
@@ -2055,6 +2080,7 @@ namespace AuroraPAR
             }
             if (aurora.Connected)
             {
+                auroraEverConnected = true;
                 statusText.Text = "STS OK";
                 statusText.Foreground = Brushes.Green;
             }

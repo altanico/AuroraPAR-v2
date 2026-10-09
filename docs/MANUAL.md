@@ -47,6 +47,8 @@ To update, download the new build and replace the files. Your settings are store
 
 AuroraPAR connects automatically to Aurora on the same PC (local port 1130). Start Aurora and AuroraPAR in any order: the connection is retried every few seconds and restored automatically if it drops.
 
+**Important — allow third-party programs in Aurora.** Aurora accepts programs like AuroraPAR only when this option is on: **Aurora → Settings → Other → Software → 3rd Party software access**. Without it AuroraPAR stays on **STS FAIL** (bottom of the information area) and shows no traffic. If there is still no connection one minute after the start, AuroraPAR reminds you of this option with a message (once per session).
+
 **Important — Aurora traffic refresh rate.** By default Aurora updates the traffic every 3 seconds, which is too slow for a PAR (tracks move in jumps). In Aurora set the **traffic refresh rate to 0.5 s**. AuroraPAR checks it for you (see *DATA* in [section 4.4](#44-information-area)).
 
 The QNH is taken from the METAR of the airport in Aurora and refreshed every minute.
@@ -549,7 +551,7 @@ All profiles and options are in one file:
 
 | Problem | Solution |
 |---|---|
-| `STS FAIL` / red STS lamp | Aurora is not running or not connected. AuroraPAR reconnects by itself. |
+| `STS FAIL` / red STS lamp | Aurora is not running, or its access for third-party programs is off: **Aurora → Settings → Other → Software → 3rd Party software access**. AuroraPAR reconnects by itself. |
 | Tracks move in jumps, red `DATA` or flashing **ANT. R/R** | In Aurora set the traffic refresh rate to **0.5 s**. |
 | An aircraft is not shown | It is outside the antenna beam: tilt the antenna, widen the beam (or the scan limits) or increase the range. |
 | No QNH (`----`) | Aurora has no METAR for the airport yet; it is requested every minute. |
