@@ -2,6 +2,8 @@
 
 ## Next update
 
+- **(Coded, in the next build) Coordination role from the callsign always wins** when connected as a controller (bug: AuroraPAR panel showed RADAR while connected as LIBV_TWR, because of a role saved earlier in Options); Options airport / role only for observers or not connected; Monitor stays.
+
 - **Coordination link must always work** (case: a friend's Pi-hole blocked emqx.io; AuroraPAR and Firefox stuck on "connecting...", Edge with secure DNS worked):
   - **Both relays at the same time** (emqx and hivemq): publish to both, listen to both, so the panels meet even when one relay is blocked on one side only (today the two sides can end on different relays and never see each other).
   - **Secure WebSocket fallback** (8084 / 8884) for networks that block port 8883 — code already prepared in Coordination.cs (not built yet); with the Windows proxy if one is set.

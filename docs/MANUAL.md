@@ -354,7 +354,7 @@ Example: at 12 NM the radar presses white (flashing, alert in the tower), the to
 
 **Linking the two panels — automatic:** AuroraPAR asks Aurora which callsign you are connected with. Panels of the same airport are linked: `XXXX_TWR` is the tower, any other callsign of the airport (`_APP`, `_F_APP`, `_DEP`…) the radar. The status line shows the airport, your side and whether the other side is online (green dot).
 
-**As observer** (`_OBS`), or to override: open **Options**, type the **airport** (ICAO) and choose the **role**.
+**Connected as a controller**, the callsign always decides airport and side, in AuroraPAR as in AuroraCoord (an airport or role chosen earlier in *Options* is not used). **As observer** (`_OBS`) or not connected: open **Options**, type the **airport** (ICAO) and choose the **role**.
 
 **Monitor (instructor):** an instructor connected as observer chooses the airport and the role **Monitor** in *Options*. The monitor panel shows the same lights in real time and whether the radar and the tower are online, but it is **read-only**: it cannot press the lights or reset them, and it does not sound.
 

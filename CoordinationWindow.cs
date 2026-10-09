@@ -351,6 +351,9 @@ namespace AuroraPAR
         private (string? Airport, CoordinationRole? Role) Effective()
         {
             (string? airport, CoordinationRole? role) = CoordinationSettings.FromCallsign(callsign);
+            // Connected as a controller (e.g. LIBV_TWR): who you are online decides, in every program, also over an
+            // airport or role chosen earlier in Options (only Monitor, the instructor's read-only panel, stays).
+            if (airport != null && role != null && Options.Role != CoordinationRole.Monitor) return (airport, role);
             return (Options.Airport ?? airport, Options.Role ?? role);
         }
 
