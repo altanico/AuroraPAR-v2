@@ -105,6 +105,12 @@
   }
   .btn.primary { background: #2E6BFF; border-color: #2E6BFF; color: white; }
   .error { color: #FF8080; font-size: 13px; min-height: 18px; margin-top: 6px; }
+  /* Always portrait: on a phone or tablet turned sideways the panel is turned back (when the system cannot lock it). */
+  html.rot-cw #app, html.rot-cw .overlay, html.rot-ccw #app, html.rot-ccw .overlay {
+    inset: auto; width: 100vh; height: 100vw; transform-origin: top left;
+  }
+  html.rot-cw #app, html.rot-cw .overlay { top: 0; left: 100%; transform: rotate(90deg); }
+  html.rot-ccw #app, html.rot-ccw .overlay { top: 100%; left: 0; transform: rotate(-90deg); }
 </style>
 </head>
 <body>
@@ -365,7 +371,27 @@ setInterval(() => {
   flashPhase = !flashPhase;
   if (state.Lights.includes("Flashing")) paint();
 }, 400);
-window.addEventListener("resize", () => { layout(); paint(); });
+// Always portrait: lock the screen where the system allows it (installed app, full screen on Android); otherwise, on a
+// touch device held sideways, turn the panel back so that it stays upright for the device.
+function keepPortrait() {
+  const root = document.documentElement;
+  root.classList.remove("rot-cw", "rot-ccw");
+  const touch = matchMedia("(pointer: coarse)").matches;
+  if (!touch || window.innerWidth <= window.innerHeight) return;
+  let angle = 90;
+  if (screen.orientation && typeof screen.orientation.angle === "number") angle = screen.orientation.angle;
+  else if (typeof window.orientation === "number") angle = window.orientation;
+  // Device turned to the left (90): the panel turned right, and the other way round.
+  root.classList.add(angle === 270 || angle === -90 ? "rot-ccw" : "rot-cw");
+}
+function lockPortrait() {
+  try {
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock("portrait").catch(() => { });
+  } catch (e) { }
+}
+keepPortrait();
+window.addEventListener("resize", () => { keepPortrait(); layout(); paint(); });
+window.addEventListener("orientationchange", () => setTimeout(() => { keepPortrait(); layout(); paint(); }, 100));
 
 // ---------- Sound, vibration, screen ----------
 let audio = null;
@@ -633,11 +659,12 @@ function start() {
   $("start").classList.add("hidden");
   unlockAudio();
   keepScreenOn();
+  lockPortrait();
   // Android: full screen also when not installed (not available on iPhone).
   try {
     const standalone = matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches || navigator.standalone;
     if (!standalone && document.documentElement.requestFullscreen && /Android/i.test(navigator.userAgent)) {
-      document.documentElement.requestFullscreen().catch(() => { });
+      document.documentElement.requestFullscreen().then(lockPortrait).catch(() => { });
     }
   } catch (e) { }
 }

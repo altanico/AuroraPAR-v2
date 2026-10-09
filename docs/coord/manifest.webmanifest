@@ -3,7 +3,7 @@
   "short_name": "AuroraCoord",
   "description": "Coordination light panel between the PAR radar and the tower (AuroraPAR).",
   "display": "fullscreen",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#2E302C",
   "theme_color": "#2E302C",
   "icons": [
