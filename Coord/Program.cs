@@ -37,6 +37,14 @@ namespace AuroraPAR
         {
             CoordinationSettings settings = Load();
             Application app = new() { ShutdownMode = ShutdownMode.OnMainWindowClose };
+            // An error is written in the log (coord-AuroraCoord.log) and the panel stays open.
+            app.DispatcherUnhandledException += (s, e) =>
+            {
+                CoordinationLink.Log("ERROR " + e.Exception);
+                e.Handled = true;
+                MessageBox.Show("Something went wrong (" + e.Exception.GetType().Name + ": " + e.Exception.Message + ").\n\nDetails in " + CoordinationLink.LogPath,
+                    "AuroraCoord", MessageBoxButton.OK, MessageBoxImage.Warning);
+            };
             CoordinationWindow window = new(settings, () => Save(settings), null) { Title = "AuroraCoord - Coordination panel" };
             AuroraCallsign aurora = new();
             DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(5) };
@@ -98,8 +106,9 @@ namespace AuroraPAR
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, JsonSerializer.Serialize(settings, Json));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                CoordinationLink.Log("Settings not saved: " + ex.Message);
             }
         }
     }
