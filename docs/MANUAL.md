@@ -279,6 +279,7 @@ Some runways have approaches with different glide path angles. In `runways.par` 
 - No labels and no altitude scale, as on the real scopes. The history tail fades with age.
 - The tooltips (help bubbles) are dark with amber text, like the console.
 - **Afterglow**: like the phosphor of the old screens, a faint trail of the echo stays where the aircraft was in the last seconds, and the history dots glow slightly when the beam passes over them.
+- **Readouts**: the windows of the left column (airport, runway, course, glide path, MAPt, DH, QNH, range, tilt) are 14-segment displays (default) or **mechanical drum counters** (*Settings → Analog controls → Readouts*): off-white digits and letters on black wheels behind a window; when a value changes the wheels roll to the new character, and each wheel is a little off, as on worn counters. Same data, only the look changes. The digits are in the Carlito font (SIL Open Font License, included).
 - **Edge of the antenna beam**: near the edge of the beam (the last half degree) the echo gets weaker; out of the beam it goes dark, and its afterglow and dots fade in about 6 s.
 - In a low window the screen is cut at the top and bottom (only frame and glass), so the views stay large.
 

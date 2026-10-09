@@ -110,6 +110,13 @@ namespace AuroraPAR
         Keys
     }
 
+    /// <summary>Readout windows of the analog console: 14-segment displays or mechanical drum counters.</summary>
+    internal enum ReadoutStyle
+    {
+        Segments,
+        Drums
+    }
+
     /// <summary>Range of the analog console: a knob, one key per range, or keys down / preferred / up.</summary>
     internal enum AnalogRangeControl
     {
@@ -231,6 +238,8 @@ namespace AuroraPAR
         public AnalogTiltControl TiltControl { get; set; } = AnalogTiltControl.Knobs;
         public AnalogControl DhControl { get; set; } = AnalogControl.Knob;
         public AnalogControl BrightnessControl { get; set; } = AnalogControl.Knob;
+        /// <summary>Readout windows of the analog console (airport, runway, course, ...): segments or drums.</summary>
+        public ReadoutStyle Readouts { get; set; } = ReadoutStyle.Segments;
         /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).
@@ -342,6 +351,7 @@ namespace AuroraPAR
             if (!Enum.IsDefined(TiltControl)) TiltControl = AnalogTiltControl.Knobs;
             if (!Enum.IsDefined(DhControl)) DhControl = AnalogControl.Knob;
             if (!Enum.IsDefined(BrightnessControl)) BrightnessControl = AnalogControl.Knob;
+            if (!Enum.IsDefined(Readouts)) Readouts = ReadoutStyle.Segments;
             RangeDefaultKey = (RangeDefaultKey ?? "").Trim().ToUpperInvariant();
             if (RangeDefaultKey.Length > MaxRangeKeyText) RangeDefaultKey = RangeDefaultKey[..MaxRangeKeyText];
             if (RangeDefaultKey.Length == 0) RangeDefaultKey = "DEF";

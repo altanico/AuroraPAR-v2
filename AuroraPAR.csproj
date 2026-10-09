@@ -16,6 +16,8 @@
     <Resource Include="Fonts\B612-Regular.ttf" />
     <!-- Barlow Condensed Bold, narrow lettering of the analog console keys (SIL Open Font License, see Fonts/BarlowCondensed-OFL.txt). -->
     <Resource Include="Fonts\BarlowCondensed-Bold.ttf" />
+    <!-- Carlito Bold, the digits and letters of the drum counters of the analog console (SIL Open Font License, see Fonts/Carlito-OFL.txt). -->
+    <Resource Include="Fonts\Carlito-Bold.ttf" />
     <!-- Sound of the coordination panel: the buzzer of the real light panel, recorded in a PAR room. -->
     <Resource Include="Sounds\coord-beep.wav" />
   </ItemGroup>

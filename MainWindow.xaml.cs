@@ -1816,6 +1816,8 @@ namespace AuroraPAR
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             viewOptions.Analog = analog;
             viewOptions.EchoGrowth = profile.EchoGrowth;
+            consolePanel.Drums = profile.Readouts == ReadoutStyle.Drums;
+            aptEntry.Drums = profile.Readouts == ReadoutStyle.Drums;
             viewOptions.Theme = analog
                 ? Theme.Analog(ColorText.Parse(profile.AnalogColor, Theme.DefaultPhosphor), BrightnessBoost(profile), profile.Style)
                 : Theme.Modern(profile.Style, BrightnessBoost(profile));

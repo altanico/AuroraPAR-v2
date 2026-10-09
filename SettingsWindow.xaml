@@ -114,6 +114,7 @@
                         <RowDefinition/>
                         <RowDefinition/>
                         <RowDefinition/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
                     <TextBlock Text="Range:" VerticalAlignment="Center"/>
                     <ComboBox Name="RangeControlComboBox" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
@@ -128,6 +129,9 @@
                     <ComboBox Name="DhControlComboBox" Grid.Row="2" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
                     <TextBlock Grid.Row="3" Text="Brightness:" VerticalAlignment="Center"/>
                     <ComboBox Name="BrightnessControlComboBox" Grid.Row="3" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
+                    <TextBlock Grid.Row="4" Text="Readouts:" VerticalAlignment="Center"
+                               ToolTip="The windows of the left column of the analog console (airport, runway, course, ...)."/>
+                    <ComboBox Name="ReadoutsComboBox" Grid.Row="4" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
                 </Grid>
             </GroupBox>
         </StackPanel>

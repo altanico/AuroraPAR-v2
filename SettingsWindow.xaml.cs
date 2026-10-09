@@ -165,6 +165,7 @@ namespace AuroraPAR
                 TiltControlComboBox.SelectedIndex = (int)Active.TiltControl;
                 DhControlComboBox.SelectedIndex = (int)Active.DhControl;
                 BrightnessControlComboBox.SelectedIndex = (int)Active.BrightnessControl;
+                ReadoutsComboBox.SelectedIndex = (int)Active.Readouts;
                 RunwayLeftRadio.IsChecked = Active.RunwaySide == RunwaySide.Left;
                 RunwayRightRadio.IsChecked = Active.RunwaySide == RunwaySide.Right;
                 StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;
@@ -321,6 +322,13 @@ namespace AuroraPAR
             TiltControlComboBox.ItemsSource = new[] { "Knobs (EL, AZ)", "Keys (UP 0 DN, L 0 R)", "Small joystick (4 ways)" };
             DhControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  RWY  +)" };
             BrightnessControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  100  +)" };
+            ReadoutsComboBox.ItemsSource = new[] { "Segments (amber)", "Drums (mechanical counters)" };
+            ReadoutsComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || ReadoutsComboBox.SelectedIndex < 0) return;
+                ReadoutStyle value = (ReadoutStyle)ReadoutsComboBox.SelectedIndex;
+                SetProfileValue(p => p.Readouts == value, p => p.Readouts = value);
+            };
             RangeControlComboBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || RangeControlComboBox.SelectedIndex < 0) return;

@@ -41,16 +41,16 @@ namespace AuroraPAR
         /// <summary>Characters of every readout: the same for all, so the windows line up.</summary>
         private const int Cells = 5;
 
-        private readonly SegmentDisplay icao = new(Cells);
-        private readonly SegmentDisplay runway = new(Cells);
-        private readonly SegmentDisplay pressure = new(Cells);
-        private readonly SegmentDisplay minimum = new(Cells);
-        private readonly SegmentDisplay finalCourse = new(Cells);
-        private readonly SegmentDisplay glideSlope = new(Cells);
-        private readonly SegmentDisplay missedApproach = new(Cells);
-        private readonly SegmentDisplay range = new(Cells);
-        private readonly SegmentDisplay tiltElevation = new(Cells);
-        private readonly SegmentDisplay tiltAzimuth = new(Cells);
+        private readonly Readout icao = new(Cells);
+        private readonly Readout runway = new(Cells);
+        private readonly Readout pressure = new(Cells);
+        private readonly Readout minimum = new(Cells);
+        private readonly Readout finalCourse = new(Cells);
+        private readonly Readout glideSlope = new(Cells);
+        private readonly Readout missedApproach = new(Cells);
+        private readonly Readout range = new(Cells);
+        private readonly Readout tiltElevation = new(Cells);
+        private readonly Readout tiltAzimuth = new(Cells);
         private readonly TextBlock pressureLabel = Label("QNH");
         private readonly TextBlock minimumLabel = Label("DA FT");
         private readonly Lamp statusLamp = new();
@@ -116,7 +116,7 @@ namespace AuroraPAR
             };
         }
 
-        private static FrameworkElement Row(TextBlock label, SegmentDisplay display, string toolTip)
+        private static FrameworkElement Row(TextBlock label, FrameworkElement display, string toolTip)
         {
             DockPanel row = new() { Margin = new Thickness(0, 0, 0, 6), ToolTip = toolTip, Background = Brushes.Transparent };
             ToolTips.KeepOpen(row);
@@ -142,6 +142,18 @@ namespace AuroraPAR
             TextBlock label = Label(text);
             row.Children.Add(label);
             return row;
+        }
+
+        /// <summary>Readouts as mechanical drum counters (otherwise 14-segment displays).</summary>
+        public bool Drums
+        {
+            set
+            {
+                foreach (Readout readout in new[] { icao, runway, pressure, minimum, finalCourse, glideSlope, missedApproach, range, tiltElevation, tiltAzimuth })
+                {
+                    readout.Drums = value;
+                }
+            }
         }
 
         public void Update(ConsoleData data)
@@ -367,7 +379,10 @@ namespace AuroraPAR
         }
 
         /// <summary>Splits the text in cells: character and decimal point.</summary>
-        private List<(char Character, bool Point)> Cells()
+        private List<(char Character, bool Point)> Cells() => Split(text, cells);
+
+        /// <summary>Splits a text in <paramref name="cells"/> cells (right aligned): character and decimal point.</summary>
+        internal static List<(char Character, bool Point)> Split(string text, int cells)
         {
             List<(char, bool)> list = [];
             foreach (char raw in text.ToUpperInvariant())
@@ -444,7 +459,7 @@ namespace AuroraPAR
     internal class AptEntry : Border
     {
         private const int Cells = 4;
-        private readonly SegmentDisplay display = new(Cells);
+        private readonly Readout display = new(Cells);
         private readonly System.Windows.Threading.DispatcherTimer blink = new() { Interval = TimeSpan.FromMilliseconds(450) };
         private readonly System.Windows.Threading.DispatcherTimer flash = new() { Interval = TimeSpan.FromMilliseconds(160) };
         private string icao = "";
@@ -452,6 +467,12 @@ namespace AuroraPAR
         private bool editing;
         private bool cursorOn = true;
         private int flashStep;
+
+        /// <summary>The window as mechanical drum counter (otherwise 14-segment display).</summary>
+        public bool Drums
+        {
+            set => display.Drums = value;
+        }
 
         /// <summary>Receives the code typed; returns false when it is not valid (unknown airport).</summary>
         public Func<string, bool>? Submit { get; set; }
