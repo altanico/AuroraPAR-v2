@@ -10,7 +10,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>AuroraCoord</AssemblyName>
     <RootNamespace>AuroraPAR</RootNamespace>
-    <ApplicationIcon>..\AuroraPAR.ico</ApplicationIcon>
+    <ApplicationIcon>AuroraCoord.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,7 +18,9 @@
     <Compile Include="..\CoordinationWindow.cs" Link="CoordinationWindow.cs" />
     <Compile Include="..\ColorPicker.cs" Link="ColorPicker.cs" />
     <Compile Include="..\ColorText.cs" Link="ColorText.cs" />
-    <Resource Include="..\AuroraPAR.ico" Link="AuroraPAR.ico" />
+    <!-- Own icon (light panel keys). Linked under the name the shared window loads (AuroraPAR.ico), so the window of
+         AuroraCoord shows it while the panel inside AuroraPAR keeps the radar icon. -->
+    <Resource Include="AuroraCoord.ico" Link="AuroraPAR.ico" />
     <!-- B612 cockpit font for the engraved texts (SIL Open Font License, see Fonts/B612-OFL.txt). -->
     <Resource Include="..\Fonts\B612-Bold.ttf" Link="Fonts\B612-Bold.ttf" />
     <Resource Include="..\Fonts\B612-Regular.ttf" Link="Fonts\B612-Regular.ttf" />
