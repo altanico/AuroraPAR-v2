@@ -1,0 +1,354 @@
+{
+  "Name": "PAR2090",
+  "RunwaySide": "Left",
+  "StartupRange": "Fixed",
+  "RunwayChangeRange": "Fixed",
+  "PreferredRange": 15,
+  "ApproachAbove": 0.5,
+  "ApproachBelow": 0.5,
+  "ApproachLeft": 1.5,
+  "ApproachRight": 1.5,
+  "ScanUp": 8,
+  "ScanDown": -1,
+  "ScanLeft": 10,
+  "ScanRight": 10,
+  "TiltStep": 2,
+  "TiltMax": 10,
+  "ScanModel": 2,
+  "BeamElevation": 7,
+  "BeamAzimuth": 24,
+  "BeamElevationNeutral": 4.5,
+  "BeamAzimuthNeutral": 0,
+  "ShowBeamEdges": false,
+  "BeamEnabled": false,
+  "BeamElevationNeutralAuto": false,
+  "LockDisplayMode": false,
+  "RangeControl": "Knob",
+  "RangeDefaultKey": "DEF",
+  "TiltControl": "Knobs",
+  "DhControl": "Knob",
+  "BrightnessControl": "Knob",
+  "CoastSeconds": 8,
+  "TrackSmoothing": "Light",
+  "AzimuthTiltSwapped": true,
+  "PressureReference": "QNH",
+  "PressureUnit": "HectoPascal",
+  "MinimaLabel": "OcaOch",
+  "ShowAltitudeScale": true,
+  "ShowAltitudeLines": false,
+  "AltitudeScaleUnit": "Feet",
+  "ElevationLabel": {
+    "Rows": 5,
+    "Columns": 2,
+    "Cells": [
+      "GlidePathDeviation",
+      "TrackId",
+      "DistanceFromTouchdown",
+      "None",
+      "Altitude",
+      "None",
+      "GroundSpeed",
+      "None",
+      "VerticalSpeed",
+      "None"
+    ],
+    "IsEmpty": false
+  },
+  "AzimuthLabel": {
+    "Rows": 3,
+    "Columns": 2,
+    "Cells": [
+      "CenterlineDeviation",
+      "TrackId",
+      "DistanceFromTouchdown",
+      "None",
+      "GroundSpeed",
+      "None"
+    ],
+    "IsEmpty": false
+  },
+  "RandomTrackIds": true,
+  "HistoryEnabled": true,
+  "HistoryDots": 50,
+  "HistoryInterval": 3,
+  "TrackSymbol": {
+    "Shape": "CrossCircle",
+    "Size": 12
+  },
+  "ThresholdSymbol": {
+    "Shape": "TriangleUp",
+    "Size": 10
+  },
+  "TouchdownSymbol": {
+    "Shape": "None",
+    "Size": 12
+  },
+  "AntennaSymbol": {
+    "Shape": "Square",
+    "Size": 8
+  },
+  "HistorySymbol": {
+    "Shape": "FilledCircle",
+    "Size": 3
+  },
+  "CoastSymbol": {
+    "Shape": "Diamond",
+    "Size": 12
+  },
+  "ScanEffect": false,
+  "DisplayMode": "Modern",
+  "RangeMarks": {
+    "Rows": [
+      {
+        "Range": 1,
+        "Lines": [
+          "One",
+          "Quarter"
+        ],
+        "Text": "One"
+      },
+      {
+        "Range": 2.5,
+        "Lines": [
+          "One",
+          "Half",
+          "Quarter"
+        ],
+        "Text": "One"
+      },
+      {
+        "Range": 5,
+        "Lines": [
+          "Five",
+          "One",
+          "Half"
+        ],
+        "Text": "One"
+      },
+      {
+        "Range": 10,
+        "Lines": [
+          "Five",
+          "One"
+        ],
+        "Text": "One"
+      },
+      {
+        "Range": 15,
+        "Lines": [
+          "Five",
+          "One"
+        ],
+        "Text": "One"
+      },
+      {
+        "Range": 20,
+        "Lines": [
+          "Two"
+        ],
+        "Text": "Two"
+      }
+    ],
+    "TextFormat": "Fractions",
+    "TextSize": 14
+  },
+  "Style": {
+    "Elements": {
+      "MarkFive": {
+        "Color": "#FF8000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "MarkTwo": {
+        "Color": "#006800",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "MarkOne": {
+        "Color": "#D9D900",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "MarkHalf": {
+        "Color": "#005300",
+        "Dash": "Dashed",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "MarkQuarter": {
+        "Color": "#005400",
+        "Dash": "DashDot",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "RangeText": {
+        "Color": "#FFFFFF",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "GlidePath": {
+        "Color": "#FFFF00",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "Centerline": {
+        "Color": "#FFFF00",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "ApproachLimits": {
+        "Color": "#FF0000",
+        "Dash": "Dashed",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "ScanLimits": {
+        "Color": "#550000",
+        "Dash": "Solid",
+        "Width": 3,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "DecisionHeight": {
+        "Color": "#FF0000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "Runway": {
+        "Color": "#5F9EA0",
+        "Dash": "Solid",
+        "Width": 3,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "Ground": {
+        "Color": "#008000",
+        "Dash": "Solid",
+        "Width": 2,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "Touchdown": {
+        "Color": "#FFFF00",
+        "Dash": "Solid",
+        "Width": 2,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "AltitudeScale": {
+        "Color": "#808080",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "Background": {
+        "Color": "#000000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "PlotInside": {
+        "Color": "#008000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "PlotOutside": {
+        "Color": "#FF0000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "TrackInside": {
+        "Color": "#008000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "TrackOutside": {
+        "Color": "#FF0000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "LabelText": {
+        "Color": "#FFFFFF",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "Antenna": {
+        "Color": "#5F9EA0",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "AltitudeLines": {
+        "Color": "#008000",
+        "Dash": "Dotted",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "AntennaBeam": {
+        "Color": "#550000",
+        "Dash": "Solid",
+        "Width": 3,
+        "Hidden": false,
+        "HiddenAnalog": false
+      },
+      "TrackCoasting": {
+        "Color": "#008000",
+        "Dash": "Solid",
+        "Width": 1,
+        "Hidden": false,
+        "HiddenAnalog": false
+      }
+    }
+  },
+  "AnalogColor": "#A8FF60",
+  "BrightnessModern": 100,
+  "BrightnessAnalog": 100,
+  "Reminders": [
+    {
+      "Distance": 3,
+      "Show": "Line",
+      "Symbol": "TriangleUp",
+      "Size": 10,
+      "Dash": "Solid",
+      "Width": 2,
+      "Color": "#FFFF00",
+      "Note": "LND Clearance",
+      "HasMarker": false,
+      "HasLine": true
+    }
+  ],
+  "RangeTextBelowHorizon": true,
+  "MagneticVariation": 4,
+  "ScanEffectSpeed": "Fast"
+}

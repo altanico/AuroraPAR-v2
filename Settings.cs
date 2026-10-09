@@ -662,8 +662,44 @@ namespace AuroraPAR
                 try { File.Copy(path, path + ".bad", overwrite: true); } catch (Exception) { }
                 settings = null;
             }
-            settings ??= new AppSettings();
+            settings ??= NewSettings();
             settings.Normalize();
+            return settings;
+        }
+
+        /// <summary>Folder of the profiles that come with the program (first start: they are the profiles).</summary>
+        public static string BundledProfilesPath => Path.Combine(AppContext.BaseDirectory, "Profiles");
+
+        /// <summary>
+        /// Settings of a first start (no settings file yet): the profiles that come with the program (Profiles folder,
+        /// in name order, the first one active), or the default profile when there are none.
+        /// </summary>
+        private static AppSettings NewSettings()
+        {
+            AppSettings settings = new();
+            try
+            {
+                if (Directory.Exists(BundledProfilesPath))
+                {
+                    foreach (string file in Directory.GetFiles(BundledProfilesPath, "*.json").Order(StringComparer.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            Profile? profile = JsonSerializer.Deserialize<Profile>(File.ReadAllText(file), JsonOptions);
+                            if (profile != null) settings.Profiles.Add(profile);
+                        }
+                        catch (Exception)
+                        {
+                            // A damaged file: skipped.
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Folder not readable: the default profile.
+            }
+            if (settings.Profiles.Count > 0) settings.ActiveProfile = settings.Profiles[0].Name;
             return settings;
         }
 

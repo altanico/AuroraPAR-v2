@@ -34,6 +34,7 @@ jobs:
             publish/AuroraPAR.exe
             publish/runways.par
             publish/MANUAL.md
+            publish/Profiles/*.json
 
       - name: Build AuroraCoord (standalone coordination panel)
         run: >

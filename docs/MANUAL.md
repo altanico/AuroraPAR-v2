@@ -382,6 +382,8 @@ Example: at 12 NM the radar presses white (flashing, alert in the tower), the to
 
 A profile holds all the display options, so that different controllers or different radar types can have their own set-up.
 
+**Profiles that come with the program:** the `Profiles` folder next to AuroraPAR.exe holds the profiles **PAR2080** (analog, narrow beam, console keys) and **PAR2090** (modern). At the first start (no settings file yet) they become your profiles, PAR2080 active. If you already have settings, add them with **Import...** from that folder.
+
 - Select the active profile from the list; **Rename**, **Duplicate**, **Delete**.
 - **Export...** saves the profile as a `.json` file to share with other controllers; **Import...** loads one.
 
