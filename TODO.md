@@ -2,6 +2,13 @@
 
 ## Next update
 
+- **Coordination link must always work** (case: a friend's Pi-hole blocked emqx.io; AuroraPAR and Firefox stuck on "connecting...", Edge with secure DNS worked):
+  - **Both relays at the same time** (emqx and hivemq): publish to both, listen to both, so the panels meet even when one relay is blocked on one side only (today the two sides can end on different relays and never see each other).
+  - **Secure WebSocket fallback** (8084 / 8884) for networks that block port 8883 — code already prepared in Coordination.cs (not built yet); with the Windows proxy if one is set.
+  - **Log file** `coord.log` in the settings folder (attempts, relay and transport used, exact error, e.g. "name not found"), kept small; mentioned in the manual.
+  - **Manual / troubleshooting**: "connecting..." → DNS ad blockers (Pi-hole, AdGuard, NextDNS…): whitelist broker.emqx.io and broker.hivemq.com; antivirus web shield, VPN / proxy.
+  - Same for the phone page (both relays).
+
 - **Phone / tablet panel icon = AuroraCoord icon (A1)** (icon-192, icon-512, apple-touch-icon in docs/coord, from Coord/AuroraCoord-icon-1024.png). Together with the **session code** of the coordination panel (decision pending: mandatory or optional).
 
 - **Analog keys, still to do:** a keyboard key for each analog key (for a programmable USB keypad, see "External controls") and the **virtual keypad on a phone / tablet** (a web page like the coordination phone panel, same relay and pairing, sending named commands to AuroraPAR). Range / DH / BRT keys repeating while held, if wanted.
