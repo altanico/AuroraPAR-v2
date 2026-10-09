@@ -586,12 +586,12 @@ namespace AuroraPAR
             SymbolSetting symbol = coasting ? Options.CoastSymbol : Options.TrackSymbol;
             if (track.SymbolVersion != Options.Version || track.SymbolCoasting != coasting)
             {
-                track.Symbol.Data = Options.Analog ? EchoGeometry : Symbols.Create(symbol.Shape, symbol.Size);
+                track.Symbol.Data = Options.Analog ? EchoGeometry : Symbols.Create(symbol);
                 track.SymbolVersion = Options.Version;
                 track.SymbolCoasting = coasting;
             }
             track.Symbol.Stroke = track.Color;
-            track.Symbol.Fill = Options.Analog || Symbols.IsFilled(symbol.Shape) ? track.Color : Brushes.Transparent;
+            track.Symbol.Fill = Options.Analog || Symbols.IsFilled(symbol) ? track.Color : Brushes.Transparent;
             Canvas.SetLeft(track.Symbol, track.Position.X);
             Canvas.SetTop(track.Symbol, track.Position.Y);
             track.Symbol.Visibility = Visibility.Visible;
@@ -645,10 +645,10 @@ namespace AuroraPAR
             }
             if (historyGeometryVersion != Options.Version)
             {
-                historyGeometry = Symbols.Create(Options.HistorySymbol.Shape, Options.HistorySymbol.Size);
+                historyGeometry = Symbols.Create(Options.HistorySymbol);
                 historyGeometryVersion = Options.Version;
             }
-            bool filled = Symbols.IsFilled(Options.HistorySymbol.Shape);
+            bool filled = Symbols.IsFilled(Options.HistorySymbol);
             while (track.Dots.Count < count)
             {
                 Path dot = new() { Data = historyGeometry, StrokeThickness = 1, IsHitTestVisible = false };
@@ -1188,10 +1188,10 @@ namespace AuroraPAR
             if (symbol.Shape == SymbolShape.None) return;
             Path path = new()
             {
-                Data = Symbols.Create(symbol.Shape, symbol.Size),
+                Data = Symbols.Create(symbol),
                 Stroke = brush,
                 StrokeThickness = 2,
-                Fill = Symbols.IsFilled(symbol.Shape) ? brush : null,
+                Fill = Symbols.IsFilled(symbol) ? brush : null,
                 IsHitTestVisible = false
             };
             Canvas.SetLeft(path, ToScreenX(x));

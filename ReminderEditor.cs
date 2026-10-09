@@ -16,7 +16,7 @@ namespace AuroraPAR
         private static readonly string[] ShowNames = ["Marker", "Line", "Both"];
         private static readonly string[] DashNames = ["Solid", "Dashed", "Dash-dot", "Dotted"];
         private static readonly SymbolShape[] MarkerShapes = Enum.GetValues<SymbolShape>()
-            .Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray();
+            .Where(s => s != SymbolShape.None && s != SymbolShape.Line && s != SymbolShape.Custom).ToArray();
 
         private readonly Func<List<DistanceReminder>> list;
         private readonly Action changed;

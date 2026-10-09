@@ -23,7 +23,9 @@ namespace AuroraPAR
         /// Filled vertical capsule (bar with rounded ends), as on older PAR displays.
         /// The internal name is kept for compatibility with saved profiles.
         /// </summary>
-        ElongatedO
+        ElongatedO,
+        /// <summary>Drawn by the user (grid or vector path, see <see cref="SymbolSetting.Path"/>).</summary>
+        Custom
     }
 
     /// <summary>
@@ -33,6 +35,15 @@ namespace AuroraPAR
     {
         public SymbolShape Shape { get; set; }
         public double Size { get; set; }
+        /// <summary>
+        /// Custom shape: vector path (SVG / WPF path syntax) in a box of <see cref="Symbols.CustomBox"/> units
+        /// centred on (0, 0), scaled to <see cref="Size"/>.
+        /// </summary>
+        public string? Path { get; set; }
+        /// <summary>Custom shape drawn filled with the symbol colour (otherwise only its outline).</summary>
+        public bool Filled { get; set; } = true;
+        /// <summary>Custom shape drawn on the grid: the cells, row by row ("1" drawn, "0" empty); null when typed as a path.</summary>
+        public string? Cells { get; set; }
 
         public SymbolSetting() { }
 
@@ -62,6 +73,7 @@ namespace AuroraPAR
             SymbolShape.Plus => "Cross +",
             SymbolShape.Cross => "Cross ×",
             SymbolShape.ElongatedO => "Capsule",
+            SymbolShape.Custom => "Custom...",
             _ => shape.ToString()
         };
 
@@ -70,6 +82,62 @@ namespace AuroraPAR
         /// </summary>
         public static bool IsFilled(SymbolShape shape) =>
             shape is SymbolShape.FilledCircle or SymbolShape.Square or SymbolShape.TriangleUp or SymbolShape.TriangleDown or SymbolShape.ElongatedO;
+
+        /// <summary>Side of the box of the custom shapes (units of the path; also the cells of the grid).</summary>
+        public const int CustomBox = 15;
+
+        /// <summary>Geometry of a symbol setting (also a custom one), centred on (0, 0).</summary>
+        public static Geometry Create(SymbolSetting symbol)
+        {
+            if (symbol.Shape != SymbolShape.Custom) return Create(symbol.Shape, symbol.Size);
+            return CreateCustom(symbol.Path, symbol.Size) ?? Create(SymbolShape.CrossCircle, symbol.Size);
+        }
+
+        public static bool IsFilled(SymbolSetting symbol) => symbol.Shape == SymbolShape.Custom ? symbol.Filled : IsFilled(symbol.Shape);
+
+        /// <summary>A custom path scaled to the size, or null when the text is not a valid path.</summary>
+        public static Geometry? CreateCustom(string? path, double size)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            try
+            {
+                Geometry geometry = Geometry.Parse(path).Clone();
+                double scale = Math.Max(size, 2) / CustomBox;
+                geometry.Transform = new ScaleTransform(scale, scale);
+                if (geometry.CanFreeze) geometry.Freeze();
+                return geometry;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Path of the cells drawn on the grid: one rectangle for each run of cells in a row.</summary>
+        public static string PathFromCells(string cells)
+        {
+            List<string> parts = [];
+            double half = CustomBox / 2.0;
+            for (int row = 0; row < CustomBox; row++)
+            {
+                int column = 0;
+                while (column < CustomBox)
+                {
+                    int index = row * CustomBox + column;
+                    if (index >= cells.Length || cells[index] != '1')
+                    {
+                        column++;
+                        continue;
+                    }
+                    int start = column;
+                    while (column < CustomBox && row * CustomBox + column < cells.Length && cells[row * CustomBox + column] == '1') column++;
+                    string x = (start - half).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    string y = (row - half).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    parts.Add($"M{x},{y} h{column - start} v1 h{start - column} Z");
+                }
+            }
+            return string.Join(" ", parts);
+        }
 
         /// <summary>
         /// Geometry of the shape centred on (0, 0), fitting a square of the given size.

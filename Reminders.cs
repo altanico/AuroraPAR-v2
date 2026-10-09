@@ -42,7 +42,7 @@ namespace AuroraPAR
         {
             Distance = double.IsNaN(Distance) ? 4 : Math.Clamp(Distance, 0.05, MaxDistance);
             if (!Enum.IsDefined(Show)) Show = ReminderShow.Marker;
-            if (!Enum.IsDefined(Symbol) || Symbol == SymbolShape.None || Symbol == SymbolShape.Line) Symbol = SymbolShape.TriangleDown;
+            if (!Enum.IsDefined(Symbol) || Symbol == SymbolShape.None || Symbol == SymbolShape.Line || Symbol == SymbolShape.Custom) Symbol = SymbolShape.TriangleDown;
             Size = double.IsNaN(Size) ? 10 : Math.Clamp(Size, 4, 30);
             if (!Enum.IsDefined(Dash)) Dash = LineDash.Solid;
             Width = double.IsNaN(Width) ? 2 : Math.Clamp(Width, 1, 6);

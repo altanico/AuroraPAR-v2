@@ -426,6 +426,8 @@ namespace AuroraPAR
         /// </summary>
         private void BuildSymbolRows()
         {
+            // Fifth column: the key that edits a custom symbol.
+            SymbolGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             SymbolShape[] all = Enum.GetValues<SymbolShape>();
             AddSymbolRow("Track", p => p.TrackSymbol, all.Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray());
             AddSymbolRow("Coasting track", p => p.CoastSymbol, all.Where(s => s != SymbolShape.None && s != SymbolShape.Line).ToArray());
@@ -467,11 +469,38 @@ namespace AuroraPAR
             SymbolGrid.Children.Add(shapeBox);
             SymbolGrid.Children.Add(sizeBox);
             SymbolGrid.Children.Add(unit);
+            Button edit = new() { Content = "✎", Width = 26, Height = 22, Margin = new Thickness(6, 2, 0, 2), ToolTip = "Draw a custom symbol (grid or vector path)." };
+            Grid.SetRow(edit, row);
+            Grid.SetColumn(edit, 4);
+            SymbolGrid.Children.Add(edit);
+            // Custom symbol: the editor; cancelled, the shape stays as it was.
+            bool EditCustom()
+            {
+                SymbolEditorWindow editor = new(label, get(Active)) { Owner = this };
+                if (editor.ShowDialog() != true) return false;
+                SymbolSetting symbol = get(Active);
+                symbol.Shape = SymbolShape.Custom;
+                symbol.Path = editor.ResultPath;
+                symbol.Cells = editor.ResultCells;
+                symbol.Filled = editor.ResultFilled;
+                Commit();
+                return true;
+            }
+            edit.Click += (s, e) =>
+            {
+                if (!EditCustom()) return;
+            };
             shapeBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || shapeBox.SelectedIndex < 0) return;
                 SymbolShape shape = shapes[shapeBox.SelectedIndex];
                 if (shape == get(Active).Shape) return;
+                if (shape == SymbolShape.Custom)
+                {
+                    // Back to the shape in use until the editor is closed with OK.
+                    if (!EditCustom()) RefreshControls();
+                    return;
+                }
                 get(Active).Shape = shape;
                 Commit();
             };

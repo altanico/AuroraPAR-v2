@@ -465,6 +465,12 @@ namespace AuroraPAR
         {
             if (symbol == null || !Enum.IsDefined(symbol.Shape)) return fallback;
             symbol.Size = Math.Clamp(symbol.Size, 2, 60);
+            if (symbol.Cells != null && symbol.Cells.Length != Symbols.CustomBox * Symbols.CustomBox) symbol.Cells = null;
+            // A custom shape without a valid path: the default one.
+            if (symbol.Shape == SymbolShape.Custom && Symbols.CreateCustom(symbol.Path, symbol.Size) == null)
+            {
+                symbol.Shape = fallback.Shape;
+            }
             return symbol;
         }
 

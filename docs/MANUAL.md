@@ -399,7 +399,7 @@ A profile holds all the display options, so that different controllers or differ
 ### 10.3 Tracks and labels
 
 - **History tails**: on/off, number of dots (3–100), one dot every *n* seconds (0.5–10).
-- **Symbols** (shape and size) of the track, history dots, threshold, touchdown point and antenna: circle, filled circle, circle with cross, square, diamond, triangle, inverted triangle, +, ×, capsule, line, none.
+- **Symbols** (shape and size) of the track, history dots, threshold, touchdown point and antenna: circle, filled circle, circle with cross, square, diamond, triangle, inverted triangle, +, ×, capsule, line, none, or **Custom...**: the ✎ key (or choosing Custom in the list) opens the symbol editor: draw on a grid of 15 × 15 cells (click or drag; a drawn cell clears it) or type / correct the vector path (SVG syntax, box of 15 units centred on 0,0 = the position of the aircraft), filled or outline, with a preview at 12, 24 and 48 px. Colour and size stay those of the symbol; the custom symbol is saved in the profile (also in Export).
 - **Edit labels...**: label layouts of the two views ([section 5.2](#52-labels)).
 - **Display style...**: range marks, colours, reminders ([section 11](#11-display-style-range-marks-colours-reminders)).
 
