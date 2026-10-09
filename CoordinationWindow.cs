@@ -433,6 +433,30 @@ namespace AuroraPAR
             }
         }
 
+        private DispatcherTimer? warning;
+
+        /// <summary>A light pressed without airport or role: a clear message in the status line for a few seconds.</summary>
+        private void WarnNoRole()
+        {
+            status.Text = "⚠ Choose the airport and the role in Options below (or connect to IVAO as a controller, e.g. LIRF_TWR): the lights cannot work without them.";
+            status.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xB8, 0x40));
+            status.FontWeight = FontWeights.SemiBold;
+            status.TextWrapping = TextWrapping.Wrap;
+            warning ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            warning.Stop();
+            warning.Tick -= EndWarning;
+            warning.Tick += EndWarning;
+            warning.Start();
+        }
+
+        private void EndWarning(object? sender, EventArgs e)
+        {
+            warning?.Stop();
+            status.Foreground = new SolidColorBrush(Color.FromRgb(0xD8, 0xD8, 0xD0));
+            status.FontWeight = FontWeights.Normal;
+            UpdateStatus();
+        }
+
         private void Press(int light)
         {
             (string? airport, CoordinationRole? role) = Effective();
@@ -440,6 +464,7 @@ namespace AuroraPAR
             {
                 options.Visibility = Visibility.Visible;
                 SystemSounds.Beep.Play();
+                WarnNoRole();
                 return;
             }
             if (role == CoordinationRole.Monitor) return;
