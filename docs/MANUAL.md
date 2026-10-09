@@ -352,7 +352,7 @@ The **Coordination** button opens a small panel for **voiceless coordination** b
 
 Example: at 12 NM the radar presses white (flashing, alert in the tower), the tower presses white (steady). At 3 NM the radar presses yellow to request the landing clearance; the tower presses yellow to give it, or red to refuse it.
 
-**Linking the two panels — automatic:** AuroraPAR asks Aurora which callsign you are connected with. Panels of the same airport are linked: `XXXX_TWR` is the tower, any other callsign of the airport (`_APP`, `_F_APP`, `_DEP`…) the radar. The status line shows the airport, your side and whether the other side is online (green dot).
+**Linking the two panels — automatic:** AuroraPAR asks Aurora which callsign you are connected with. Panels of the same airport are linked: `XXXX_TWR` is the tower, any other callsign of the airport (`_APP`, `_F_APP`, `_DEP`…) the radar. The status line shows the airport, your side and whether the panel of the other side is linked (*linked with the tower* / *linked with the radar*, green dot; *waiting for the …* in orange). It is about the two panels, not about IVAO: with airport and role chosen in *Options* the panels link also offline (e.g. to test them on one PC).
 
 **Connected as a controller**, the callsign always decides airport and side, in AuroraPAR as in AuroraCoord (an airport or role chosen earlier in *Options* is not used). **As observer** (`_OBS`) or not connected: open **Options**, type the **airport** (ICAO) and choose the **role**.
 

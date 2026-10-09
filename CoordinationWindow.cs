@@ -411,14 +411,14 @@ namespace AuroraPAR
             {
                 partnerOnline = radarOnline && towerOnline;
                 relay = link.Connected
-                    ? $"radar {(radarOnline ? "online" : "offline")} · tower {(towerOnline ? "online" : "offline")}"
+                    ? $"radar {(radarOnline ? "linked" : "not linked")} · tower {(towerOnline ? "linked" : "not linked")}"
                     : "connecting...";
             }
             else
             {
                 partnerOnline = role == CoordinationRole.Tower ? radarOnline : towerOnline;
                 string other = role == CoordinationRole.Tower ? "radar" : "tower";
-                relay = link.Connected ? (partnerOnline ? $"{other} online" : $"waiting for the {other}") : "connecting...";
+                relay = link.Connected ? (partnerOnline ? $"linked with the {other}" : $"waiting for the {other}") : "connecting...";
             }
             string side = role switch { CoordinationRole.Tower => "TOWER", CoordinationRole.Monitor => "MONITOR", _ => "RADAR" };
             status.Text = $"{airport} · {side} · {relay}";

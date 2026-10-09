@@ -604,11 +604,11 @@ function updateStatus() {
   let partner, text;
   if (role === "Monitor") {
     partner = radarOnline && towerOnline;
-    text = connected ? `radar ${radarOnline ? "online" : "offline"} · tower ${towerOnline ? "online" : "offline"}` : "connecting...";
+    text = connected ? `radar ${radarOnline ? "linked" : "not linked"} · tower ${towerOnline ? "linked" : "not linked"}` : "connecting...";
   } else {
     partner = role === "Tower" ? radarOnline : towerOnline;
     const other = role === "Tower" ? "radar" : "tower";
-    text = connected ? (partner ? `${other} online` : `waiting for the ${other}`) : "connecting...";
+    text = connected ? (partner ? `linked with the ${other}` : `waiting for the ${other}`) : "connecting...";
   }
   $("status").textContent = `${settings.airport} · ${role.toUpperCase()} · ${text}`;
   dot.style.background = connected && partner ? "#50E050" : connected ? "#FFB020" : "#FF3030";
