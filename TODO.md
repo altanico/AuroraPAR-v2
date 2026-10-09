@@ -8,6 +8,7 @@
 
 - **(Built 9 Oct) Coordination role from the callsign always wins** when connected as a controller (bug: AuroraPAR panel showed RADAR while connected as LIBV_TWR, because of a role saved earlier in Options); Options airport / role only for observers or not connected; Monitor stays.
 
+- **ON HOLD (decided 9 Oct): publish the first build of AuroraPAR, see how many people use it and who has problems; if connection problems appear, come back to this block.**
 - **Coordination link must always work** (case: a friend's Pi-hole blocked emqx.io; AuroraPAR and Firefox stuck on "connecting...", Edge with secure DNS worked):
   - **Both relays at the same time** (emqx and hivemq): publish to both, listen to both, so the panels meet even when one relay is blocked on one side only (today the two sides can end on different relays and never see each other).
   - **Secure WebSocket fallback** (8084 / 8884) for networks that block port 8883 — code already prepared in Coordination.cs (not built yet); with the Windows proxy if one is set.
@@ -15,7 +16,9 @@
 
 - **Session code** of the coordination panel (decision pending: mandatory or optional).
 
-- **Analog keys, still to do:** a keyboard key for each analog key (for a programmable USB keypad, see "External controls") and the **virtual keypad on a phone / tablet** (a web page like the coordination phone panel, same relay and pairing, sending named commands to AuroraPAR). Range / DH / BRT keys repeating while held, if wanted.
+- **Analog keys, still to do:** a keyboard key for each analog key (for a programmable USB keypad, see "External controls"; fixed assignments, only with the AuroraPAR window in front; a customisation window only if asked). Range / DH / BRT keys repeating while held, if wanted.
+
+- **Quarantine (a proposal, to evaluate at the end or later; decided 9 Oct):** the **virtual keypad on a phone / tablet** (a web page like the coordination phone panel, same relay and pairing, sending named commands to AuroraPAR). Other free applications already do the same: worth it only if there is a real request.
 
 - **(Done, to be tested) Test traffic, control panel v2** (second mockup sent): model on heading (CRS off final, up to about 30°) instead of drift; **turn rate selector 1.5°/s / 3°/s / Free** (Free: the longer the stick is held at full deflection, the higher the rate). No more "teleport" buttons (+200 ft, Left 300 m): the **initial offsets** go into New aircraft (lateral m +R/−L, vertical ft +above/−below GP). Vertical controls left of the stick: **▲ −100 ft/min** (less descent), **Optimal GP** (back to the glide path rate, offset kept), **▼ +100 ft/min** (more descent); step preset (100 ft/min), **aligned on the best VS**: the steps go through the best VS of the GP in use (e.g. best −740, from −990: −940, −840, −740, −640…), so the buttons always reach it exactly. ACTUAL VS follows every command (stick, buttons, Optimal GP). Under the stick: **Final CRS** (turns back to the final course at the selected rate, Free → 3°/s; offset kept). Aircraft panel: name, distance, speed, SSR. **Control panel (fourth mockup): readout strip at its top (dark, amber digits), only three values: BEST VS for the GP angle in use (ft/min, depends on speed and angle), ACTUAL VS (ft/min), actual TURN rate (°/s L/R, useful in Free)**. Offsets from centreline / GP are not shown there (they are on the labels). Footer: On GP / CL, Auto, Pause, Remove, Remove all; Aurora-like data.
 
