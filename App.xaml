@@ -4,6 +4,24 @@
              xmlns:local="clr-namespace:AuroraPAR"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <!-- Every button of the program shows that it is pressed: a little smaller while held (explicit styles, such
+             as the console keys, have their own pressed look). -->
+        <ScaleTransform x:Key="PressedScale" ScaleX="0.95" ScaleY="0.9"/>
+        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Style.Triggers>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="RenderTransform" Value="{StaticResource PressedScale}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="RepeatButton" BasedOn="{StaticResource {x:Type RepeatButton}}">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Style.Triggers>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="RenderTransform" Value="{StaticResource PressedScale}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Application.Resources>
 </Application>

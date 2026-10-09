@@ -363,7 +363,7 @@ namespace AuroraPAR
             ToolTip = "Antenna tilt: push the stick (drag, or click on a direction) up/down for the elevation, left/right for the azimuth; held, it repeats. Click on the centre: neutral."
         };
         /// <summary>Analog keys of the control groups, and when each one is lit.</summary>
-        private readonly List<(Button Key, Func<bool>? Lit)> analogKeys = [];
+        private readonly List<(Button Key, Func<bool>? Lit, bool Latching)> analogKeys = [];
         /// <summary>Choices the analog controls were built for.</summary>
         private string? analogControlsLayout;
 
@@ -385,7 +385,7 @@ namespace AuroraPAR
                 case AnalogRangeControl.RangeKeys:
                     AddKeyGroup("RANGE NM", Ranges.Values.Select((value, i) => (
                         value.ToString(invariant), $"Range {value.ToString(invariant)} NM",
-                        (Action)(() => SetRangeIndex(i)), (Func<bool>?)(() => DistanceComboBox.SelectedIndex == i))).ToArray());
+                        (Action)(() => SetRangeIndex(i)), (Func<bool>?)(() => DistanceComboBox.SelectedIndex == i))).ToArray(), latching: true);
                     break;
                 case AnalogRangeControl.StepKeys:
                     AddKeyGroup("RANGE NM",
@@ -459,7 +459,7 @@ namespace AuroraPAR
         private const double SmallKeyHeight = 32;
 
         /// <summary>A group of small keys, three per row, on a recessed plate with its engraved name.</summary>
-        private void AddKeyGroup(string title, (string Text, string Tip, Action Action, Func<bool>? Lit)[] keys)
+        private void AddKeyGroup(string title, (string Text, string Tip, Action Action, Func<bool>? Lit)[] keys, bool latching = false)
         {
             StackPanel group = new() { Margin = new Thickness(0, 4, 0, 6) };
             group.Children.Add(new TextBlock { Text = title, Style = (Style)FindResource("EngravedLabel") });
@@ -471,7 +471,7 @@ namespace AuroraPAR
                 key.Margin = new Thickness(1, 0, 1, 2);
                 key.Click += (s, e) => action();
                 grid.Children.Add(key);
-                analogKeys.Add((key, lit));
+                analogKeys.Add((key, lit, latching));
             }
             group.Children.Add(new Border
             {
@@ -488,9 +488,10 @@ namespace AuroraPAR
         /// <summary>Lamps of the analog keys (range in use, neutral, runway DH, 100%).</summary>
         private void UpdateAnalogKeys()
         {
-            foreach ((Button key, Func<bool>? lit) in analogKeys)
+            // Latching keys (one key per range): the selected one stays pressed in; spring-loaded keys only light up.
+            foreach ((Button key, Func<bool>? lit, bool latching) in analogKeys)
             {
-                key.Tag = lit?.Invoke() == true ? "Lit" : "Unlit";
+                key.Tag = lit?.Invoke() == true ? (latching ? "Selected" : "Lit") : "Unlit";
             }
         }
 
@@ -589,7 +590,7 @@ namespace AuroraPAR
             }
             foreach ((Runway r, Button button) in runwayButtons)
             {
-                button.Tag = r.RunwayKey == runway.RunwayKey ? "Lit" : "Unlit";
+                button.Tag = r.RunwayKey == runway.RunwayKey ? "Selected" : "Unlit";
             }
             Runway[] glide = approaches.Length > 1 ? approaches : [];
             GlideButtonPanel.Visibility = glide.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -607,7 +608,7 @@ namespace AuroraPAR
             }
             foreach ((Runway a, Button button) in glideButtons)
             {
-                button.Tag = a == runway ? "Lit" : "Unlit";
+                button.Tag = a == runway ? "Selected" : "Unlit";
             }
         }
 

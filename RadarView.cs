@@ -330,7 +330,7 @@ namespace AuroraPAR
         /// </summary>
         public void RenderSweep(bool enabled, double t, ScanEffectSpeed speed)
         {
-            if (!enabled || !staticValid || Canvas.ActualWidth <= 0 || Canvas.ActualHeight <= 0)
+            if (!enabled || !staticValid || Canvas.ActualWidth <= 0 || Canvas.ActualHeight <= 0 || Options.Theme.IsHidden(StyleElement.ScanEffect))
             {
                 foreach (Line line in sweepLines) line.Visibility = Visibility.Collapsed;
                 foreach (Track track in tracks.Values) track.Symbol.Opacity = 1;
@@ -340,19 +340,20 @@ namespace AuroraPAR
             ScanEffect.Compute(t, speed, IsElevation, beams);
             while (sweepLines.Count < beams.Length)
             {
-                Line line = new()
-                {
-                    StrokeThickness = sweepLines.Count == 0 ? 2 : 3,
-                    IsHitTestVisible = false
-                };
+                Line line = new() { IsHitTestVisible = false };
                 Panel.SetZIndex(line, SweepZIndex);
                 Canvas.Children.Add(line);
                 sweepLines.Add(line);
             }
             Point origin = SweepOrigin();
+            // Width of the beam line as set in Display style; the trail lines (fading) one pixel wider.
+            double width = Options.Theme.Width(StyleElement.ScanEffect);
+            DoubleCollection? dash = Theme.DashArray(Options.Theme.Dash(StyleElement.ScanEffect));
             for (int i = 0; i < beams.Length; i++)
             {
                 Line line = sweepLines[i];
+                line.StrokeThickness = i == 0 ? width : width + 1;
+                line.StrokeDashArray = dash;
                 if (beams[i].Position is not double position)
                 {
                     line.Visibility = Visibility.Collapsed;

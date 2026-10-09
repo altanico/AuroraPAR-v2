@@ -394,7 +394,7 @@ A profile holds all the display options, so that different controllers or differ
 | Preferred range | A range you like to use. |
 | Range at start | Last used, runway default (from `runways.par`) or preferred. |
 | Range when the runway changes | Keep current, runway default or preferred. |
-| Antenna scan effect, speed | Sweeping beam drawn over the modern display (graphic only); slow, normal, fast. Always on in Analog mode. |
+| Antenna scan effect, speed | Sweeping beam drawn over the modern display (graphic only); slow, normal, fast. Always on in Analog mode. Colour, line and width of the beam (default 1 px): *Display style → Antenna scan effect*. |
 
 ### 10.3 Tracks and labels
 

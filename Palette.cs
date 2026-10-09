@@ -23,7 +23,7 @@ namespace AuroraPAR
 
         public bool IsAnalog { get; private init; }
         /// <summary>Beam of the antenna scan effect.</summary>
-        public Brush Sweep { get; private init; } = Brushes.White;
+        public Brush Sweep { get; private set; } = Brushes.White;
         /// <summary>Colour of the glow of the analog scope.</summary>
         public Color Glow { get; private init; } = DefaultPhosphor;
 
@@ -50,6 +50,8 @@ namespace AuroraPAR
                 theme.elements[element] = (Frozen(color), style.Width, style.Dash);
                 if (style.Hidden && DisplayStyleSettings.CanHide(element)) theme.hidden.Add(element);
             }
+            // The beam of the scan effect has its own colour (Display style); on the analog scope it is the phosphor.
+            theme.Sweep = theme.elements[StyleElement.ScanEffect].Brush;
             return theme;
         }
 

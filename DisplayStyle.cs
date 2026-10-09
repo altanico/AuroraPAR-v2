@@ -216,6 +216,8 @@ namespace AuroraPAR
         AltitudeScale,
         /// <summary>Horizontal lines every 1000 (optional).</summary>
         AltitudeLines,
+        /// <summary>Beam line of the antenna scan effect (added later: older profiles get the default, 1 px).</summary>
+        ScanEffect,
         Background,
         PlotInside,
         PlotOutside,
@@ -282,6 +284,7 @@ namespace AuroraPAR
             StyleElement.Touchdown => "Touchdown point",
             StyleElement.AltitudeScale => "Altitude scale",
             StyleElement.AltitudeLines => "Altitude lines (every 1000)",
+            StyleElement.ScanEffect => "Antenna scan effect (beam line)",
             StyleElement.Background => "Background",
             StyleElement.PlotInside => "Plots inside limits (history)",
             StyleElement.PlotOutside => "Plots outside limits (history)",
@@ -309,6 +312,7 @@ namespace AuroraPAR
             StyleElement.Touchdown => new() { Color = "#FFFF00", Width = 2 },
             StyleElement.AltitudeScale => new() { Color = "#808080", Width = 1 },
             StyleElement.AltitudeLines => new() { Color = "#008000", Dash = LineDash.Dotted, Width = 1 },
+            StyleElement.ScanEffect => new() { Color = "#70F0E0", Width = 1 },
             StyleElement.Background => new() { Color = "#000000" },
             StyleElement.PlotInside => new() { Color = "#008000" },
             StyleElement.PlotOutside => new() { Color = "#FF0000" },

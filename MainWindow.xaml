@@ -52,9 +52,30 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Hover" Property="Opacity" Value="0.1"/>
                             </Trigger>
+                            <!-- Spring-loaded: the cap goes down while held and darker. -->
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Cap" Property="Margin" Value="0,2,0,1"/>
-                                <Setter TargetName="Hover" Property="Opacity" Value="0"/>
+                                <Setter TargetName="Cap" Property="Margin" Value="0,3,0,0"/>
+                                <Setter TargetName="Hover" Property="Background" Value="Black"/>
+                                <Setter TargetName="Hover" Property="Opacity" Value="0.25"/>
+                            </Trigger>
+                            <!-- Latching (selection keys): the selected one stays pressed in, and lit. -->
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter Property="Foreground" Value="#33270A"/>
+                                <Setter TargetName="Cap" Property="Margin" Value="0,3,0,0"/>
+                                <Setter TargetName="Cap" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#FFC85A" ShadowDepth="0" BlurRadius="10" Opacity="0.5"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Cap" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#E8C878" Offset="0"/>
+                                            <GradientStop Color="#FFE8B0" Offset="0.25"/>
+                                            <GradientStop Color="#FFD983" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Root" Property="Opacity" Value="0.5"/>
@@ -87,8 +108,19 @@
                                 <Setter TargetName="Face" Property="BorderBrush" Value="#005A9E"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="Face" Property="Background" Value="#0067B8"/>
+                                <Setter TargetName="Face" Property="BorderBrush" Value="#004A80"/>
+                                <Setter TargetName="Face" Property="BorderThickness" Value="1,2,1,0"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Face" Property="Background" Value="#CCDDF0"/>
+                                <Setter TargetName="Face" Property="Background" Value="#B8CDE6"/>
+                                <Setter TargetName="Face" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="1"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
