@@ -52,7 +52,8 @@ namespace AuroraPAR
             cells = new Border[box * box];
             state = (current.Cells is string saved && saved.Length == box * box ? saved : new string('0', box * box)).ToCharArray();
 
-            StackPanel root = new() { Margin = new Thickness(10) };
+            // Fixed width: the path box wraps its text instead of widening the window.
+            StackPanel root = new() { Margin = new Thickness(10), Width = box * CellSize + 12 + 200 };
             root.Children.Add(new TextBlock
             {
                 Text = "Draw on the grid (click or drag; a drawn cell clears it), or type the path below.",

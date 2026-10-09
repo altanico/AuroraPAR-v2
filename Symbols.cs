@@ -116,25 +116,38 @@ namespace AuroraPAR
         /// <summary>Path of the cells drawn on the grid: one rectangle for each run of cells in a row.</summary>
         public static string PathFromCells(string cells)
         {
-            List<string> parts = [];
-            double half = CustomBox / 2.0;
+            // Runs of cells in each row; a run repeated in the rows below becomes one taller rectangle (shorter path).
+            bool Cell(int row, int column) => row * CustomBox + column < cells.Length && cells[row * CustomBox + column] == '1';
+            List<(int Row, int Start, int End)> runs = [];
             for (int row = 0; row < CustomBox; row++)
             {
                 int column = 0;
                 while (column < CustomBox)
                 {
-                    int index = row * CustomBox + column;
-                    if (index >= cells.Length || cells[index] != '1')
+                    if (!Cell(row, column))
                     {
                         column++;
                         continue;
                     }
                     int start = column;
-                    while (column < CustomBox && row * CustomBox + column < cells.Length && cells[row * CustomBox + column] == '1') column++;
-                    string x = (start - half).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    string y = (row - half).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    parts.Add($"M{x},{y} h{column - start} v1 h{start - column} Z");
+                    while (column < CustomBox && Cell(row, column)) column++;
+                    runs.Add((row, start, column));
                 }
+            }
+            HashSet<(int, int, int)> used = [];
+            List<string> parts = [];
+            double half = CustomBox / 2.0;
+            System.Globalization.CultureInfo invariant = System.Globalization.CultureInfo.InvariantCulture;
+            foreach ((int row, int start, int end) in runs)
+            {
+                if (used.Contains((row, start, end))) continue;
+                int height = 1;
+                while (runs.Contains((row + height, start, end)))
+                {
+                    used.Add((row + height, start, end));
+                    height++;
+                }
+                parts.Add($"M{(start - half).ToString(invariant)},{(row - half).ToString(invariant)} h{end - start} v{height} h{start - end} Z");
             }
             return string.Join(" ", parts);
         }
