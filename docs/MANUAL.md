@@ -345,7 +345,7 @@ The **Coordination** button opens a small panel for **voiceless coordination** b
 
 **How it works — the same rule for every light:**
 
-1. The first side that presses a light makes it **flash** on both panels, with a **sound** (see *Sound* in Options).
+1. The first side that presses a light makes it **flash** on both panels, with a **sound**: the buzzer of a real PAR light panel (see *Sound* in Options).
 2. When the other side presses the **same light**, it becomes **steady** on both panels: received.
 3. Pressing again a light you called yourself, while it still flashes, cancels the call.
 4. The lights stay on until one of the two presses **Reset** (usually at the end of the approach).

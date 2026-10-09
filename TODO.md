@@ -2,9 +2,9 @@
 
 ## Next update
 
-- **(Coded, in the next build) Coordination panel as the real one**: default colours blue, white, yellow, red, green (reset stays black on the same row: phone layout); **sound at every press** (call, acknowledge, cancel, reset) — option *Sound*: every press on both panels (default) / only the presses of the other side; no sound for the state found on joining. Also on the phone page (setting + link parameter s=).
+- **(Built 9 Oct) Coordination panel as the real one**: default colours blue, white, yellow, red, green (reset stays black on the same row: phone layout); **sound at every press** (call, acknowledge, cancel, reset) — option *Sound*: every press on both panels (default) / only the presses of the other side; no sound for the state found on joining. Also on the phone page (setting + link parameter s=).
 
-- **(Coded, in the next build) Coordination role from the callsign always wins** when connected as a controller (bug: AuroraPAR panel showed RADAR while connected as LIBV_TWR, because of a role saved earlier in Options); Options airport / role only for observers or not connected; Monitor stays.
+- **(Built 9 Oct) Coordination role from the callsign always wins** when connected as a controller (bug: AuroraPAR panel showed RADAR while connected as LIBV_TWR, because of a role saved earlier in Options); Options airport / role only for observers or not connected; Monitor stays.
 
 - **Coordination link must always work** (case: a friend's Pi-hole blocked emqx.io; AuroraPAR and Firefox stuck on "connecting...", Edge with secure DNS worked):
   - **Both relays at the same time** (emqx and hivemq): publish to both, listen to both, so the panels meet even when one relay is blocked on one side only (today the two sides can end on different relays and never see each other).
@@ -13,7 +13,7 @@
   - **Manual / troubleshooting**: "connecting..." → DNS ad blockers (Pi-hole, AdGuard, NextDNS…): whitelist broker.emqx.io and broker.hivemq.com; antivirus web shield, VPN / proxy.
   - Same for the phone page (both relays).
 
-- **Phone / tablet panel icon = AuroraCoord icon (A1)** (icon-192, icon-512, apple-touch-icon in docs/coord, from Coord/AuroraCoord-icon-1024.png). Together with the **session code** of the coordination panel (decision pending: mandatory or optional).
+- **Session code** of the coordination panel (decision pending: mandatory or optional).
 
 - **Analog keys, still to do:** a keyboard key for each analog key (for a programmable USB keypad, see "External controls") and the **virtual keypad on a phone / tablet** (a web page like the coordination phone panel, same relay and pairing, sending named commands to AuroraPAR). Range / DH / BRT keys repeating while held, if wanted.
 
@@ -23,6 +23,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Coordination panel sound = the buzzer of the real panel** (recorded in a PAR room: 2870 Hz, 1 s, 15 Hz warble), in AuroraPAR, AuroraCoord and the phone page; phone page icon = AuroraCoord icon. With: colours of the real panel, sound at every press (option), role from the callsign always. Check: sound on both sides at call / acknowledge / reset; phone (iPhone, Android) after the first tap.
 - **Hint for new users**: 1 minute after the start without connection to Aurora (STS FAIL, never connected), a message says to turn on Aurora → Settings → Other → Software → 3rd Party software access (once per session); also in the manual (section 2). Check: start without Aurora, wait 1 min.
 - **Custom symbols** (Settings → Tracks and labels, ✎ or Custom... in the list): grid 15×15 drawing or vector path (SVG syntax), filled / outline, preview; for track, coasting, history, threshold, touchdown, antenna (not the reminders). Check: draw, OK, size change, profile export/import, Cancel keeps the old shape, invalid path refused.
 - **Pressed buttons and scan line width**: every button shrinks a little while pressed; analog console keys spring-loaded (cap down and darker while held), latching selection keys (runway, GP, one key per range) stay pressed in and lit; modern runway / GP keys also look pressed when selected. Scan effect beam line: own row in Display style (colour, line, width, Show), default 1 px, trail 1 px wider. Check: Settings buttons, test traffic keys, analog keys, scan line at 1–6 px, hidden.

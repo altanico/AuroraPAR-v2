@@ -591,7 +591,26 @@ namespace AuroraPAR
     /// <summary>Alert sound of a new call: two short tones, generated once.</summary>
     internal static class Alert
     {
-        private static readonly byte[] Wave = Create();
+        /// <summary>The buzzer of the real light panel (recorded); the two generated tones if it cannot be read.</summary>
+        private static readonly byte[] Wave = Load() ?? Create();
+
+        private static byte[]? Load()
+        {
+            try
+            {
+                System.Windows.Resources.StreamResourceInfo? info =
+                    Application.GetResourceStream(new Uri("pack://application:,,,/Sounds/coord-beep.wav"));
+                if (info == null) return null;
+                using Stream stream = info.Stream;
+                using MemoryStream copy = new();
+                stream.CopyTo(copy);
+                return copy.ToArray();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         public static void Play()
         {

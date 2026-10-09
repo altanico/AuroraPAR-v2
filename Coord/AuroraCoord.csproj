@@ -23,6 +23,8 @@
     <Resource Include="AuroraCoord.ico" Link="AuroraPAR.ico" />
     <!-- B612 cockpit font for the engraved texts (SIL Open Font License, see Fonts/B612-OFL.txt). -->
     <Resource Include="..\Fonts\B612-Bold.ttf" Link="Fonts\B612-Bold.ttf" />
+    <!-- Sound of the coordination panel: the buzzer of the real light panel. -->
+    <Resource Include="..\Sounds\coord-beep.wav" Link="Sounds\coord-beep.wav" />
     <Resource Include="..\Fonts\B612-Regular.ttf" Link="Fonts\B612-Regular.ttf" />
   </ItemGroup>
 
