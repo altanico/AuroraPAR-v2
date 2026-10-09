@@ -106,7 +106,22 @@ namespace AuroraPAR
         private const double GhostSpacing = 0.8;
         private static readonly double[] GhostStrengths = [0.4, 0.24, 0.12];
         /// <summary>Echo of an aircraft on the analog scope: a small blob, longer along the range.</summary>
-        private static readonly Geometry EchoGeometry = CreateEchoGeometry();
+        /// <summary>Echo of the analog scope, sized by the track symbol size (see <see cref="CreateEchoGeometry"/>).</summary>
+        private Geometry echoGeometry = CreateEchoGeometry(12);
+        private int echoVersion = -1;
+
+        private Geometry EchoGeometry
+        {
+            get
+            {
+                if (echoVersion != Options.Version)
+                {
+                    echoGeometry = CreateEchoGeometry(Options.TrackSymbol.Size);
+                    echoVersion = Options.Version;
+                }
+                return echoGeometry;
+            }
+        }
         private Vector dragStartOffset;
 
         /// <summary>
@@ -475,6 +490,7 @@ namespace AuroraPAR
                     ghost.Visibility = Visibility.Collapsed;
                     continue;
                 }
+                ghost.Data = EchoGeometry;
                 ghost.Stroke = track.Color;
                 ghost.Fill = track.Color;
                 Canvas.SetLeft(ghost, ToScreenX(logical.X));
@@ -485,10 +501,15 @@ namespace AuroraPAR
             }
         }
 
-        private static Geometry CreateEchoGeometry()
+        /// <summary>
+        /// Phosphor echo: a thin vertical bar with rounded ends, as on the real PAR scopes, as tall as the track symbol
+        /// size (Settings → Tracks and labels; 12 px by default, about the first version).
+        /// </summary>
+        private static Geometry CreateEchoGeometry(double size)
         {
-            // Elongated vertically (turned 90 degrees from the first version).
-            EllipseGeometry geometry = new(new Point(0, 0), 2.2, 5);
+            double height = Math.Clamp(size, 4, 60) - 2;
+            double width = Math.Clamp(height * 0.22, 2.4, 8);
+            RectangleGeometry geometry = new(new Rect(-width / 2, -height / 2, width, height), width / 2, width / 2);
             geometry.Freeze();
             return geometry;
         }
