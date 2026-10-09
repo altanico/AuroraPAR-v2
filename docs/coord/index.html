@@ -133,6 +133,11 @@
       <option value="Tower">Tower</option>
       <option value="Monitor">Monitor (instructor, read-only)</option>
     </select>
+    <label for="sound">Sound</label>
+    <select id="sound">
+      <option value="every">At every press, on both panels</option>
+      <option value="other">Only for the presses of the other side</option>
+    </select>
     <div class="hint">The panel links with the AuroraPAR / AuroraCoord panels of the same airport. Tower: the tower side. Radar: the radar side (also as an extra panel next to AuroraPAR). Monitor: sees the lights and who is online, cannot press anything.</div>
     <div class="error" id="error"></div>
 
@@ -153,7 +158,7 @@
 <script>
 "use strict";
 const LIGHTS = 5;
-const DEFAULT_COLORS = ["#FFFFFF", "#2E6BFF", "#FFD400", "#FF2020", "#20C840", "#101010"];
+const DEFAULT_COLORS = ["#2E6BFF", "#FFFFFF", "#FFD400", "#FF2020", "#20C840", "#101010"];
 const DEFAULT_LABELS = ["", "", "", "", "", "RESET"];
 const MAX_LABEL = 10;
 const ROLES = ["Radar", "Tower", "Monitor"];
@@ -167,7 +172,7 @@ const clientId = "aurorapar-web-" + Math.random().toString(16).slice(2, 14);
 
 // ---------- Settings ----------
 function defaults() {
-  return { airport: "", role: "Tower", colors: DEFAULT_COLORS.slice(), labels: DEFAULT_LABELS.slice(), query: "" };
+  return { airport: "", role: "Tower", colors: DEFAULT_COLORS.slice(), labels: DEFAULT_LABELS.slice(), sound: "every", query: "" };
 }
 function normalize(s) {
   const d = defaults();
@@ -178,6 +183,7 @@ function normalize(s) {
   s.colors = s.colors.map((c, i) => /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toUpperCase() : DEFAULT_COLORS[i]);
   if (!Array.isArray(s.labels) || s.labels.length !== 6) s.labels = DEFAULT_LABELS.slice();
   s.labels = s.labels.map(l => String(l || "").trim().toUpperCase().slice(0, MAX_LABEL));
+  if (s.sound !== "other") s.sound = "every";
   return s;
 }
 function load() {
@@ -214,6 +220,7 @@ function applyLink(s) {
     const labels = raw.l.split(",").map(decode);
     if (labels.length === 6) s.labels = labels;
   }
+  if (raw.s) s.sound = decode(raw.s).toLowerCase() === "other" ? "other" : "every";
   s = normalize(s);
   s.query = query;
   return s;
@@ -442,7 +449,9 @@ function loadMqtt(index = 0) {
   });
 }
 
+let quietNext = true;
 async function join() {
+  quietNext = true;
   leave();
   state = emptyState();
   radarOnline = towerOnline = false;
@@ -526,15 +535,17 @@ function onMessage(topic, payload) {
     try { received = payload.length === 0 ? emptyState() : JSON.parse(payload); } catch (e) { return; }
     if (!validState(received) || received.Sender === clientId) return;
     const role = settings.role;
+    // The state found on joining is not a press: no sound.
+    const quiet = quietNext;
+    quietNext = false;
+    // Any press of the other panel (call, acknowledge, cancel, reset) sounds, in both sound modes.
     let alert = false;
     for (let i = 0; i < LIGHTS; i++) {
-      // A new call from the other side: alert.
-      if (received.Lights[i] === "Flashing" && received.CalledBy[i] !== role
-          && !(state.Lights[i] === "Flashing" && state.CalledBy[i] === received.CalledBy[i])) alert = true;
+      if (received.Lights[i] !== state.Lights[i] || received.CalledBy[i] !== state.CalledBy[i]) alert = true;
     }
     state = { Lights: received.Lights.slice(), CalledBy: received.CalledBy.slice() };
     paint();
-    if (alert && role !== "Monitor") alertSound();
+    if (alert && !quiet && role !== "Monitor") alertSound();
   } else if (topic === presenceTopic("Radar") || topic === presenceTopic("Tower")) {
     const side = topic.endsWith("/Radar") ? "Radar" : "Tower";
     const online = payload === "online";
@@ -559,6 +570,7 @@ function onButton(i) {
   if (i === LIGHTS) state = emptyState(); else press(i);
   paint();
   send();
+  if (settings.sound === "every") alertSound();
 }
 
 function updateStatus() {
@@ -586,6 +598,7 @@ function updateStatus() {
 function openSettings() {
   $("airport").value = settings.airport;
   $("role").value = settings.role;
+  $("sound").value = settings.sound;
   $("error").textContent = "";
   fillRows(settings.colors, settings.labels);
   $("settings").classList.remove("hidden");
@@ -617,6 +630,7 @@ $("save").addEventListener("click", () => {
   settings = normalize(Object.assign({}, settings, {
     airport,
     role: $("role").value,
+    sound: $("sound").value,
     colors: rows.map(r => r.children[1].value),
     labels: rows.map(r => r.children[2].value)
   }));

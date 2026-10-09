@@ -26,11 +26,21 @@ namespace AuroraPAR
         Steady
     }
 
+    /// <summary>When the panel sounds.</summary>
+    internal enum CoordinationSound
+    {
+        /// <summary>Every press, on both panels (also your own).</summary>
+        EveryPress,
+        /// <summary>Only the presses of the other side (calls, acknowledges, reset).</summary>
+        OtherSide
+    }
+
     /// <summary>Options of the coordination panel (saved with the settings, not in the profiles).</summary>
     internal class CoordinationSettings
     {
         public const int Lights = 5;
-        public static readonly string[] DefaultColors = ["#FFFFFF", "#2E6BFF", "#FFD400", "#FF2020", "#20C840", "#101010"];
+        /// <summary>As the real panel: blue, white, yellow, red, green; reset black (white on the real one, on its own row).</summary>
+        public static readonly string[] DefaultColors = ["#2E6BFF", "#FFFFFF", "#FFD400", "#FF2020", "#20C840", "#101010"];
 
         /// <summary>Airport typed by hand (needed when connected as observer); null: from the callsign.</summary>
         public string? Airport { get; set; }
@@ -44,6 +54,8 @@ namespace AuroraPAR
         public string[] Labels { get; set; } = (string[])DefaultLabels.Clone();
         /// <summary>Panel always on top of the other windows.</summary>
         public bool Topmost { get; set; } = true;
+        /// <summary>Sound at every press on both panels, or only for the presses of the other side.</summary>
+        public CoordinationSound Sound { get; set; } = CoordinationSound.EveryPress;
 
         /// <summary>The panel for phones and tablets (a web page, see docs/coord).</summary>
         public const string PhonePanelUrl = "https://altanico.github.io/AuroraPAR-v2/coord/";
@@ -58,6 +70,7 @@ namespace AuroraPAR
             if (role != null) query.Add("role=" + role.Value.ToString().ToLowerInvariant());
             query.Add("c=" + string.Join(",", Colors.Select(c => ColorText.ToHex(ColorText.Parse(c, System.Windows.Media.Colors.White)).TrimStart('#'))));
             query.Add("l=" + string.Join(",", Labels.Select(Uri.EscapeDataString)));
+            query.Add("s=" + (Sound == CoordinationSound.OtherSide ? "other" : "every"));
             return PhonePanelUrl + "?" + string.Join("&", query);
         }
 
@@ -80,6 +93,7 @@ namespace AuroraPAR
                 if (Airport.Length == 0) Airport = null;
             }
             if (Role is CoordinationRole role && !Enum.IsDefined(role)) Role = null;
+            if (!Enum.IsDefined(Sound)) Sound = CoordinationSound.EveryPress;
         }
 
         /// <summary>

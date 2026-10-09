@@ -2,6 +2,8 @@
 
 ## Next update
 
+- **(Coded, in the next build) Coordination panel as the real one**: default colours blue, white, yellow, red, green (reset stays black on the same row: phone layout); **sound at every press** (call, acknowledge, cancel, reset) — option *Sound*: every press on both panels (default) / only the presses of the other side; no sound for the state found on joining. Also on the phone page (setting + link parameter s=).
+
 - **(Coded, in the next build) Coordination role from the callsign always wins** when connected as a controller (bug: AuroraPAR panel showed RADAR while connected as LIBV_TWR, because of a role saved earlier in Options); Options airport / role only for observers or not connected; Monitor stays.
 
 - **Coordination link must always work** (case: a friend's Pi-hole blocked emqx.io; AuroraPAR and Firefox stuck on "connecting...", Edge with secure DNS worked):
@@ -87,7 +89,7 @@ Last updates, newest first. When an item works in the test, delete it.
 - **Runway heading (true) from the two thresholds — external utility that does only that** (decided: separate small tool, not inside the radar). The two threshold coordinates (any format of the editor, at least 5–6 decimals or seconds with hundredths) give the true heading with two decimals; the distance between the thresholds is shown as a check against the runway length. Why: 0.1° = 0.026 NM (48 m) of lateral error at 15 NM, 0.3° = 145 m; a heading from the runway number or the magnetic value on the charts (rounded) is not enough; coordinates with 4 decimals (11 m) give about 0.25° on a 2500 m runway. Possible later: check with live traffic (aircraft established on the ILS should have a lateral offset near zero at all distances: a slope means a heading error; the simulator's runway can differ by a few tenths of a degree from the real one, and aircraft fly the simulator's).
 - **Runway management as an external app (like AuroraCoord)** — only if the editor grows (heading tools, file checks, import). Then in this order: (1) runway reminders move into the radar (*Display style → Reminders*, they are a display preference and live in the settings file, which two programs must not both write); (2) the radar rereads `runways.par` by itself when it changes; (3) the external app (same source files linked, third download in the Releases). For now the editor stays in the radar, opened from *Settings → Edit the runways file*.
 
-- Shout line (always-open intercom) in the coordination panel.
+- Shout line (always-open intercom) in the coordination panel. Real panel (photo 9 Oct): a small intercom plate beside the lights with a loudspeaker grille, two keys (teal and orange, both do the same: talk) and a volume knob.
 - Event log for the instructor (monitor), with saving to a file.
 - **External controls — FROZEN until the keypad arrives** (mini keypad, 9 keys + 3 knobs, programmable with its own software, onboard memory). Agreed plan:
   - Large knob = RANGE (press: back to a chosen start range); small knob 1 = EL TILT, small knob 2 = AZ TILT (press: tilt back to zero).

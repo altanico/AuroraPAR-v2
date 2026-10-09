@@ -320,6 +320,22 @@ namespace AuroraPAR
             topmost.Checked += (s, e) => SetTopmost(true);
             topmost.Unchecked += (s, e) => SetTopmost(false);
             options.Children.Add(topmost);
+            StackPanel soundRow = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+            soundRow.Children.Add(new TextBlock { Text = "Sound:", Foreground = new SolidColorBrush(Color.FromRgb(0xD8, 0xD8, 0xD0)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
+            ComboBox sound = new()
+            {
+                ItemsSource = new[] { "At every press, on both panels", "Only for the presses of the other side" },
+                SelectedIndex = Options.Sound == CoordinationSound.OtherSide ? 1 : 0,
+                Width = 250
+            };
+            sound.SelectionChanged += (s, e) =>
+            {
+                if (loading || sound.SelectedIndex < 0) return;
+                Options.Sound = sound.SelectedIndex == 1 ? CoordinationSound.OtherSide : CoordinationSound.EveryPress;
+                save();
+            };
+            soundRow.Children.Add(sound);
+            options.Children.Add(soundRow);
             loading = false;
         }
 
@@ -357,10 +373,14 @@ namespace AuroraPAR
             return (Options.Airport ?? airport, Options.Role ?? role);
         }
 
+        /// <summary>The next state received is the one found on joining (not a press): no sound.</summary>
+        private bool quietNext = true;
+
         private async Task Rejoin()
         {
             (string? airport, CoordinationRole? role) = Effective();
             state = new CoordinationState();
+            quietNext = true;
             UpdateLamps();
             if (airport == null || role == null)
             {
@@ -426,6 +446,7 @@ namespace AuroraPAR
             state.Press(light, role.Value);
             UpdateLamps();
             _ = link.Send(state.Copy());
+            if (Options.Sound == CoordinationSound.EveryPress) Alert.Play();
         }
 
         private void ResetLights()
@@ -435,24 +456,23 @@ namespace AuroraPAR
             state.Reset();
             UpdateLamps();
             _ = link.Send(state.Copy());
+            if (Options.Sound == CoordinationSound.EveryPress) Alert.Play();
         }
 
         private void Received(CoordinationState received)
         {
             CoordinationRole? role = Effective().Role;
+            // Any press of the other panel (call, acknowledge, cancel, reset) sounds, in both sound modes.
             bool alert = false;
             for (int i = 0; i < CoordinationSettings.Lights; i++)
             {
-                // A new call from the other side: alert.
-                if (received.Lights[i] == LightState.Flashing && received.CalledBy[i] != role
-                    && !(state.Lights[i] == LightState.Flashing && state.CalledBy[i] == received.CalledBy[i]))
-                {
-                    alert = true;
-                }
+                if (received.Lights[i] != state.Lights[i] || received.CalledBy[i] != state.CalledBy[i]) alert = true;
             }
+            bool quiet = quietNext;
+            quietNext = false;
             state = received;
             UpdateLamps();
-            if (alert && role != CoordinationRole.Monitor) Alert.Play();
+            if (alert && !quiet && role != CoordinationRole.Monitor) Alert.Play();
         }
 
         private void ApplyColors()
