@@ -2,6 +2,8 @@
 
 ## Next update
 
+- **Pressed effect on every button** (all windows: main, Settings, test traffic, joystick, editors...): a visible "pressed down" look while clicked. **Analog console keys:** the key stays **pressed in** (lower cap, shadow inside, as a latching key) while it is the selected one of its group (runway, GP, range keys, 0 / RWY / 100...), and pops out when another key of that group is selected; together with the backlight. Momentary keys (UP, DN, −, +, <, >, SETUP...) only go down while held.
+
 - **Scan effect line width settable** (Display style, with the other line widths): main beam line default **1 px** (now 2 px fixed); the trail lines (now 3 px, fading) scaled with it.
 
 - **Analog keys, still to do:** a keyboard key for each analog key (for a programmable USB keypad, see "External controls") and the **virtual keypad on a phone / tablet** (a web page like the coordination phone panel, same relay and pairing, sending named commands to AuroraPAR). Range / DH / BRT keys repeating while held, if wanted.
