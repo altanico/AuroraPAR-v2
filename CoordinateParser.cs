@@ -152,7 +152,16 @@ namespace AuroraPAR
         /// </summary>
         public static bool TryParsePair(string text, out double latitude, out double longitude)
         {
+            return TryParsePair(text, out latitude, out longitude, out _, out _);
+        }
+
+        /// <summary>
+        /// As above, and gives the two texts the pair was split into (latitude, longitude), for the precision of the numbers.
+        /// </summary>
+        public static bool TryParsePair(string text, out double latitude, out double longitude, out string latitudeText, out string longitudeText)
+        {
             latitude = longitude = 0;
+            latitudeText = longitudeText = "";
             if (string.IsNullOrWhiteSpace(text)) return false;
             // First without converting decimal commas (so "44.8,8.5" splits at the comma), then with.
             foreach (bool convert in new[] { false, true })
@@ -161,6 +170,8 @@ namespace AuroraPAR
                 {
                     if (TryParse(a, true, out latitude) && TryParse(b, false, out longitude))
                     {
+                        latitudeText = a;
+                        longitudeText = b;
                         return true;
                     }
                 }

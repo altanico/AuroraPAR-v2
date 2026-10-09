@@ -27,6 +27,10 @@
     <Compile Remove="Coord\**" />
     <None Remove="Coord\**" />
     <Page Remove="Coord\**" />
+    <Compile Remove="CRSCalculator\**" />
+    <None Remove="CRSCalculator\**" />
+    <Page Remove="CRSCalculator\**" />
+    <Resource Remove="CRSCalculator\**" />
   </ItemGroup>
 
   <ItemGroup>

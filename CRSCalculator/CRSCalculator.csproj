@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- CRSCalculator: runway heading and final course from the coordinates of the two thresholds, with the current
+       magnetic variation (World Magnetic Model WMM2025, public domain). It uses the same source files as AuroraPAR for the
+       coordinates and the final course, so the results agree with the radar. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>CRSCalculator</AssemblyName>
+    <RootNamespace>AuroraPAR</RootNamespace>
+    <ApplicationIcon>CRSCalculator.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CoordinateParser.cs" Link="CoordinateParser.cs" />
+    <Compile Include="..\MagneticVariation.cs" Link="MagneticVariation.cs" />
+    <Resource Include="CRSCalculator.ico" />
+  </ItemGroup>
+
+</Project>

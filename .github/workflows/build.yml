@@ -46,3 +46,23 @@ jobs:
         with:
           name: AuroraCoord-win-x64
           path: publish-coord/AuroraCoord.exe
+
+      - name: Build CRSCalculator (runway heading and magnetic variation)
+        run: >
+          dotnet publish CRSCalculator/CRSCalculator.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish-crs
+
+      # Checks the magnetic model against the official WMM2025 test values and the geometry against known results:
+      # the build fails if a value is wrong.
+      - name: Self-test of CRSCalculator
+        run: |
+          $report = Join-Path $PWD 'crs-selftest.txt'
+          $p = Start-Process -FilePath publish-crs/CRSCalculator.exe -ArgumentList '--selftest', $report -Wait -PassThru
+          if (Test-Path $report) { Get-Content $report }
+          if ($p.ExitCode -ne 0) { throw 'CRSCalculator self-test failed' }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CRSCalculator-win-x64
+          path: publish-crs/CRSCalculator.exe

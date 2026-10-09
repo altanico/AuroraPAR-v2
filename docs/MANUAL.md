@@ -24,6 +24,7 @@ This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https
 10. [Settings and profiles](#10-settings-and-profiles)
 11. [Display style: range marks, colours, reminders](#11-display-style-range-marks-colours-reminders)
 12. [Runways and the runway editor](#12-runways-and-the-runway-editor)
+    - [12.4 CRSCalculator: runway heading and magnetic variation](#124-crscalculator-runway-heading-and-magnetic-variation)
 13. [Where the settings are stored](#13-where-the-settings-are-stored)
 14. [Troubleshooting](#14-troubleshooting)
 15. [Quick reference](#15-quick-reference)
@@ -535,6 +536,17 @@ ICAO;DESIGNATOR;HEADING;ELEVATION;LATITUDE;LONGITUDE;LENGTH_M;WIDTH_M;GLIDE_SLOP
 To give the magnetic variation without the touchdown distance leave that field empty: `...;10;;3E`.
 
 Several lines with the same ICAO and designator and different glide path angles are the approaches of one runway ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)).
+
+### 12.4 CRSCalculator: runway heading and magnetic variation
+
+A heading taken from the runway number or from the magnetic value on a chart is rounded, and a small error grows with the distance: **0.1° is about 48 m of lateral error at 15 NM** (0.3° is 145 m). **CRSCalculator** (download **CRSCalculator-win-x64**, a small program of its own: `CRSCalculator.exe`) gives the heading from the coordinates of the two thresholds:
+
+1. Write the coordinates of **threshold A** (the landing threshold of the runway whose heading you want, as in the runway editor) and of **threshold B** (the other end, the threshold of the opposite runway), in any format of the editor; each on one line, latitude and longitude together. Use at least 6 decimals (or seconds with 2 decimals): the program shows the **precision** that the digits you wrote allow, and warns when it is too rough.
+2. **Heading for AuroraPAR** is the value to write in the *Runway heading* field of the editor (button **Copy**). It is calculated as AuroraPAR does (on a sphere), so that an aircraft on the extended centreline shows zero lateral offset on the radar. Below it the **true heading on the WGS84 ellipsoid**, as the charts give it (it differs by a tenth of a degree or so), and the values for the **opposite runway**.
+3. The **distance** between the thresholds, to compare with the published length (type it to get a check): a big difference means a wrong coordinate, a displaced threshold or the wrong end.
+4. The **magnetic variation now** at the runway, calculated with the World Magnetic Model (WMM2025, valid 2025-2029, accuracy about 0.3°), for today or another date, with its yearly change. The variation printed on the charts is updated only now and then, so it may differ; type the published one to see the **final course (CRS)** with both and decide which to use (the radar uses the variation of *Settings* or of the runway, [section 12.1](#121-runway-editor)).
+
+CRSCalculator does not read or write `runways.par`: you copy the values into the editor.
 
 ---
 
