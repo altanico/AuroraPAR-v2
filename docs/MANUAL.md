@@ -360,7 +360,7 @@ Example: at 12 NM the radar presses white (flashing, alert in the tower), the to
 
 **Options:** airport, role (from callsign, Radar, Tower, Monitor), **colour** and **engraved text** of each button (optional, up to 10 characters, shown under the button as on a radio panel; only on your panel; default: *RESET* under the reset button, nothing elsewhere), *Default colours and texts*, always on top.
 
-**Connection:** the panels talk through a free public relay on the internet (MQTT, encrypted connection), so there is nothing to install and no port to open. Only the state of the lights is sent: no names, no IVAO data. Being a public service it is best-effort; if the status line keeps saying *connecting...*, check that your network allows outgoing connections on port 8883.
+**Connection:** the panels talk through a free public relay on the internet (MQTT, encrypted connection), so there is nothing to install and no port to open. Only the state of the lights is sent: no names, no IVAO data. Being a public service it is best-effort. If the network blocks the MQTT port (8883), the panel reaches the same relay through a secure WebSocket (ports 8084 / 8884), as the phone panel. If the status line keeps saying *connecting...*, check that a firewall or antivirus does not block AuroraPAR / AuroraCoord from the internet (try the phone panel link in a browser on the same PC: if that connects, the network is fine).
 
 **On a phone or tablet:** the same panel also runs in the browser of a phone or tablet, with nothing to install: <https://altanico.github.io/AuroraPAR-v2/coord/>. Use it instead of the window on the PC, or as an **extra panel** next to it (same role as the PC: pressing on the phone or on the PC is the same).
 

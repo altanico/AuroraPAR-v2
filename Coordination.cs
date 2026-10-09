@@ -161,12 +161,21 @@ namespace AuroraPAR
     internal sealed class CoordinationLink : IDisposable
     {
         /// <summary>
-        /// Public relays, tried in this order (encrypted connection, port 8883). Both panels use the first one
-        /// that works, so normally the same one.
+        /// Public relays and ways to reach them, tried in this order (always encrypted). Both panels use the first one
+        /// that works, so normally the same relay. Some networks block the MQTT port 8883: then the same relay is
+        /// reached through a secure WebSocket (as the phone panel), before trying the other relay.
         /// </summary>
-        private static readonly string[] Brokers = ["broker.emqx.io", "broker.hivemq.com"];
-        private const int Port = 8883;
+        private static readonly (string Host, int Port, string? WebSocket)[] Brokers =
+        [
+            ("broker.emqx.io", 8883, null),
+            ("broker.emqx.io", 8084, "wss://broker.emqx.io:8084/mqtt"),
+            ("broker.hivemq.com", 8883, null),
+            ("broker.hivemq.com", 8884, "wss://broker.hivemq.com:8884/mqtt")
+        ];
         private int brokerIndex;
+
+        /// <summary>Relay in use (for the status tooltip), or null when not connected.</summary>
+        public string? RelayName => Connected ? $"{Brokers[brokerIndex].Host}:{Brokers[brokerIndex].Port}" : null;
         private static readonly JsonSerializerOptions Json = new() { Converters = { new JsonStringEnumConverter() } };
 
         private readonly string clientId = "aurorapar-" + Guid.NewGuid().ToString("N")[..12];
@@ -245,8 +254,12 @@ namespace AuroraPAR
                 client?.Dispose();
                 client = factory.CreateMqttClient();
                 client.ApplicationMessageReceivedAsync += OnMessage;
-                MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder()
-                    .WithTcpServer(Brokers[brokerIndex], Port)
+                (string host, int port, string? webSocket) = Brokers[brokerIndex];
+                MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder();
+                builder = webSocket != null
+                    ? builder.WithWebSocketServer(o => o.WithUri(webSocket))
+                    : builder.WithTcpServer(host, port);
+                builder = builder
                     .WithTlsOptions(o => o.UseTls())
                     .WithClientId(clientId)
                     .WithCleanSession()
