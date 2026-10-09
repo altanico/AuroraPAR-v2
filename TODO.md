@@ -9,8 +9,6 @@
 - **Coordination link must always work** (case: a friend's Pi-hole blocked emqx.io; AuroraPAR and Firefox stuck on "connecting...", Edge with secure DNS worked):
   - **Both relays at the same time** (emqx and hivemq): publish to both, listen to both, so the panels meet even when one relay is blocked on one side only (today the two sides can end on different relays and never see each other).
   - **Secure WebSocket fallback** (8084 / 8884) for networks that block port 8883 — code already prepared in Coordination.cs (not built yet); with the Windows proxy if one is set.
-  - **Log file** `coord.log` in the settings folder (attempts, relay and transport used, exact error, e.g. "name not found"), kept small; mentioned in the manual.
-  - **Manual / troubleshooting**: "connecting..." → DNS ad blockers (Pi-hole, AdGuard, NextDNS…): whitelist broker.emqx.io and broker.hivemq.com; antivirus web shield, VPN / proxy.
   - Same for the phone page (both relays).
 
 - **Session code** of the coordination panel (decision pending: mandatory or optional).
@@ -23,6 +21,7 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **Coordination log** `%AppData%\AuroraPAR\coord-AuroraPAR.log` / `coord-AuroraCoord.log` (join, attempts with relay and transport, exact error, disconnections, other panel linked / gone; 200 KB then .old); troubleshooting row for *connecting...* (Pi-hole / AdGuard whitelist). Status *linked with the tower / radar*; warning when a light is pressed without airport / role. Analog tilt / DH / BRT keys repeat while held (range keys do not).
 - **Coordination panel sound = the buzzer of the real panel** (recorded in a PAR room: 2870 Hz, 1 s, 15 Hz warble), in AuroraPAR, AuroraCoord and the phone page; phone page icon = AuroraCoord icon. With: colours of the real panel, sound at every press (option), role from the callsign always. Check: sound on both sides at call / acknowledge / reset; phone (iPhone, Android) after the first tap.
 - **Hint for new users**: 1 minute after the start without connection to Aurora (STS FAIL, never connected), a message says to turn on Aurora → Settings → Other → Software → 3rd Party software access (once per session); also in the manual (section 2). Check: start without Aurora, wait 1 min.
 - **Custom symbols** (Settings → Tracks and labels, ✎ or Custom... in the list): grid 15×15 drawing or vector path (SVG syntax), filled / outline, preview; for track, coasting, history, threshold, touchdown, antenna (not the reminders). Check: draw, OK, size change, profile export/import, Cancel keeps the old shape, invalid path refused.

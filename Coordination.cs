@@ -175,6 +175,40 @@ namespace AuroraPAR
     internal sealed class CoordinationLink : IDisposable
     {
         /// <summary>
+        /// Log of the link, for problems that are hard to see (relay not reachable, blocked name, ...):
+        /// %AppData%\AuroraPAR\coord-AuroraPAR.log or coord-AuroraCoord.log, about 200 KB at most (then kept as .old).
+        /// </summary>
+        public static string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AuroraPAR",
+            $"coord-{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "AuroraPAR"}.log");
+        private static readonly object logLock = new();
+
+        public static void Log(string text)
+        {
+            try
+            {
+                lock (logLock)
+                {
+                    string path = LogPath;
+                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                    if (File.Exists(path) && new FileInfo(path).Length > 200_000) File.Move(path, path + ".old", overwrite: true);
+                    File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  {text}{Environment.NewLine}");
+                }
+            }
+            catch (Exception)
+            {
+                // The log must never disturb the panel.
+            }
+        }
+
+        /// <summary>The exception and its inner ones in one line (e.g. "No such host is known").</summary>
+        private static string Describe(Exception error)
+        {
+            List<string> parts = [];
+            for (Exception? e = error; e != null && parts.Count < 4; e = e.InnerException) parts.Add($"{e.GetType().Name}: {e.Message}");
+            return string.Join(" <- ", parts);
+        }
+
+        /// <summary>
         /// Public relays and ways to reach them, tried in this order (always encrypted). Both panels use the first one
         /// that works, so normally the same relay. Some networks block the MQTT port 8883: then the same relay is
         /// reached through a secure WebSocket (as the phone panel), before trying the other relay.
@@ -232,6 +266,7 @@ namespace AuroraPAR
                 role = newRole;
                 channel = airport == null ? null : ChannelOf(airport);
                 brokerIndex = 0;
+                Log(airport == null ? "Leave: no airport / role" : $"Join {airport} as {newRole}");
                 PresenceChanged?.Invoke(CoordinationRole.Radar, false);
                 PresenceChanged?.Invoke(CoordinationRole.Tower, false);
                 if (channel != null) await ConnectInternal();
@@ -269,6 +304,7 @@ namespace AuroraPAR
                 client = factory.CreateMqttClient();
                 client.ApplicationMessageReceivedAsync += OnMessage;
                 (string host, int port, string? webSocket) = Brokers[brokerIndex];
+                Log($"Connecting to {host}:{port} ({(webSocket != null ? "secure WebSocket" : "MQTT over TLS")})...");
                 MqttClientOptionsBuilder builder = new MqttClientOptionsBuilder();
                 builder = webSocket != null
                     ? builder.WithWebSocketServer(o => o.WithUri(webSocket))
@@ -302,9 +338,16 @@ namespace AuroraPAR
                 {
                     await Publish(PresenceTopic(role), "online");
                 }
+                Log($"Connected to {host}:{port}, channel of {Airport} as {role}");
+                client.DisconnectedAsync += e =>
+                {
+                    if (!leaving) Log($"Disconnected from {host}:{port}: {e.Reason}{(e.Exception != null ? " - " + Describe(e.Exception) : "")}");
+                    return Task.CompletedTask;
+                };
             }
-            catch (Exception)
+            catch (Exception error)
             {
+                Log($"Failed: {Describe(error)}");
                 // No network or relay not reachable: KeepAlive tries again, with the next relay.
                 brokerIndex = (brokerIndex + 1) % Brokers.Length;
             }
@@ -395,6 +438,7 @@ namespace AuroraPAR
                             }
                         });
                     }
+                    Log($"{side} panel {(online ? "linked" : "gone")}");
                     PresenceChanged?.Invoke(side, online);
                 }
             }

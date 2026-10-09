@@ -409,13 +409,13 @@ namespace AuroraPAR
                         ("UP", "Antenna elevation tilt up (key ↑).", () => TiltAntenna(1, 0), null),
                         ("0", "Elevation tilt neutral.", NeutralElevation, () => radar.TiltElevation == 0),
                         ("DN", "Antenna elevation tilt down (key ↓).", () => TiltAntenna(-1, 0), null)
-                    ]);
+                    ], repeat: true);
                     AddKeyGroup("AZ TILT",
                     [
                         ("L", "Antenna azimuth tilt left (key ←).", () => TiltAntenna(0, -AzimuthSign), null),
                         ("0", "Azimuth tilt neutral.", NeutralAzimuth, () => radar.TiltAzimuth == 0),
                         ("R", "Antenna azimuth tilt right (key →).", () => TiltAntenna(0, AzimuthSign), null)
-                    ]);
+                    ], repeat: true);
                     break;
                 case AnalogTiltControl.Joystick:
                     KnobPanel.Children.Add(tiltStick);
@@ -432,7 +432,7 @@ namespace AuroraPAR
                     ("−", $"Decision height {DecisionHeightStep} ft lower.", () => SetDecisionHeight(runway.MDH - DecisionHeightStep), null),
                     ("RWY", "Decision height of the runway.", () => SetDecisionHeight(runway.DefaultMDH), () => runway.MDH == runway.DefaultMDH),
                     ("+", $"Decision height {DecisionHeightStep} ft higher.", () => SetDecisionHeight(runway.MDH + DecisionHeightStep), null)
-                ]);
+                ], repeat: true);
             }
             else
             {
@@ -445,7 +445,7 @@ namespace AuroraPAR
                     ("−", "Scope brightness down.", () => ChangeBrightness(-1), null),
                     ("100", "Scope brightness 100%.", () => SetBrightness(100), () => settings.Active.BrightnessAnalog == 100),
                     ("+", "Scope brightness up (above 100% for dim monitors).", () => ChangeBrightness(1), null)
-                ]);
+                ], repeat: true);
             }
             else
             {
@@ -459,7 +459,9 @@ namespace AuroraPAR
         private const double SmallKeyHeight = 32;
 
         /// <summary>A group of small keys, three per row, on a recessed plate with its engraved name.</summary>
-        private void AddKeyGroup(string title, (string Text, string Tip, Action Action, Func<bool>? Lit)[] keys, bool latching = false)
+        /// <param name="repeat">Keys that repeat while held (tilt, DH, BRT; not the range, which steps only on a deliberate
+        /// press); the middle keys (0, RWY, 100: those with a lamp) never repeat.</param>
+        private void AddKeyGroup(string title, (string Text, string Tip, Action Action, Func<bool>? Lit)[] keys, bool latching = false, bool repeat = false)
         {
             StackPanel group = new() { Margin = new Thickness(0, 4, 0, 6) };
             group.Children.Add(new TextBlock { Text = title, Style = (Style)FindResource("EngravedLabel") });
@@ -470,6 +472,7 @@ namespace AuroraPAR
                 StyleAsKey(key, text, SmallKeyWidth, SmallKeyHeight);
                 key.Margin = new Thickness(1, 0, 1, 2);
                 key.Click += (s, e) => action();
+                if (repeat && lit == null) MakeRepeating(key, action);
                 grid.Children.Add(key);
                 analogKeys.Add((key, lit, latching));
             }
@@ -483,6 +486,30 @@ namespace AuroraPAR
                 Child = grid
             });
             KnobPanel.Children.Add(group);
+        }
+
+        /// <summary>The key acts when pressed, then again after 0.45 s and every 0.12 s while held.</summary>
+        private static void MakeRepeating(Button key, Action action)
+        {
+            key.ClickMode = ClickMode.Press;
+            System.Windows.Threading.DispatcherTimer timer = new();
+            timer.Tick += (s, e) =>
+            {
+                if (!key.IsPressed)
+                {
+                    timer.Stop();
+                    return;
+                }
+                timer.Interval = TimeSpan.FromSeconds(0.12);
+                action();
+            };
+            key.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                timer.Interval = TimeSpan.FromSeconds(0.45);
+                timer.Start();
+            };
+            key.PreviewMouseLeftButtonUp += (s, e) => timer.Stop();
+            key.LostMouseCapture += (s, e) => timer.Stop();
         }
 
         /// <summary>Lamps of the analog keys (range in use, neutral, runway DH, 100%).</summary>

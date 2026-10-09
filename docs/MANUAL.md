@@ -318,6 +318,7 @@ The knobs always follow the real state, also when it is changed with the keyboar
 - **Range:** knob, **one key per range** (1, 2.5, 5, 10, 15, 20; the one in use is lit) or **`<` `DEF` `>`**: smaller / back to the preferred range (*Display*) / larger. The text of the middle key is free (at most 5 characters, default DEF).
 - **Antenna tilt:** two knobs (EL, AZ), keys **UP 0 DN** and **L 0 R** (0 = neutral of that axis, lit when neutral), or a **small 4-way joystick** as on some old American PAR consoles: push it (drag, or click on a direction) up/down for the elevation, left/right for the azimuth; one step, repeated while held; released it springs back; a click on the centre = neutral.
 - **DH:** knob or keys **− RWY +** (10 ft steps; RWY = the runway value, lit when in use).
+- Tilt, DH and BRT keys **repeat while held** (0, RWY, 100 do not); the range keys step only once per press.
 - **BRT:** knob or keys **− 100 +** (100 lit at 100%).
 
 ### 9.4 Airport, runway and approach keys
@@ -553,6 +554,7 @@ All profiles and options are in one file:
 
 | Problem | Solution |
 |---|---|
+| Coordination panel stays on *connecting...* | The relay on the internet is not reachable from this PC. Most often a **DNS ad blocker** (Pi-hole, AdGuard, NextDNS…): add **broker.emqx.io** and **broker.hivemq.com** to its allow list (whitelist). Otherwise an antivirus web shield, a VPN or a proxy. Check: open the phone panel link in a browser on the same PC. Details of every attempt in the **log**: `%AppData%\AuroraPAR\coord-AuroraPAR.log` (or `coord-AuroraCoord.log`). |
 | `STS FAIL` / red STS lamp | Aurora is not running, or its access for third-party programs is off: **Aurora → Settings → Other → Software → 3rd Party software access**. AuroraPAR reconnects by itself. |
 | Tracks move in jumps, red `DATA` or flashing **ANT. R/R** | In Aurora set the traffic refresh rate to **0.5 s**. |
 | An aircraft is not shown | It is outside the antenna beam: tilt the antenna, widen the beam (or the scan limits) or increase the range. |
