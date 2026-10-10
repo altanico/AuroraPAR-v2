@@ -350,6 +350,51 @@ namespace AuroraPAR
             results.Children.Add(row);
         }
 
+        /// <summary>Button: writes heading and length of the picked runway (and of its opposite end, if it is in the file) into runways.par.</summary>
+        private void AddWriteButton(RunwayEntry entry, double heading, double reverse, double distance)
+        {
+            RunwayEntry? opposite = RunwayFile.OppositeOf(fileEntries, entry);
+            Button button = new()
+            {
+                Content = "Write heading and length in runways.par...",
+                Height = 26,
+                Padding = new Thickness(12, 0, 12, 0),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 6, 0, 0),
+                ToolTip = "Changes only the heading and the length of the lines of this runway" + (opposite != null ? " and of its opposite end" : "") + "; the old file is kept as .bak."
+            };
+            button.Click += (s, e) =>
+            {
+                if (filePath == null) return;
+                RunwayCheck Make(RunwayEntry r, double h) => new()
+                {
+                    Name = $"{r.Icao} {r.Base}",
+                    Lines = fileEntries.Where(x => x.Icao == r.Icao && x.Base == r.Base).Select(x => x.Line).ToList(),
+                    NewHeading = Math.Round(h, 2),
+                    NewLength = Math.Round(distance)
+                };
+                List<RunwayCheck> list = [Make(entry, heading)];
+                if (opposite != null) list.Add(Make(opposite, reverse));
+                string names = string.Join(" and ", list.Select(r => r.Name));
+                if (MessageBox.Show(this, $"Write in {System.IO.Path.GetFileName(filePath)}:\n{string.Join("\n", list.Select(r => $"{r.Name}: heading {Number(r.NewHeading)}°, length {Number(r.NewLength, "0")} m"))}\n\nThe present file is kept as {System.IO.Path.GetFileName(filePath)}.bak.",
+                        "CRSCalculator", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+                try
+                {
+                    int lines = RunwayFile.WriteValues(filePath, list);
+                    MessageBox.Show(this, $"Written: {lines} lines ({names}). The previous file is {System.IO.Path.GetFileName(filePath)}.bak.", "CRSCalculator");
+                    string keepIcao = entry.Icao, keepName = entry.Base;
+                    fileEntries = RunwayFile.Parse(System.IO.File.ReadAllLines(filePath));
+                    fileRunway = fileEntries.FirstOrDefault(x => x.Icao == keepIcao && x.Base == keepName);
+                    Recalculate();
+                }
+                catch (Exception error)
+                {
+                    MessageBox.Show(this, "Cannot write the file: " + error.Message, "CRSCalculator", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            };
+            results.Children.Add(button);
+        }
+
         private void Recalculate()
         {
             results.Children.Clear();
@@ -387,6 +432,7 @@ namespace AuroraPAR
                 Add($"In runways.par for {fileRunway.Icao} {fileRunway.Base}", $"heading {Number(fileRunway.Heading, "0.##")}° · length {Number(fileRunway.Length, "0")} m", null,
                     Math.Abs(gap) > 0.05 ? Amber : null,
                     Math.Abs(gap) > 0.05 ? $"The heading in the file differs by {Number(Math.Abs(gap))}° from the one calculated here." : "The heading in the file agrees with the calculated one.");
+                AddWriteButton(fileRunway, radar, radarReverse, distance);
             }
 
             // Distance and length.

@@ -121,6 +121,27 @@ namespace AuroraPAR
             return result;
         }
 
+        /// <summary>Writes heading and length of the given runways into the file (a .bak copy is kept); returns the number of lines changed.</summary>
+        public static int WriteValues(string path, IReadOnlyList<RunwayCheck> runways)
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            bool bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+            List<string> lines = [.. new UTF8Encoding(false).GetString(bom ? bytes[3..] : bytes).Split('\n')];
+            int count = 0;
+            foreach (RunwayCheck runway in runways)
+            {
+                string icao = runway.Name.Split(' ')[0];
+                foreach (int index in runway.Lines)
+                    if (index >= lines.Count || !lines[index].StartsWith(icao + ";", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("The file has changed since it was read: choose the runway again.");
+                count += runway.Lines.Count;
+            }
+            Apply(lines, runways.Select(r => (r, true, true)));
+            File.Copy(path, path + ".bak", overwrite: true);
+            File.WriteAllBytes(path, [.. (bom ? new byte[] { 0xEF, 0xBB, 0xBF } : []), .. new UTF8Encoding(false).GetBytes(string.Join("\n", lines))]);
+            return count;
+        }
+
         /// <summary>Writes the chosen values (only the heading and length fields of the lines; all the rest stays as it is).</summary>
         public static void Apply(List<string> lines, IEnumerable<(RunwayCheck Runway, bool Heading, bool Length)> choices)
         {
