@@ -199,18 +199,28 @@ namespace AuroraPAR
                     Grid.SetColumn(t, c);
                     grid.Children.Add(t);
                 }
-                foreach ((CheckBox box, int c) in new[] { (heading, 5), (length, 6) })
+                foreach ((CheckBox box, int c, bool needed) in new[] { (heading, 5, r.Heading), (length, 6, r.Length) })
                 {
-                    Grid.SetRow(box, row);
-                    Grid.SetColumn(box, c);
-                    box.VerticalAlignment = VerticalAlignment.Center;
-                    grid.Children.Add(box);
+                    // Already as calculated: nothing to write, shown as OK instead of a box that cannot be ticked.
+                    UIElement cell = needed
+                        ? box
+                        : new TextBlock { Text = "✔ OK", Foreground = new SolidColorBrush(Color.FromRgb(0x20, 0x90, 0x30)), HorizontalAlignment = HorizontalAlignment.Center };
+                    Grid.SetRow(cell, row);
+                    Grid.SetColumn(cell, c);
+                    if (cell is FrameworkElement element) element.VerticalAlignment = VerticalAlignment.Center;
+                    grid.Children.Add(cell);
                 }
                 rows.Add((r, heading, length));
             }
             root.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = grid });
             Content = root;
             if (runways.Count == 0) note.Text = "No runway with its opposite end was found in this file.";
+            else if (!runways.Any(r => r.Heading || r.Length))
+            {
+                note.Foreground = new SolidColorBrush(Color.FromRgb(0x20, 0x90, 0x30));
+                note.Text = "✔ All the headings and lengths in this file already agree with the thresholds: nothing to write (this is also what you see after the file has been written).";
+                apply.IsEnabled = false;
+            }
         }
 
         private void Write()
