@@ -63,12 +63,33 @@ namespace AuroraPAR
             AnalogRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Analog, p => p.DisplayMode = DisplayMode.Analog);
             LockModeCheck.Checked += (s, e) => SetProfileValue(p => p.LockDisplayMode, p => p.LockDisplayMode = true);
             LockModeCheck.Unchecked += (s, e) => SetProfileValue(p => !p.LockDisplayMode, p => p.LockDisplayMode = false);
-            DhLengthComboBox.ItemsSource = DhLengths.Select(l => l == 0 ? "up to the glide path" : FormatNumber(l) + " NM").ToList();
+            DhSideComboBox.ItemsSource = new[] { "left", "right", "both" };
+            DhSideComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || DhSideComboBox.SelectedIndex < 0) return;
+                DhHorizontalSide value = (DhHorizontalSide)DhSideComboBox.SelectedIndex;
+                SetProfileValue(p => p.DhLineSide == value, p => p.DhLineSide = value);
+            };
+            DhLengthComboBox.ItemsSource = DhLengths.Select(l => FormatNumber(l) + " NM").ToList();
             DhLengthComboBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || DhLengthComboBox.SelectedIndex < 0) return;
                 double value = DhLengths[DhLengthComboBox.SelectedIndex];
                 SetProfileValue(p => p.DhLineLength == value, p => p.DhLineLength = value);
+            };
+            DhDropSideComboBox.ItemsSource = new[] { "down", "up", "both" };
+            DhDropSideComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || DhDropSideComboBox.SelectedIndex < 0) return;
+                DhVerticalSide value = (DhVerticalSide)DhDropSideComboBox.SelectedIndex;
+                SetProfileValue(p => p.DhDropSide == value, p => p.DhDropSide = value);
+            };
+            DhDropLengthComboBox.ItemsSource = DhDropLengths.Select(l => l == 0 ? "as the DH (to ground)" : FormatNumber(l) + " ft").ToList();
+            DhDropLengthComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || DhDropLengthComboBox.SelectedIndex < 0) return;
+                double value = DhDropLengths[DhDropLengthComboBox.SelectedIndex];
+                SetProfileValue(p => p.DhDropLength == value, p => p.DhDropLength = value);
             };
             ShowDhCheck.Checked += (s, e) => SetProfileValue(p => p.ShowDhSelector, p => p.ShowDhSelector = true);
             ShowDhCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ShowDhSelector, p => p.ShowDhSelector = false);
@@ -176,7 +197,10 @@ namespace AuroraPAR
                 AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
                 LockModeCheck.IsChecked = Active.LockDisplayMode;
                 ShowDhCheck.IsChecked = Active.ShowDhSelector;
+                DhSideComboBox.SelectedIndex = (int)Active.DhLineSide;
                 DhLengthComboBox.SelectedIndex = Array.FindIndex(DhLengths, l => Math.Abs(l - Active.DhLineLength) < 0.01);
+                DhDropSideComboBox.SelectedIndex = (int)Active.DhDropSide;
+                DhDropLengthComboBox.SelectedIndex = Array.FindIndex(DhDropLengths, l => Math.Abs(l - Active.DhDropLength) < 0.5);
                 RangeControlComboBox.SelectedIndex = (int)Active.RangeControl;
                 if (!RangeKeyTextBox.IsKeyboardFocused) RangeKeyTextBox.Text = Active.RangeDefaultKey;
                 RangeKeyTextBox.IsEnabled = Active.RangeControl is AnalogRangeControl.StepKeys or AnalogRangeControl.PanelKeys;
@@ -464,7 +488,8 @@ namespace AuroraPAR
         /// <summary>
         /// One row per symbol (track, threshold, touchdown point, antenna): shape and size.
         /// </summary>
-        private static readonly double[] DhLengths = [0, 0.5, 1, 1.5, 2, 3, 4, 5];
+        private static readonly double[] DhLengths = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5];
+        private static readonly double[] DhDropLengths = [0, 50, 100, 200, 300, 500, 1000];
 
         private void BuildSymbolRows()
         {

@@ -93,9 +93,16 @@
                     <ComboBox Name="SmoothingComboBox" Width="90" Margin="8,0,0,0"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
-                            ToolTip="Length of the horizontal decision height line, from the touchdown point (elevation view). Colour, line style and width: Display style, Colours &amp; lines.">
-                    <TextBlock Text="DH line length:" VerticalAlignment="Center"/>
-                    <ComboBox Name="DhLengthComboBox" Width="130" Margin="8,0,0,0"/>
+                            ToolTip="Decision height lines of the elevation view, drawn from the point where the glide path reaches the DH. Colour, line style and width: Display style, Colours &amp; lines.">
+                    <TextBlock Text="DH horizontal line:" VerticalAlignment="Center" Width="120"/>
+                    <ComboBox Name="DhSideComboBox" Width="90" Margin="8,0,0,0"/>
+                    <ComboBox Name="DhLengthComboBox" Width="130" Margin="6,0,0,0" ToolTip="Length on each side of the point."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                            ToolTip="Vertical line from the point where the glide path reaches the DH: down, up or both; as long as the DH (down to the ground) or a given length.">
+                    <TextBlock Text="DH vertical line:" VerticalAlignment="Center" Width="120"/>
+                    <ComboBox Name="DhDropSideComboBox" Width="90" Margin="8,0,0,0"/>
+                    <ComboBox Name="DhDropLengthComboBox" Width="130" Margin="6,0,0,0" ToolTip="Length on each side of the point."/>
                 </StackPanel>
                 <Grid Name="SymbolGrid" Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>

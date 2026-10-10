@@ -190,6 +190,12 @@ namespace AuroraPAR
     /// A named set of user preferences. New preferences are added here as properties with a default value:
     /// profiles saved by older versions simply get the default for the missing ones.
     /// </summary>
+    /// <summary>Where the horizontal DH line goes from the point where the glide path reaches the DH (side of the screen).</summary>
+    internal enum DhHorizontalSide { Left, Right, Both }
+
+    /// <summary>Where the vertical DH line goes from that point.</summary>
+    internal enum DhVerticalSide { Down, Up, Both }
+
     internal class Profile
     {
         public string Name { get; set; } = AppSettings.DefaultProfileName;
@@ -326,8 +332,12 @@ namespace AuroraPAR
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
         /// <summary>Symbol on the point where the glide path reaches the decision height (none by default).</summary>
         public SymbolSetting DhSymbol { get; set; } = new(SymbolShape.None, 10);
-        /// <summary>Length of the horizontal DH line from the touchdown point, in NM; 0 = up to the glide path.</summary>
-        public double DhLineLength { get; set; } = Runway.DecisionHeightLineLength;
+        /// <summary>Horizontal DH line, drawn from the point where the glide path reaches the DH: side on the screen and length (NM) on each side.</summary>
+        public DhHorizontalSide DhLineSide { get; set; } = DhHorizontalSide.Both;
+        public double DhLineLength { get; set; } = 1;
+        /// <summary>Vertical DH line from the same point: direction and length in ft (0 = as long as the DH, down to the ground).</summary>
+        public DhVerticalSide DhDropSide { get; set; } = DhVerticalSide.Down;
+        public double DhDropLength { get; set; }
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         /// <summary>Symbol of a coasting track (estimated position, out of the beam).</summary>
         public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);
@@ -415,7 +425,10 @@ namespace AuroraPAR
             TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));
             AntennaSymbol = NormalizeSymbol(AntennaSymbol, new(SymbolShape.Square, 8));
             DhSymbol = NormalizeSymbol(DhSymbol, new(SymbolShape.None, 10));
-            DhLineLength = double.IsNaN(DhLineLength) ? Runway.DecisionHeightLineLength : Math.Clamp(DhLineLength, 0, 5);
+            if (!Enum.IsDefined(DhLineSide)) DhLineSide = DhHorizontalSide.Both;
+            if (!Enum.IsDefined(DhDropSide)) DhDropSide = DhVerticalSide.Down;
+            DhLineLength = double.IsNaN(DhLineLength) || DhLineLength <= 0 ? 1 : Math.Clamp(DhLineLength, 0.25, 5);
+            DhDropLength = double.IsNaN(DhDropLength) || DhDropLength < 0 ? 0 : Math.Clamp(DhDropLength, 0, 1000);
             HistorySymbol = NormalizeSymbol(HistorySymbol, new(SymbolShape.FilledCircle, 3));
             CoastSymbol = NormalizeSymbol(CoastSymbol, new(SymbolShape.Diamond, 12));
             CoastSeconds = double.IsNaN(CoastSeconds) ? 8 : Math.Clamp(CoastSeconds, 0, MaxCoastSeconds);

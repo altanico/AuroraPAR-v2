@@ -34,7 +34,10 @@ namespace AuroraPAR
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
         public SymbolSetting DhSymbol { get; set; } = new(SymbolShape.None, 10);
-        public double DhLineLength { get; set; } = 3;
+        public DhHorizontalSide DhLineSide { get; set; } = DhHorizontalSide.Both;
+        public double DhLineLength { get; set; } = 1;
+        public DhVerticalSide DhDropSide { get; set; } = DhVerticalSide.Down;
+        public double DhDropLength { get; set; }
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         /// <summary>Coasting tracks (modern display): symbol, and seconds shown out of the beam (0 = none).</summary>
         public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);

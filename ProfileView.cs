@@ -116,12 +116,21 @@ namespace AuroraPAR
             // Decision height: horizontal line from the touchdown point to 3 NM (or the end of the display),
             // and a dashed vertical line from its intercept with the glide path down to the runway axis.
             double displayEnd = Runway.TouchdownNM + range;
+            // Everything starts from the point where the glide path reaches the DH.
             double intercept = Runway.MissedApproachPointNM;
-            double lineLength = Options.DhLineLength <= 0 ? intercept : Options.DhLineLength;
-            AddLine(X(0), Y(Runway.MDH), X(Math.Min(lineLength, displayEnd)), Y(Runway.MDH), StyleElement.DecisionHeight);
             if (intercept <= displayEnd)
             {
-                AddLine(X(intercept), Y(0), X(intercept), Y(Runway.MDH), StyleElement.DecisionHeightDrop);
+                // Horizontal line: left, right or both sides of the point on the screen (the runway may be on either side).
+                bool towardsApproach = Options.DhLineSide != DhHorizontalSide.Both && (Options.DhLineSide == DhHorizontalSide.Right) != RunwayOnRight;
+                bool towardsRunway = Options.DhLineSide != DhHorizontalSide.Both && !towardsApproach;
+                double from = towardsApproach ? intercept : Math.Max(0, intercept - Options.DhLineLength);
+                double to = towardsRunway ? intercept : Math.Min(displayEnd, intercept + Options.DhLineLength);
+                AddLine(X(from), Y(Runway.MDH), X(to), Y(Runway.MDH), StyleElement.DecisionHeight);
+                // Vertical line: down, up or both; by default as long as the DH (down to the ground).
+                double drop = Options.DhDropLength > 0 ? Options.DhDropLength : Runway.MDH;
+                double down = Options.DhDropSide != DhVerticalSide.Up ? Math.Min(drop, Runway.MDH) : 0;
+                double up = Options.DhDropSide != DhVerticalSide.Down ? drop : 0;
+                AddLine(X(intercept), Y(Runway.MDH - down), X(intercept), Y(Runway.MDH + up), StyleElement.DecisionHeightDrop);
                 AddSymbol(Options.DhSymbol, X(intercept), Y(Runway.MDH), Brush(StyleElement.DecisionHeightMark));
             }
             // Touchdown point: origin of the range marks and of the glide path.
