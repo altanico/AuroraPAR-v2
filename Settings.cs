@@ -265,6 +265,8 @@ namespace AuroraPAR
         /// untick this in the settings).
         /// </summary>
         public bool LockDisplayMode { get; set; }
+        /// <summary>Decision height selector on the right panel (field, knob or keys): an advanced function, off by default (Shift+arrows always work).</summary>
+        public bool ShowDhSelector { get; set; }
         /// <summary>Analog console: the controls of each group as a knob or as keys (the tilt also as a small joystick).</summary>
         public AnalogRangeControl RangeControl { get; set; } = AnalogRangeControl.Knob;
         /// <summary>Text of the key back to the preferred range (<see cref="AnalogRangeControl.StepKeys"/>), at most 5 characters.</summary>

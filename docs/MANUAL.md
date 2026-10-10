@@ -76,7 +76,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **5** | Range list | Display range: the ranges ticked in *Settings → Display → Ranges offered* (1, 2.5, 5, 10, 15, 20, 30, 40 NM; up to 20 NM by default). The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | | **GP (°)** | Glide path of the approach: one key per published angle of the runway (when it has more than one), and below a box with the angle in use, where a free angle can be typed (Enter; unpublished approach, orange) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
-| **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
+| **8** | **DH** box with **−** / **+** (hidden by default: *Settings → Display → Show the DH selector*) | Decision height for this session ([section 8](#8-decision-height)). |
 | | **BRT** with **−** / **+** | Brightness of the radar picture, 10–150% (also with the mouse wheel over it); saved in the profile. Up to 100% the picture is dimmed; above 100% the colours are made brighter and lighter, for dim monitors. |
 | **9** | **Antenna tilt** | EL ▲ / EL ▼, AZ L / AZ R, Neutral ([section 7](#7-antenna-tilt)). |
 | **10** | **Hide labels (L)** | Hides / shows all labels. |
@@ -254,6 +254,8 @@ The tilt moves the **beam** inside the scan limits; the glide path, centreline a
 ## 8. Decision height
 
 The DH of each runway comes from `runways.par`. During the session it can be changed **on the fly** with **−** / **+** (10 ft steps) or by typing a value in the box. It is not saved: it goes back to the file value when the runway is selected again.
+
+The DH selector (box with **−** / **+** in the modern display, knob or keys in the analog one) is an advanced function and is **hidden by default**: tick *Settings → Display → Show the DH selector* to show it (per profile; existing profiles start with it hidden). Hidden, the runway value is used, and **Shift+↑ / ↓ / Home** still change it.
 
 The name shown (DA/DH, OCA/OCH, MDA/MDH) is chosen in *Settings → Units and references*.
 

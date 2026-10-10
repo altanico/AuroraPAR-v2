@@ -376,7 +376,7 @@ namespace AuroraPAR
         {
             Profile profile = settings.Active;
             string ranges = string.Join(",", Ranges.Values);
-            string layout = $"{profile.KeyStyle}|{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.BrightnessControl}";
+            string layout = $"{profile.KeyStyle}|{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.ShowDhSelector}|{profile.BrightnessControl}";
             if (layout == analogControlsLayout) return;
             analogControlsLayout = layout;
             KnobPanel.Children.Clear();
@@ -430,7 +430,10 @@ namespace AuroraPAR
                     KnobPanel.Children.Add(azimuthKnob);
                     break;
             }
-            if (profile.DhControl == AnalogControl.Keys)
+            if (!profile.ShowDhSelector)
+            {
+            }
+            else if (profile.DhControl == AnalogControl.Keys)
             {
                 AddKeyGroup("DH",
                 [
@@ -1093,7 +1096,7 @@ namespace AuroraPAR
             // and keys instead.
             AptPanel.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
             IcaoPanel.Visibility = modern;
-            DhPanel.Visibility = modern;
+            DhPanel.Visibility = analog || !settings.Active.ShowDhSelector ? Visibility.Collapsed : Visibility.Visible;
             ApplyKeyPanels(analog);
             aptEntry.Icao = runway.ICAO;
             DistanceComboBox.Visibility = modern;

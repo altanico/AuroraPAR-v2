@@ -37,6 +37,8 @@
                 </StackPanel>
                 <CheckBox Name="LockModeCheck" Content="Lock the display mode in this profile (no button, key A off)" Margin="0,6,0,0"
                           ToolTip="With two profiles, one Modern and one Analog, the mode cannot be switched by mistake: change profile instead (keys P / Shift+P)."/>
+                <CheckBox Name="ShowDhCheck" Content="Show the DH selector (advanced: field, knob or keys; Shift+arrows work anyway)" Margin="0,6,0,0"
+                          ToolTip="Decision height selector on the right panel, in both displays. Off by default: the DH of the runway is used."/>
                 <TextBlock Text="Runway position on screen" Margin="0,10,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <RadioButton Name="RunwayLeftRadio" GroupName="RunwaySide" Content="Left" Margin="0,0,20,0"/>

@@ -63,6 +63,8 @@ namespace AuroraPAR
             AnalogRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Analog, p => p.DisplayMode = DisplayMode.Analog);
             LockModeCheck.Checked += (s, e) => SetProfileValue(p => p.LockDisplayMode, p => p.LockDisplayMode = true);
             LockModeCheck.Unchecked += (s, e) => SetProfileValue(p => !p.LockDisplayMode, p => p.LockDisplayMode = false);
+            ShowDhCheck.Checked += (s, e) => SetProfileValue(p => p.ShowDhSelector, p => p.ShowDhSelector = true);
+            ShowDhCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ShowDhSelector, p => p.ShowDhSelector = false);
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
             RunwayRightRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Right);
             foreach (double value in Ranges.All)
@@ -166,6 +168,7 @@ namespace AuroraPAR
                 ModernRadio.IsChecked = Active.DisplayMode == DisplayMode.Modern;
                 AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
                 LockModeCheck.IsChecked = Active.LockDisplayMode;
+                ShowDhCheck.IsChecked = Active.ShowDhSelector;
                 RangeControlComboBox.SelectedIndex = (int)Active.RangeControl;
                 if (!RangeKeyTextBox.IsKeyboardFocused) RangeKeyTextBox.Text = Active.RangeDefaultKey;
                 RangeKeyTextBox.IsEnabled = Active.RangeControl is AnalogRangeControl.StepKeys or AnalogRangeControl.PanelKeys;
