@@ -1,0 +1,215 @@
+<title>AuroraPAR v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one dark scope-like column; hero with a drawn PAR display, then features, how it works, credits.
+   Palette: scope black, phosphor green (the one accent), amber for the glide path, cool grey text. */
+:root{
+  --bg:#070b09; --panel:#0d1411; --line:#1b2a22; --fg:#d7e0da; --muted:#8b9a91;
+  --phos:#5df08a; --phos-dim:#2a7a45; --amber:#e8b64a;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font:400 17px/1.6 var(--body);padding-inline:20px;padding-block:0}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:var(--phos);text-underline-offset:3px}
+a:focus-visible,.btn:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:.01em;line-height:1.05;margin:0;text-wrap:balance}
+.mono{font-family:var(--mono)}
+.eyebrow{font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--phos-dim)}
+
+header.top{display:flex;gap:16px;align-items:center;justify-content:space-between;padding-block:22px;flex-wrap:wrap}
+.brand{font:700 22px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--fg);text-decoration:none}
+.brand b{color:var(--phos);font-weight:700}
+nav{display:flex;gap:22px;flex-wrap:wrap}
+nav a{font:500 14px/1 var(--mono);color:var(--muted);text-decoration:none;letter-spacing:.04em}
+nav a:hover{color:var(--phos)}
+
+.hero{display:grid;grid-template-columns:minmax(0,1fr);gap:36px;padding-block:34px 56px}
+.hero h1{font-size:clamp(46px,8vw,92px);font-weight:700;text-transform:uppercase;letter-spacing:.015em}
+.hero h1 span{color:var(--phos)}
+.lead{font-size:clamp(18px,2.2vw,22px);color:var(--fg);max-width:34em;margin:20px 0 0}
+.cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:28px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:3px;font:600 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border:1px solid var(--phos);color:#04120a;background:var(--phos)}
+.btn:hover{background:#86f6a8}
+.btn.ghost{background:transparent;color:var(--phos)}
+.btn.ghost:hover{background:rgba(93,240,138,.1)}
+.note{font:400 13px/1.5 var(--mono);color:var(--muted);margin-top:14px;max-width:46em}
+
+.scope{background:#050806;border:1px solid var(--line);border-radius:6px;padding:10px;position:relative;overflow:hidden}
+.scope svg{display:block;width:100%;height:auto}
+.scope .cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:400 12px/1.4 var(--mono);color:var(--muted);padding:8px 4px 2px}
+.sweep{transform-origin:40px 232px;animation:sweep 6s linear infinite}
+@keyframes sweep{0%{transform:rotate(-1.2deg)}50%{transform:rotate(4.6deg)}100%{transform:rotate(-1.2deg)}}
+@media (prefers-reduced-motion:reduce){.sweep{animation:none}}
+
+section{padding-block:56px;border-top:1px solid var(--line)}
+section h2{font-size:clamp(32px,5vw,50px);text-transform:uppercase;margin-top:12px}
+.sub{color:var(--muted);max-width:40em;margin:14px 0 0}
+
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px;margin-top:34px}
+.f{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:22px 22px 24px;min-width:0}
+.f h3{font-size:25px;text-transform:uppercase;color:var(--fg);margin-top:14px}
+.f p{margin:10px 0 0;color:var(--muted);font-size:16px}
+.f svg{width:54px;height:54px;display:block}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:22px;margin-top:30px;list-style:none;padding:0;counter-reset:s}
+.steps li{counter-increment:s;border-left:2px solid var(--phos-dim);padding-left:18px;min-width:0}
+.steps li::before{content:"STEP " counter(s);font:500 12px/1 var(--mono);letter-spacing:.14em;color:var(--phos)}
+.steps h3{font-size:24px;text-transform:uppercase;margin:8px 0 6px}
+.steps p{margin:0;color:var(--muted);font-size:16px}
+
+.credit{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;max-width:46em}
+.credit p{margin:0}
+.credit p.big{font:500 clamp(24px,3.4vw,34px)/1.2 var(--display);color:var(--fg)}
+footer{border-top:1px solid var(--line);padding-block:34px 56px;color:var(--muted);font:400 13px/1.7 var(--mono)}
+footer p{margin:0 0 8px;max-width:60em}
+@media (min-width:900px){.hero{grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:center}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <a class="brand" href="#top">Aurora<b>PAR</b> v2</a>
+  <nav aria-label="Main">
+    <a href="#features">Features</a>
+    <a href="#start">Get started</a>
+    <a href="https://github.com/altanico/AuroraPAR-v2/blob/master/docs/MANUAL.md">Manual</a>
+    <a href="#credits">Credits</a>
+  </nav>
+</header>
+
+<main id="top">
+<div class="hero">
+  <div>
+    <div class="eyebrow">Precision approach radar for IVAO Aurora</div>
+    <h1 style="margin-top:16px">Talk them<br>down on the <span>scope</span></h1>
+    <p class="lead">A Precision Approach Radar display for the Aurora ATC client: elevation and azimuth views, a console-style analog mode, a coordination light panel and test traffic to practise with.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/altanico/AuroraPAR-v2/releases/tag/test-build">Download for Windows</a>
+      <a class="btn ghost" href="https://github.com/altanico/AuroraPAR-v2/blob/master/docs/MANUAL.md">Read the manual</a>
+    </div>
+    <p class="note">Test build for Windows 64-bit. Free, open source (MIT). Unofficial add-on: not affiliated with IVAO. For flight simulation only, never for real navigation.</p>
+  </div>
+
+  <figure class="scope" style="margin:0" aria-label="Drawing of the two PAR views: elevation above, azimuth below, with an aircraft on the glide path">
+    <svg viewBox="0 0 520 440" role="img" aria-hidden="true">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="blob"><stop offset="0" stop-color="#5df08a" stop-opacity=".55"/><stop offset="1" stop-color="#5df08a" stop-opacity="0"/></radialGradient>
+        <clipPath id="ce"><polygon points="40,232 504,42 504,148"/></clipPath>
+        <clipPath id="ca"><polygon points="40,360 504,318 504,402"/></clipPath>
+      </defs>
+      <!-- elevation view -->
+      <rect x="8" y="14" width="504" height="236" fill="none" stroke="#1b2a22"/>
+      <g stroke="#14241b">
+        <path d="M108 14V250M176 14V250M244 14V250M312 14V250M380 14V250M448 14V250"/>
+      </g>
+      <path d="M40 232H504" stroke="#5df08a" stroke-width="2" filter="url(#glow)"/>
+      <path d="M40 232L504 92" stroke="#e8b64a" stroke-width="2" filter="url(#glow)"/>
+      <path d="M40 232L504 42M40 232L504 148" stroke="#2a7a45" stroke-dasharray="5 4"/>
+      <path d="M40 232L504 62M40 232L504 128" stroke="#1f5e36"/>
+      <g clip-path="url(#ce)" filter="url(#glow)">
+        <ellipse cx="190" cy="196" rx="26" ry="9" fill="url(#blob)"/>
+        <ellipse cx="262" cy="160" rx="34" ry="12" fill="url(#blob)"/>
+        <ellipse cx="338" cy="140" rx="22" ry="8" fill="url(#blob)"/>
+        <ellipse cx="420" cy="110" rx="36" ry="13" fill="url(#blob)"/>
+        <g fill="#5df08a"><circle cx="150" cy="208" r="1.3"/><circle cx="226" cy="178" r="1.3"/><circle cx="298" cy="150" r="1.3"/><circle cx="372" cy="124" r="1.3"/><circle cx="458" cy="86" r="1.3"/><circle cx="404" cy="132" r="1.3"/><circle cx="318" cy="170" r="1.3"/><circle cx="248" cy="196" r="1.3"/></g>
+      </g>
+      <g stroke="#5df08a" fill="none" filter="url(#glow)">
+        <circle cx="300" cy="145" r="6" stroke-width="2"/><path d="M291 145H309M300 136V154"/>
+      </g>
+      <path class="sweep" d="M40 232L504 92" stroke="#5df08a" stroke-opacity=".55" stroke-width="1.5"/>
+      <g font-family="IBM Plex Mono,monospace" font-size="10" fill="#5e7a69">
+        <text x="104" y="246">1</text><text x="172" y="246">2</text><text x="240" y="246">3</text><text x="308" y="246">4</text><text x="376" y="246">5</text><text x="444" y="246">6 NM</text>
+        <text x="16" y="30">ELEVATION</text>
+      </g>
+      <!-- azimuth view -->
+      <rect x="8" y="270" width="504" height="160" fill="none" stroke="#1b2a22"/>
+      <g stroke="#14241b"><path d="M108 270V430M176 270V430M244 270V430M312 270V430M380 270V430M448 270V430"/></g>
+      <path d="M40 350H504" stroke="#e8b64a" stroke-width="2" filter="url(#glow)"/>
+      <path d="M40 350L504 304M40 350L504 396" stroke="#2a7a45" stroke-dasharray="5 4"/>
+      <g clip-path="url(#ca)" filter="url(#glow)">
+        <ellipse cx="236" cy="345" rx="40" ry="8" fill="url(#blob)"/>
+        <ellipse cx="410" cy="336" rx="44" ry="12" fill="url(#blob)"/>
+        <g fill="#5df08a"><circle cx="160" cy="352" r="1.3"/><circle cx="300" cy="356" r="1.3"/><circle cx="352" cy="344" r="1.3"/><circle cx="470" cy="360" r="1.3"/></g>
+      </g>
+      <g stroke="#5df08a" fill="none" filter="url(#glow)">
+        <circle cx="300" cy="347" r="6" stroke-width="2"/><path d="M291 347H309M300 338V356"/>
+      </g>
+      <text x="16" y="286" font-family="IBM Plex Mono,monospace" font-size="10" fill="#5e7a69">AZIMUTH</text>
+    </svg>
+    <figcaption class="cap"><span>Drawing: analog scope, rain clutter, aircraft on the glide path</span><span>not a screenshot</span></figcaption>
+  </figure>
+</div>
+
+<section id="features">
+  <div class="eyebrow">What it does</div>
+  <h2>Built for the approach</h2>
+  <p class="sub">Everything a PAR controller looks at, on one screen, with the settings to make it look and behave like the radar you know.</p>
+  <div class="feat">
+    <article class="f">
+      <svg viewBox="0 0 54 54" fill="none" stroke="#5df08a" stroke-width="2"><path d="M4 40H50"/><path d="M4 40L50 14" stroke="#e8b64a"/><path d="M4 48H50" stroke-opacity=".4"/><circle cx="30" cy="27" r="4"/></svg>
+      <h3>Two views, like the real thing</h3>
+      <p>Elevation and azimuth, with glide path, decision height, scan limits, range marks and the antenna beam that follows the tilt.</p>
+    </article>
+    <article class="f">
+      <svg viewBox="0 0 54 54" fill="none" stroke="#5df08a" stroke-width="2"><rect x="6" y="8" width="42" height="30" rx="2"/><path d="M14 30L26 20L40 24" stroke-opacity=".7"/><circle cx="14" cy="46" r="3"/><circle cx="27" cy="46" r="3"/><circle cx="40" cy="46" r="3"/></svg>
+      <h3>An analog console mode</h3>
+      <p>Phosphor echoes lit by the sweeping beam, afterglow, knobs and backlit keys, mechanical drum readouts and optional rain clutter taken from the METAR.</p>
+    </article>
+    <article class="f">
+      <svg viewBox="0 0 54 54" fill="none" stroke="#5df08a" stroke-width="2"><circle cx="14" cy="27" r="6"/><circle cx="27" cy="27" r="6" stroke="#e8b64a"/><circle cx="40" cy="27" r="6" stroke="#ff6b5b"/><path d="M8 44H46" stroke-opacity=".5"/></svg>
+      <h3>Coordination light panel</h3>
+      <p>The radar and tower light panel with the buzzer of the real one, on the PC and on a phone or tablet, paired by callsign.</p>
+    </article>
+    <article class="f">
+      <svg viewBox="0 0 54 54" fill="none" stroke="#5df08a" stroke-width="2"><path d="M8 40L44 14"/><path d="M36 12L46 12L44 22"/><circle cx="14" cy="38" r="3" stroke="#e8b64a"/></svg>
+      <h3>Test traffic to practise</h3>
+      <p>Fly your own aircraft on the scope: intercept from the side, change heading and rate of descent, add wind, use a keyboard, a virtual stick or a real joystick.</p>
+    </article>
+    <article class="f">
+      <svg viewBox="0 0 54 54" fill="none" stroke="#5df08a" stroke-width="2"><path d="M8 14H46M8 27H46M8 40H46"/><circle cx="18" cy="14" r="3.5" fill="#070b09"/><circle cx="34" cy="27" r="3.5" fill="#070b09"/><circle cx="24" cy="40" r="3.5" fill="#070b09"/></svg>
+      <h3>Yours to customise</h3>
+      <p>Profiles, colours, line styles, symbols, labels, decision height marks, ranges up to 40 NM. Switch between profiles with one key.</p>
+    </article>
+    <article class="f">
+      <svg viewBox="0 0 54 54" fill="none" stroke="#5df08a" stroke-width="2"><rect x="10" y="8" width="34" height="38" rx="2"/><path d="M17 18H37M17 26H37M17 34H29"/></svg>
+      <h3>Runways without the pain</h3>
+      <p>CRSCalculator works out heading, length and magnetic variation from two thresholds and checks your whole runways file. Full manual included.</p>
+    </article>
+  </div>
+</section>
+
+<section id="start">
+  <div class="eyebrow">Get started</div>
+  <h2>Up and running in minutes</h2>
+  <ol class="steps">
+    <li><h3>Download</h3><p>Get the zip from the Releases page, check the SHA-256 and unzip it anywhere.</p></li>
+    <li><h3>Open Aurora</h3><p>Start Aurora and connect. AuroraPAR reads the traffic and the airport from it.</p></li>
+    <li><h3>Pick the runway</h3><p>Choose the airport and runway. Add yours to <span class="mono">runways.par</span> with the CRSCalculator if it is not there.</p></li>
+    <li><h3>Control</h3><p>Try it first with test traffic (key T), then use it on the network.</p></li>
+  </ol>
+  <div class="cta"><a class="btn" href="https://github.com/altanico/AuroraPAR-v2/releases/tag/test-build">Download</a><a class="btn ghost" href="https://github.com/altanico/AuroraPAR-v2/blob/master/docs/MANUAL.md">Manual</a></div>
+</section>
+
+<section id="credits">
+  <div class="eyebrow">Credits</div>
+  <h2>It started with bornac1</h2>
+  <div class="credit" style="margin-top:22px">
+    <p class="big">AuroraPAR v2 grows from AuroraPAR by bornac1, who had the idea of a PAR display for Aurora.</p>
+    <p>His original program is still the base of this one: the way it talks to Aurora, the runway file format and the two views come from his work. Everything you see on top of it was added later, with his project as the starting point. This is an evolution of his work and not a replacement for it.</p>
+    <p><a href="https://github.com/bornac1/AuroraPAR">AuroraPAR by bornac1 on GitHub</a>. Released under the MIT license, with his copyright notice kept.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <p>AuroraPAR v2 is an unofficial add-on for the Aurora ATC client. It is not affiliated with, or endorsed by, IVAO. For flight simulation only: not to be used for real navigation or air traffic control.</p>
+  <p>MIT license · Source on <a href="https://github.com/altanico/AuroraPAR-v2">GitHub</a> · Design preview</p>
+</footer>
+</div>
