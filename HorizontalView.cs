@@ -105,7 +105,12 @@ namespace AuroraPAR
             double interceptNM = length - Runway.TouchdownNM + Runway.MissedApproachPointNM;
             if (interceptNM <= end)
             {
-                AddLine(interceptNM * xscale, ScanY(interceptNM, left), interceptNM * xscale, ScanY(interceptNM, right), StyleElement.DecisionHeight);
+                // Both sides of the centreline: up to the scan limits, or a length in metres (never beyond the limits).
+                double yLeft = ScanY(interceptNM, left), yRight = ScanY(interceptNM, right);
+                double low = Math.Min(yLeft, yRight), high = Math.Max(yLeft, yRight);
+                double reach = Options.DhAzimuthLength > 0 ? Options.DhAzimuthLength / 1852 * yscale : double.MaxValue;
+                AddLine(interceptNM * xscale, Math.Max(low, cy - reach), interceptNM * xscale, Math.Min(high, cy + reach), StyleElement.DecisionHeightAzimuth);
+                AddSymbol(Options.DhAzimuthSymbol, interceptNM * xscale, cy, Brush(StyleElement.DecisionHeightMark));
             }
             // Range marks, measured from the touchdown point, between the scan limits.
             List<DistanceReminder> reminders = VisibleReminders();

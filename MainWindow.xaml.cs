@@ -1969,6 +1969,8 @@ namespace AuroraPAR
             viewOptions.DhLineLength = profile.DhLineLength;
             viewOptions.DhDropSide = profile.DhDropSide;
             viewOptions.DhDropLength = profile.DhDropLength;
+            viewOptions.DhAzimuthLength = profile.DhAzimuthLength;
+            viewOptions.DhAzimuthSymbol = profile.DhAzimuthSymbol;
             viewOptions.HistorySymbol = profile.HistorySymbol;
             viewOptions.CoastSymbol = profile.CoastSymbol;
             viewOptions.CoastSeconds = profile.CoastSeconds;

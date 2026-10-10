@@ -38,6 +38,8 @@ namespace AuroraPAR
         public double DhLineLength { get; set; } = 1;
         public DhVerticalSide DhDropSide { get; set; } = DhVerticalSide.Down;
         public double DhDropLength { get; set; }
+        public double DhAzimuthLength { get; set; }
+        public SymbolSetting DhAzimuthSymbol { get; set; } = new(SymbolShape.None, 10);
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         /// <summary>Coasting tracks (modern display): symbol, and seconds shown out of the beam (0 = none).</summary>
         public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);

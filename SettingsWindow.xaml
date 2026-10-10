@@ -104,6 +104,11 @@
                     <ComboBox Name="DhDropSideComboBox" Width="90" Margin="8,0,0,0"/>
                     <ComboBox Name="DhDropLengthComboBox" Width="130" Margin="6,0,0,0" ToolTip="Length on each side of the point."/>
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                            ToolTip="Decision height line of the azimuth view (from above): always on both sides of the centreline, up to the scan limits or a given length. Colour, line style and width: Display style, Colours &amp; lines.">
+                    <TextBlock Text="DH line, azimuth view:" VerticalAlignment="Center" Width="120"/>
+                    <ComboBox Name="DhAzimuthLengthComboBox" Width="190" Margin="8,0,0,0" ToolTip="Length on each side of the centreline."/>
+                </StackPanel>
                 <Grid Name="SymbolGrid" Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

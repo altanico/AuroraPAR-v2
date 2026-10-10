@@ -233,7 +233,9 @@ namespace AuroraPAR
         /// <summary>Vertical line from the intercept of the glide path with the DH down to the ground (added later: older profiles get the style of the DH line, dashed).</summary>
         DecisionHeightDrop,
         /// <summary>Colour of the symbol on the DH point (added later: older profiles get the colour of the DH line).</summary>
-        DecisionHeightMark
+        DecisionHeightMark,
+        /// <summary>DH line of the azimuth view (added later: older profiles get the style of the DH line).</summary>
+        DecisionHeightAzimuth
     }
 
     /// <summary>Colour (as #RRGGBB), dash style and width of an element.</summary>
@@ -289,6 +291,7 @@ namespace AuroraPAR
             StyleElement.DecisionHeight => "Decision height line (horizontal)",
             StyleElement.DecisionHeightDrop => "Decision height drop line (vertical)",
             StyleElement.DecisionHeightMark => "Decision height mark (symbol)",
+            StyleElement.DecisionHeightAzimuth => "Decision height line (azimuth view)",
             StyleElement.Runway => "Runway and threshold",
             StyleElement.Ground => "Ground",
             StyleElement.Touchdown => "Touchdown point",
@@ -319,6 +322,7 @@ namespace AuroraPAR
             StyleElement.DecisionHeight => new() { Color = "#FF0000", Width = 2 },
             StyleElement.DecisionHeightDrop => new() { Color = "#FF0000", Width = 2, Dash = LineDash.Dashed },
             StyleElement.DecisionHeightMark => new() { Color = "#FF0000" },
+            StyleElement.DecisionHeightAzimuth => new() { Color = "#FF0000", Width = 2 },
             StyleElement.Runway => new() { Color = "#008000", Width = 3 },
             StyleElement.Ground => new() { Color = "#008000", Width = 2 },
             StyleElement.Touchdown => new() { Color = "#FFFF00", Width = 2 },
@@ -367,6 +371,10 @@ namespace AuroraPAR
                     LineStyle copy = dh.Copy();
                     copy.Dash = LineDash.Dashed;
                     Elements[StyleElement.DecisionHeightDrop] = copy;
+                }
+                if (!Elements.TryGetValue(StyleElement.DecisionHeightAzimuth, out LineStyle? azimuth) || azimuth == null)
+                {
+                    Elements[StyleElement.DecisionHeightAzimuth] = dh.Copy();
                 }
                 if (!Elements.TryGetValue(StyleElement.DecisionHeightMark, out LineStyle? mark) || mark == null)
                 {

@@ -338,6 +338,9 @@ namespace AuroraPAR
         /// <summary>Vertical DH line from the same point: direction and length in ft (0 = as long as the DH, down to the ground).</summary>
         public DhVerticalSide DhDropSide { get; set; } = DhVerticalSide.Down;
         public double DhDropLength { get; set; }
+        /// <summary>DH line of the azimuth view: length on each side of the centreline in metres (0 = up to the scan limits), and a symbol on the centreline.</summary>
+        public double DhAzimuthLength { get; set; }
+        public SymbolSetting DhAzimuthSymbol { get; set; } = new(SymbolShape.None, 10);
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         /// <summary>Symbol of a coasting track (estimated position, out of the beam).</summary>
         public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);
@@ -429,6 +432,8 @@ namespace AuroraPAR
             if (!Enum.IsDefined(DhDropSide)) DhDropSide = DhVerticalSide.Down;
             DhLineLength = double.IsNaN(DhLineLength) || DhLineLength <= 0 ? 1 : Math.Clamp(DhLineLength, 0.25, 5);
             DhDropLength = double.IsNaN(DhDropLength) || DhDropLength < 0 ? 0 : Math.Clamp(DhDropLength, 0, 1000);
+            DhAzimuthLength = double.IsNaN(DhAzimuthLength) || DhAzimuthLength < 0 ? 0 : Math.Clamp(DhAzimuthLength, 0, 2000);
+            DhAzimuthSymbol = NormalizeSymbol(DhAzimuthSymbol, new(SymbolShape.None, 10));
             HistorySymbol = NormalizeSymbol(HistorySymbol, new(SymbolShape.FilledCircle, 3));
             CoastSymbol = NormalizeSymbol(CoastSymbol, new(SymbolShape.Diamond, 12));
             CoastSeconds = double.IsNaN(CoastSeconds) ? 8 : Math.Clamp(CoastSeconds, 0, MaxCoastSeconds);

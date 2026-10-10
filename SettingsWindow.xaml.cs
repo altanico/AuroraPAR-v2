@@ -77,6 +77,13 @@ namespace AuroraPAR
                 double value = DhLengths[DhLengthComboBox.SelectedIndex];
                 SetProfileValue(p => p.DhLineLength == value, p => p.DhLineLength = value);
             };
+            DhAzimuthLengthComboBox.ItemsSource = DhAzimuthLengths.Select(l => l == 0 ? "up to the scan limits" : FormatNumber(l) + " m each side").ToList();
+            DhAzimuthLengthComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || DhAzimuthLengthComboBox.SelectedIndex < 0) return;
+                double value = DhAzimuthLengths[DhAzimuthLengthComboBox.SelectedIndex];
+                SetProfileValue(p => p.DhAzimuthLength == value, p => p.DhAzimuthLength = value);
+            };
             DhDropSideComboBox.ItemsSource = new[] { "down", "up", "both" };
             DhDropSideComboBox.SelectionChanged += (s, e) =>
             {
@@ -199,6 +206,7 @@ namespace AuroraPAR
                 ShowDhCheck.IsChecked = Active.ShowDhSelector;
                 DhSideComboBox.SelectedIndex = (int)Active.DhLineSide;
                 DhLengthComboBox.SelectedIndex = Array.FindIndex(DhLengths, l => Math.Abs(l - Active.DhLineLength) < 0.01);
+                DhAzimuthLengthComboBox.SelectedIndex = Array.FindIndex(DhAzimuthLengths, l => Math.Abs(l - Active.DhAzimuthLength) < 0.5);
                 DhDropSideComboBox.SelectedIndex = (int)Active.DhDropSide;
                 DhDropLengthComboBox.SelectedIndex = Array.FindIndex(DhDropLengths, l => Math.Abs(l - Active.DhDropLength) < 0.5);
                 RangeControlComboBox.SelectedIndex = (int)Active.RangeControl;
@@ -489,6 +497,7 @@ namespace AuroraPAR
         /// One row per symbol (track, threshold, touchdown point, antenna): shape and size.
         /// </summary>
         private static readonly double[] DhLengths = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5];
+        private static readonly double[] DhAzimuthLengths = [0, 50, 100, 200, 300, 500, 1000];
         private static readonly double[] DhDropLengths = [0, 50, 100, 200, 300, 500, 1000];
 
         private void BuildSymbolRows()
@@ -502,7 +511,8 @@ namespace AuroraPAR
             AddSymbolRow("Threshold", p => p.ThresholdSymbol, all);
             AddSymbolRow("Touchdown point", p => p.TouchdownSymbol, all);
             AddSymbolRow("Antenna", p => p.AntennaSymbol, all);
-            AddSymbolRow("DH point", p => p.DhSymbol, all);
+            AddSymbolRow("DH point (side view)", p => p.DhSymbol, all);
+            AddSymbolRow("DH point (azimuth view)", p => p.DhAzimuthSymbol, all);
         }
 
         private void AddSymbolRow(string label, Func<Profile, SymbolSetting> get, SymbolShape[] shapes)
