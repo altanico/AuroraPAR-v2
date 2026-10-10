@@ -33,7 +33,7 @@ This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https
 
 ## 1. Installation and first start
 
-1. On the project's GitHub page open the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section.
+1. Open the **[Test build](https://github.com/altanico/AuroraPAR-v2/releases/tag/test-build)** page on GitHub (Releases; no GitHub account needed) and download **AuroraPAR-win-x64.zip**. With a GitHub account the same files are also in the *Artifacts* of the latest successful **Build** run (*Actions* tab).
 2. Unzip it into a folder of your choice. It contains:
    - `AuroraPAR.exe` — the program (Windows 64-bit, nothing else to install);
    - `runways.par` — the runway database (keep it **next to** `AuroraPAR.exe`);
@@ -342,7 +342,7 @@ The airport is the same as in the modern display (ICAO box and runway keys there
 
 The **Coordination** button opens a small panel for **voiceless coordination** between the radar (PAR / approach) and the tower, as on the light panels of real PAR rooms.
 
-**For the tower: AuroraCoord.** The tower controller does not need the PAR display: download **AuroraCoord-win-x64** (same *Actions* page as AuroraPAR) and run `AuroraCoord.exe`, a small program with only this panel. It works with the panel inside AuroraPAR (and two AuroraCoord can also work together). It needs Aurora running on the same PC, like AuroraPAR. Its options are saved in `%AppData%\AuroraPAR\AuroraCoord.settings.json` (or in a file with that name next to `AuroraCoord.exe`, portable mode).
+**For the tower: AuroraCoord.** The tower controller does not need the PAR display: download **AuroraCoord-win-x64.zip** (same *Test build* page as AuroraPAR) and run `AuroraCoord.exe`, a small program with only this panel. It works with the panel inside AuroraPAR (and two AuroraCoord can also work together). It needs Aurora running on the same PC, like AuroraPAR. Its options are saved in `%AppData%\AuroraPAR\AuroraCoord.settings.json` (or in a file with that name next to `AuroraCoord.exe`, portable mode).
 
 | | |
 |---|---|
@@ -510,7 +510,7 @@ The last two columns, **Modern** and **Analog**, show or hide each line (not the
 |---|---|
 | Airport ICAO | e.g. `LIRF` |
 | Runway / approach | Free text, e.g. `16L`, or `14 3.0` and `14 2.5` for two glide slopes on the same runway |
-| Runway heading | **True** heading, not magnetic |
+| Runway heading | **True** heading, not magnetic. Use the value *Heading for AuroraPAR* of the CRSCalculator (section 12.4) |
 | Threshold elevation | ft |
 | Threshold latitude / longitude | **Landing threshold.** Any common format: `41.80292`, `41°48'10.5"N`, `414810.5N`, `0121503E` (also `O` for west). A latitude and longitude pasted together are split automatically. |
 | Runway length / width | m |

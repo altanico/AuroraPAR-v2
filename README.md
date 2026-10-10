@@ -33,7 +33,7 @@ Range marks (by default every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM 
 
 ## Download
 
-Go to the **Actions** tab, open the latest successful **Build** run and download **AuroraPAR-win-x64** from the *Artifacts* section. Unzip it (it also contains the user manual, `MANUAL.md`) and run `AuroraPAR.exe`. For the tower there is also **AuroraCoord-win-x64**: only the coordination panel (`AuroraCoord.exe`); and **CRSCalculator-win-x64** (`CRSCalculator.exe`): runway heading from the coordinates of the two thresholds and the current magnetic variation (World Magnetic Model), to check `runways.par` against the charts (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
+Open the **[Test build](https://github.com/altanico/AuroraPAR-v2/releases/tag/test-build)** page (Releases, no GitHub account needed) and download **AuroraPAR-win-x64.zip**. (With a GitHub account the same files are also in the *Artifacts* of the latest successful **Build** run, *Actions* tab.) Unzip it (it also contains the user manual, `MANUAL.md`) and run `AuroraPAR.exe`. For the tower there is also **AuroraCoord-win-x64.zip**: only the coordination panel (`AuroraCoord.exe`); and **CRSCalculator-win-x64.zip** (`CRSCalculator.exe`): runway heading from the coordinates of the two thresholds and the current magnetic variation (World Magnetic Model), to check `runways.par` against the charts (Windows 64-bit, no .NET installation required). Keep `runways.par` in the same folder.
 
 ## Settings and profiles
 

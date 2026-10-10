@@ -1,6 +1,7 @@
 # Builds AuroraPAR on GitHub's Windows machines at every push.
-# The ready-to-run program is attached to each run as "AuroraPAR-win-x64"
-# (Actions tab -> latest run -> Artifacts). It does not require .NET to be installed.
+# The ready-to-run programs are attached to each run as artifacts (Actions tab -> latest run -> Artifacts; a GitHub
+# account is needed to download them). A push to master also refreshes the public pre-release "Test build"
+# (Releases page, no account needed). They do not require .NET to be installed.
 name: Build
 
 on:
@@ -11,6 +12,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -66,3 +69,23 @@ jobs:
         with:
           name: CRSCalculator-win-x64
           path: publish-crs/CRSCalculator.exe
+
+      # Public download without a GitHub account: one pre-release "Test build" (tag test-build), replaced at every push
+      # to master, with the three programs as zip files and their SHA-256.
+      - name: Publish the test build (Releases)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Compress-Archive -Path publish/AuroraPAR.exe, publish/runways.par, publish/MANUAL.md, publish/Profiles -DestinationPath AuroraPAR-win-x64.zip
+          Compress-Archive -Path publish-coord/AuroraCoord.exe -DestinationPath AuroraCoord-win-x64.zip
+          Compress-Archive -Path publish-crs/CRSCalculator.exe -DestinationPath CRSCalculator-win-x64.zip
+          $zips = 'AuroraPAR-win-x64.zip', 'AuroraCoord-win-x64.zip', 'CRSCalculator-win-x64.zip'
+          $zips | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_ } | Set-Content SHA256SUMS.txt
+          $date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm')
+          $short = '${{ github.sha }}'.Substring(0, 7)
+          $notes = "Test build of $date UTC (commit $short). Unofficial add-on for IVAO Aurora, not affiliated with IVAO. Unzip and run; Windows may show a SmartScreen warning (More info -> Run anyway)."
+          gh release delete test-build --yes --cleanup-tag 2>$null
+          $global:LASTEXITCODE = 0
+          gh release create test-build $zips SHA256SUMS.txt --prerelease --target '${{ github.sha }}' --title "Test build ($date UTC)" --notes $notes
+          if ($LASTEXITCODE -ne 0) { throw 'Release not created' }
