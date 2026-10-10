@@ -75,7 +75,8 @@ namespace AuroraPAR
             List<string> query = [];
             if (airport != null) query.Add("apt=" + Uri.EscapeDataString(airport));
             if (role != null) query.Add("role=" + role.Value.ToString().ToLowerInvariant());
-            if (Code != null) query.Add("k=" + Code);
+            // Always present (empty: no code), so a phone that had a code drops it with the new link.
+            query.Add("k=" + (Code ?? ""));
             query.Add("c=" + string.Join(",", Colors.Select(c => ColorText.ToHex(ColorText.Parse(c, System.Windows.Media.Colors.White)).TrimStart('#'))));
             query.Add("l=" + string.Join(",", Labels.Select(Uri.EscapeDataString)));
             query.Add("s=" + (Sound == CoordinationSound.OtherSide ? "other" : "every"));

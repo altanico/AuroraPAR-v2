@@ -381,10 +381,15 @@ namespace AuroraPAR
         {
             if (loading) return;
             string airport = airportBox.Text.Trim().ToUpperInvariant();
-            Options.Airport = airport.Length == 0 ? null : airport;
-            Options.Role = roleBox.SelectedIndex switch { 1 => CoordinationRole.Radar, 2 => CoordinationRole.Tower, 3 => CoordinationRole.Monitor, _ => null };
-            Options.Code = CoordinationSettings.NormalizeCode(codeBox.Text);
-            codeBox.Text = Options.Code ?? "";
+            string? newAirport = airport.Length == 0 ? null : airport;
+            CoordinationRole? newRole = roleBox.SelectedIndex switch { 1 => CoordinationRole.Radar, 2 => CoordinationRole.Tower, 3 => CoordinationRole.Monitor, _ => null };
+            string? newCode = CoordinationSettings.NormalizeCode(codeBox.Text);
+            codeBox.Text = newCode ?? "";
+            // Nothing changed (e.g. focus left a box): no rejoin, the lights stay as they are.
+            if (newAirport == Options.Airport && newRole == Options.Role && newCode == Options.Code) return;
+            Options.Airport = newAirport;
+            Options.Role = newRole;
+            Options.Code = newCode;
             save();
             _ = Rejoin();
         }
