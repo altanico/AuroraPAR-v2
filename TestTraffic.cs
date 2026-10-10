@@ -334,9 +334,13 @@ namespace AuroraPAR
             // On the same Earth as the radar (Earth.Radius): on the centreline the radar shows exactly the distance given.
             double radius = Earth.Radius(runway);
             (double onLine, double onLineLon) = Earth.Destination(runway.Latitude, runway.Longitude, runway.Heading + 180, along, radius);
-            (double latitude, double longitude) = Earth.Destination(onLine, onLineLon, runway.Heading + 90, plane.Lateral, radius);
+            // Direction of the centreline at that point (it turns a little away from the threshold: meridian convergence),
+            // so the lateral step is square to it and the track is relative to it.
+            double toThreshold = Earth.Bearing(onLine, onLineLon, runway.Latitude, runway.Longitude);
+            double course = along > 0.001 ? toThreshold : along < -0.001 ? toThreshold + 180 : runway.Heading;
+            (double latitude, double longitude) = Earth.Destination(onLine, onLineLon, course + 90, plane.Lateral, radius);
             double altitude = runway.Elevation + plane.Height;
-            double track = (runway.Heading + plane.Track + 720) % 360;
+            double track = (course + plane.Track + 720) % 360;
             if (AuroraLike)
             {
                 // As Aurora: a new position every 0.4–0.65 s, a new altitude every 3 s; in between the last ones.

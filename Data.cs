@@ -35,6 +35,17 @@ namespace AuroraPAR
 
         public static double Radius(Runway runway) => Radius(runway.Latitude, runway.Heading);
 
+        /// <summary>Initial bearing (degrees true, 0–360) from a point to another, on a sphere.</summary>
+        public static double Bearing(double latitude1, double longitude1, double latitude2, double longitude2)
+        {
+            double phi1 = latitude1 * Math.PI / 180;
+            double phi2 = latitude2 * Math.PI / 180;
+            double deltaLambda = (longitude2 - longitude1) * Math.PI / 180;
+            double y = Math.Sin(deltaLambda) * Math.Cos(phi2);
+            double x = Math.Cos(phi1) * Math.Sin(phi2) - Math.Sin(phi1) * Math.Cos(phi2) * Math.Cos(deltaLambda);
+            return (Math.Atan2(y, x) * 180 / Math.PI + 360) % 360;
+        }
+
         /// <summary>Point at a distance (NM, may be negative) and initial bearing (degrees) from a point, on the sphere of the given radius.</summary>
         public static (double Latitude, double Longitude) Destination(double latitude, double longitude, double bearing, double distanceNM, double radius)
         {
