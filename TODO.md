@@ -29,6 +29,8 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **(Done, to be tested) CRSCalculator: pick airport and runway from `runways.par`.** Choose the file (remembered), the ICAO and the runway: threshold A is filled in, B too if the opposite end is in the file (otherwise you type B). Filter **Only runways without the opposite end** (default on). Results show what the file already contains. Confirmation before writing the file.
+
 - **(10 Oct) CRSCalculator: check of a whole runways.par** (button *Check a runways.par file...*): pairs the runways with the opposite ends, shows heading / length in the file and calculated, ticks to write (heading differing > 1° not ticked), writes only fields 3 and 7, keeps comments and line endings, `.bak`. In the self-test of the build. Check with the real file (LIRF lengths were all 1000).
 
 - **(10 Oct) FIAR style for all the analog keys**: *Settings → Analog controls → Keys: Console / FIAR* (per profile): tilt, DH, BRT, range keys, RWY, GP DEG, MODERN / COORD / SETUP as backlit keys (dim, the one in use bright), the groups in a gold frame with gold engraving. Check: text size on the small keys, pressed / latching look, switching style without restart.
