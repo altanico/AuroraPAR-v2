@@ -85,6 +85,17 @@ namespace AuroraPAR
         private int[] pixels = [];
         private int frame;
         private readonly float[] light = new float[LutSize + 1];
+        /// <summary>Beam limits of the last frame, and the previous ones after a tilt (kept a moment and faded out).</summary>
+        private struct Wedge
+        {
+            public double LowY, HighY, Weight;
+        }
+        private readonly List<(double LowY, double HighY, double Since)> trail = [];
+        private double lastLow = double.NaN, lastHigh, lastOriginX, lastOriginY, lastEndX, lastTrailTime = -1;
+        private const double TrailSpacing = 0.2;
+        private const double TrailSeconds = 0.7;
+        private const int TrailMax = 5;
+        private Wedge[] wedges = new Wedge[TrailMax + 1];
 
         public Image Element => image;
 
@@ -108,6 +119,23 @@ namespace AuroraPAR
                 Hide();
                 return;
             }
+            // Tilt: the picture stays a moment where the beam was and fades, it does not vanish at once.
+            if (!double.IsNaN(lastLow))
+            {
+                if (Math.Abs(f.OriginX - lastOriginX) > 0.5 || Math.Abs(f.OriginY - lastOriginY) > 0.5 || Math.Abs(f.EndX - lastEndX) > 0.5) trail.Clear();
+                else if ((Math.Abs(f.LowY - lastLow) > 0.5 || Math.Abs(f.HighY - lastHigh) > 0.5) && f.Time - lastTrailTime >= TrailSpacing)
+                {
+                    trail.Add((lastLow, lastHigh, f.Time));
+                    lastTrailTime = f.Time;
+                    if (trail.Count > TrailMax) trail.RemoveAt(0);
+                }
+            }
+            lastLow = f.LowY; lastHigh = f.HighY; lastOriginX = f.OriginX; lastOriginY = f.OriginY; lastEndX = f.EndX;
+            double now = f.Time;
+            trail.RemoveAll(t => Math.Exp(-(now - t.Since) / TrailSeconds) < 0.03);
+            int count = 0;
+            wedges[count++] = new Wedge { LowY = f.LowY, HighY = f.HighY, Weight = 1 };
+            foreach (var t in trail) wedges[count++] = new Wedge { LowY = t.LowY, HighY = t.HighY, Weight = Math.Exp(-(f.Time - t.Since) / TrailSeconds) };
             image.Visibility = Visibility.Visible;
             int w = (int)Math.Ceiling(f.Width / Pixel), h = (int)Math.Ceiling(f.Height / Pixel);
             if (bitmap == null || bitmap.PixelWidth != w || bitmap.PixelHeight != h)
@@ -127,10 +155,10 @@ namespace AuroraPAR
                 double p = -0.1 + 1.2 * i / LutSize;
                 light[i] = (float)ScanEffect.BeamLight(f.Time, f.Speed, f.Elevation, p, 0.6);
             }
-            // Rain is nearly static compared with an aircraft: the patches creep very slowly (no jumps), the dots stay.
+            // Rain is static compared with an aircraft: patches and dots do not move (only their light changes with the beam).
             int cycle = 0;
-            int driftX = (int)(f.Time * 0.15);
-            int driftY = (int)(f.Time * 0.05);
+            int driftX = 0;
+            int driftY = 0;
             double ratio = Tile / f.Width;
             double thr = 0.80 - 0.24 * f.Strength;
             double dotBase = 0.05 * f.Strength;
@@ -150,10 +178,14 @@ namespace AuroraPAR
                     double lx = (f.RunwayOnRight ? f.Width - sx : sx) - f.XShift;
                     double dx = lx - f.OriginX;
                     if (dx <= 1) continue;
-                    double y = f.OriginY + (ly - f.OriginY) * slope / dx;
-                    double p = (y - f.LowY) / (f.HighY - f.LowY);
-                    double edge = Math.Min(p, 1 - p);
-                    double mask = Math.Clamp((edge + EdgeFade) / (2 * EdgeFade), 0, 1);
+                    double mask = 0, p = 0;
+                    for (int g = 0; g < count; g++)
+                    {
+                        double y = f.OriginY + (ly - f.OriginY) * slope / dx;
+                        double pg = (y - wedges[g].LowY) / (wedges[g].HighY - wedges[g].LowY);
+                        double m = Math.Clamp((Math.Min(pg, 1 - pg) + EdgeFade) / (2 * EdgeFade), 0, 1) * wedges[g].Weight;
+                        if (m > mask) { mask = m; p = pg; }
+                    }
                     if (mask <= 0) continue;
                     int tx = ((int)(sx * ratio) + driftX) & (Tile - 1);
                     int ti = ty * Tile + tx;
@@ -167,7 +199,7 @@ namespace AuroraPAR
                     double a = (blob * f.Strength * 1.1 + dot);
                     if (a <= 0.01) continue;
                     double lit = light[Math.Clamp((int)((p + 0.1) / 1.2 * LutSize), 0, LutSize)];
-                    a = Math.Min(1, a * (0.45 + 0.9 * lit) * mask * gainFilter);
+                    a = Math.Min(1, a * (0.6 + 0.6 * lit) * mask * gainFilter);
                     if (a <= 0.01) continue;
                     int alpha = (int)(a * 235);
                     pixels[by * w + bx] = (alpha << 24)
