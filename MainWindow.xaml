@@ -93,6 +93,8 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Foreground" Value="#2A2622"/>
             <Setter Property="Focusable" Value="False"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -108,7 +110,7 @@
                                 </Border.Background>
                                 <Grid>
                                     <Border x:Name="Hover" CornerRadius="2" Background="White" Opacity="0" IsHitTestVisible="False"/>
-                                    <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" RecognizesAccessKey="False"/>
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="False"/>
                                 </Grid>
                             </Border>
                         </Grid>
@@ -121,8 +123,29 @@
                                 <Setter TargetName="Hover" Property="Background" Value="Black"/>
                                 <Setter TargetName="Hover" Property="Opacity" Value="0.2"/>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Lit">
+                                <Setter Property="Foreground" Value="#1D1A17"/>
+                                <Setter TargetName="Lens" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#FFF6E1" ShadowDepth="0" BlurRadius="12" Opacity="0.6"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Lens" Property="Background">
+                                    <Setter.Value>
+                                        <RadialGradientBrush Center="0.5,0.45" GradientOrigin="0.5,0.45" RadiusX="0.7" RadiusY="0.7">
+                                            <GradientStop Color="#FFFDF6" Offset="0"/>
+                                            <GradientStop Color="#F3ECE0" Offset="0.55"/>
+                                            <GradientStop Color="#D9CFC0" Offset="1"/>
+                                        </RadialGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
                             <Trigger Property="Tag" Value="Selected">
                                 <Setter Property="Foreground" Value="#1D1A17"/>
+                                <Setter TargetName="Lens" Property="Margin" Value="4,4,2,2"/>
                                 <Setter TargetName="Lens" Property="Effect">
                                     <Setter.Value>
                                         <DropShadowEffect Color="#FFF6E1" ShadowDepth="0" BlurRadius="12" Opacity="0.6"/>

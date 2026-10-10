@@ -328,6 +328,7 @@ The knobs always follow the real state, also when it is changed with the keyboar
 - **DH:** knob or keys **− RWY +** (10 ft steps; RWY = the runway value, lit when in use).
 - Tilt, DH and BRT keys **repeat while held** (0, RWY, 100 do not); the range keys step only once per press.
 - **BRT:** knob or keys **− 100 +** (100 lit at 100%).
+- **Keys:** the look of all the keys of the console (groups, RWY, GP DEG, MODERN / COORD / SETUP): **Console** (grey keys, default) or **FIAR** (backlit keys as on the FIAR console: all dimly lit, the one in use bright white; the groups in a thin gold frame).
 
 ### 9.4 Airport, runway and approach keys
 
@@ -547,7 +548,7 @@ Several lines with the same ICAO and designator and different glide path angles 
 
 A heading taken from the runway number or from the magnetic value on a chart is rounded, and a small error grows with the distance: **0.1° is about 48 m of lateral error at 15 NM** (0.3° is 145 m). **CRSCalculator** (download **CRSCalculator-win-x64.zip** from the same page as AuroraPAR, a small program of its own: `CRSCalculator.exe`) gives the heading from the coordinates of the two thresholds:
 
-1. Write the coordinates of **threshold A** (the landing threshold of the runway whose heading you want, as in the runway editor) and of **threshold B** (the other end, the threshold of the opposite runway), in any format of the editor; each on one line, latitude and longitude together. Use at least 6 decimals (or seconds with 2 decimals): the program shows the **precision** that the digits you wrote allow, and warns when it is too rough.
+1. Write the coordinates of **threshold A** (the landing threshold of the runway whose heading you want, as in the runway editor) and of **threshold B** (the other end, the threshold of the opposite runway), in any format of the editor: **latitude** and **longitude** each in its own box, as the two fields of `runways.par`. Pasting both together, or a whole line of `runways.par`, in the latitude box fills both boxes (so for B you can paste the line of the opposite runway). Use at least 6 decimals (or seconds with 2 decimals): the program shows the **precision** that the digits you wrote allow, and warns when it is too rough.
 2. **Heading for AuroraPAR** is the value to write in the *Runway heading* field of the editor (button **Copy**). It is calculated as AuroraPAR does (on a sphere), so that an aircraft on the extended centreline shows zero lateral offset on the radar. Below it the **true heading on the WGS84 ellipsoid**, as the charts give it (it differs by a tenth of a degree or so), and the values for the **opposite runway**.
 3. The **distance** between the thresholds, to compare with the published length (type it to get a check): a big difference means a wrong coordinate, a displaced threshold or the wrong end.
 4. The **magnetic variation now** at the runway, calculated with the World Magnetic Model (WMM2025, valid 2025-2029, accuracy about 0.3°), for today or another date, with its yearly change. The variation printed on the charts is updated only now and then, so it may differ; type the published one to see the **final course (CRS)** with both and decide which to use (the radar uses the variation of *Settings* or of the runway, [section 12.1](#121-runway-editor)).

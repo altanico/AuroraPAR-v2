@@ -117,6 +117,13 @@ namespace AuroraPAR
         Drums
     }
 
+    /// <summary>Look of the keys of the analog console: grey console keys, or backlit keys as on the FIAR console.</summary>
+    internal enum AnalogKeyStyle
+    {
+        Console,
+        Fiar
+    }
+
     /// <summary>Range of the analog console: a knob, one key per range, or keys down / preferred / up.</summary>
     internal enum AnalogRangeControl
     {
@@ -267,6 +274,8 @@ namespace AuroraPAR
         public AnalogControl BrightnessControl { get; set; } = AnalogControl.Knob;
         /// <summary>Readout windows of the analog console (airport, runway, course, ...): segments or drums.</summary>
         public ReadoutStyle Readouts { get; set; } = ReadoutStyle.Segments;
+        /// <summary>Look of all the keys of the analog console (groups, runway, approach, system keys).</summary>
+        public AnalogKeyStyle KeyStyle { get; set; } = AnalogKeyStyle.Console;
         /// <summary>
         /// Coasting tracks (modern display): seconds a track out of the beam is still shown at its estimated
         /// position (0 = hidden at once).
@@ -380,6 +389,7 @@ namespace AuroraPAR
             if (!Enum.IsDefined(DhControl)) DhControl = AnalogControl.Knob;
             if (!Enum.IsDefined(BrightnessControl)) BrightnessControl = AnalogControl.Knob;
             if (!Enum.IsDefined(Readouts)) Readouts = ReadoutStyle.Segments;
+            if (!Enum.IsDefined(KeyStyle)) KeyStyle = AnalogKeyStyle.Console;
             RangeDefaultKey = (RangeDefaultKey ?? "").Trim().ToUpperInvariant();
             if (RangeDefaultKey.Length > MaxRangeKeyText) RangeDefaultKey = RangeDefaultKey[..MaxRangeKeyText];
             if (RangeDefaultKey.Length == 0) RangeDefaultKey = "DEF";

@@ -376,7 +376,7 @@ namespace AuroraPAR
         {
             Profile profile = settings.Active;
             string ranges = string.Join(",", Ranges.Values);
-            string layout = $"{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.BrightnessControl}";
+            string layout = $"{profile.KeyStyle}|{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.BrightnessControl}";
             if (layout == analogControlsLayout) return;
             analogControlsLayout = layout;
             KnobPanel.Children.Clear();
@@ -469,7 +469,10 @@ namespace AuroraPAR
         private void AddKeyGroup(string title, (string Text, string Tip, Action Action, Func<bool>? Lit)[] keys, bool latching = false, bool repeat = false)
         {
             StackPanel group = new() { Margin = new Thickness(0, 4, 0, 6) };
-            group.Children.Add(new TextBlock { Text = title, Style = (Style)FindResource("EngravedLabel") });
+            bool fiar = FiarKeys;
+            TextBlock caption = new() { Text = title, Style = (Style)FindResource("EngravedLabel") };
+            if (fiar) caption.Foreground = PanelEngravingBrush;
+            group.Children.Add(caption);
             System.Windows.Controls.Primitives.UniformGrid grid = new() { Columns = 3 };
             foreach ((string text, string tip, Action action, Func<bool>? lit) in keys)
             {
@@ -481,15 +484,25 @@ namespace AuroraPAR
                 grid.Children.Add(key);
                 analogKeys.Add((key, lit, latching));
             }
-            group.Children.Add(new Border
-            {
-                Background = new SolidColorBrush(Color.FromRgb(0x1F, 0x20, 0x1D)),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(0x0E, 0x0F, 0x0D)),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(5),
-                Padding = new Thickness(0, 2, 0, 0),
-                Child = grid
-            });
+            group.Children.Add(fiar
+                // FIAR: keys in a thin gold frame, as on the panels of that console.
+                ? new Border
+                {
+                    BorderBrush = PanelFrameBrush,
+                    BorderThickness = new Thickness(1.5),
+                    CornerRadius = new CornerRadius(2),
+                    Padding = new Thickness(1, 3, 1, 1),
+                    Child = grid
+                }
+                : new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(0x1F, 0x20, 0x1D)),
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(0x0E, 0x0F, 0x0D)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(5),
+                    Padding = new Thickness(0, 2, 0, 0),
+                    Child = grid
+                });
             KnobPanel.Children.Add(group);
         }
 
@@ -536,6 +549,8 @@ namespace AuroraPAR
                 Button key = new()
                 {
                     Content = face,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    VerticalContentAlignment = VerticalAlignment.Stretch,
                     ToolTip = $"Range {value} NM" + (i == preferred ? " (preferred range, Settings → Display)." : ".") + " Keys Page up / Page down / End.",
                     Style = (Style)FindResource("PanelKey"),
                     Width = PanelKeyWidth,
@@ -690,10 +705,11 @@ namespace AuroraPAR
         private void UpdateAnalogButtons()
         {
             bool analog = viewOptions.Analog;
-            // Keys of the other mode: built again in the style of this one.
-            if (keysAnalog != analog)
+            // Keys of the other mode or key style: built again in the style of this one.
+            string keysLayout = $"{analog}|{settings.Active.KeyStyle}";
+            if (keysAnalog != keysLayout)
             {
-                keysAnalog = analog;
+                keysAnalog = keysLayout;
                 RunwayButtons.Children.Clear();
                 runwayButtons.Clear();
                 GlideButtons.Children.Clear();
@@ -740,8 +756,11 @@ namespace AuroraPAR
             }
         }
 
-        /// <summary>Mode the runway and glide path keys were built for.</summary>
-        private bool keysAnalog;
+        /// <summary>Mode and key style the runway and glide path keys were built for.</summary>
+        private string? keysAnalog;
+
+        /// <summary>Analog console keys in the FIAR style (profile).</summary>
+        private bool FiarKeys => settings.Active.KeyStyle == AnalogKeyStyle.Fiar;
 
         /// <summary>Runway or glide path key: square console key (analog) or flat key (modern display).</summary>
         private Button ConsoleKey(string text, string toolTip)
@@ -771,7 +790,7 @@ namespace AuroraPAR
         /// </summary>
         private void StyleAsKey(Button key, string text, double width = 45, double height = 48)
         {
-            key.Style = (Style)FindResource("ConsoleButton");
+            key.Style = (Style)FindResource(FiarKeys ? "PanelKey" : "ConsoleButton");
             key.Width = width;
             key.Height = height;
             key.Margin = new Thickness(2, 0, 2, 2);

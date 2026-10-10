@@ -29,6 +29,9 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **(10 Oct) FIAR style for all the analog keys**: *Settings → Analog controls → Keys: Console / FIAR* (per profile): tilt, DH, BRT, range keys, RWY, GP DEG, MODERN / COORD / SETUP as backlit keys (dim, the one in use bright), the groups in a gold frame with gold engraving. Check: text size on the small keys, pressed / latching look, switching style without restart.
+- **(10 Oct) CRSCalculator: latitude and longitude in separate boxes** (the user had put the latitude in A and the longitude in B, both red). A pair or a whole runways.par line pasted in the latitude box fills both. Check with LIRF.
+
 - **(10 Oct) Selectable display ranges up to 40 NM**: *Settings → Display → Ranges offered*, tick boxes 1, 2.5, 5, 10, 15, 20, 30, 40 (per profile, at least one; old and new profiles up to 20). Range box, knob, keys, Page up/down, wheel use only the ticked ones; preferred range not ticked → closest. Range marks at 30/40: every 5 NM with text. Check: knob with 8 positions, scope / altitude scale / echo at 40 NM, profile switch keeps the closest range.
 - **(10 Oct) Range panel (FIAR keys)**: *Settings → Analog controls → Range: Range panel (FIAR keys)*: two columns of square backlit keys (number over NM) in a gold frame, the range in use bright, dot on the preferred one, key back to the preferred range under them (its text = the middle key text). Check: fits the 100 px column with 8 ranges, pressed look, tooltips.
 - **(10 Oct) Panel code (optional) of the coordination panel**: *Options → Panel code* (+ New code), the same on all the panels of the group (AuroraPAR, AuroraCoord, phone page ⚙); part of the hashed channel name; empty = open channel as before; 🔒 in the status line; QR link carries it (`k=`). Check: PC↔PC with and without code, PC↔phone via QR, different codes do not link.

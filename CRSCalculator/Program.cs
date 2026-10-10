@@ -36,8 +36,14 @@ namespace AuroraPAR
         private static readonly Brush Amber = new SolidColorBrush(Color.FromRgb(0xB0, 0x60, 0x00));
         private static readonly Brush BadInput = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0xD7));
 
-        private readonly TextBox thresholdA = new() { Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
-        private readonly TextBox thresholdB = new() { Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
+        // Latitude and longitude of each threshold in their own boxes, as the two fields of runways.par.
+        private readonly TextBox latitudeA = CoordinateBox();
+        private readonly TextBox longitudeA = CoordinateBox();
+        private readonly TextBox latitudeB = CoordinateBox();
+        private readonly TextBox longitudeB = CoordinateBox();
+        private bool splitting;
+
+        private static TextBox CoordinateBox() => new() { Width = 270, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
         private readonly TextBox lengthBox = new() { Width = 110, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
         private readonly TextBox variationBox = new() { Width = 110, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
         private readonly TextBox dateBox = new() { Width = 110, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
@@ -57,12 +63,12 @@ namespace AuroraPAR
             {
             }
             StackPanel root = new() { Margin = new Thickness(14), Width = 560 };
-            root.Children.Add(Note("Heading of a runway from the coordinates of its two thresholds, for the Runways editor of AuroraPAR (true heading) and to check the final course (CRS) against the charts. Coordinates in any format: 40.232271 18.139080, N040 13.9 E018 08.3, 401357N 0180821E ... Use the thresholds of the landing runways and at least 6 decimals (or seconds with 2 decimals)."));
+            root.Children.Add(Note("Heading of a runway from the coordinates of its two thresholds, for the Runways editor of AuroraPAR (true heading) and to check the final course (CRS) against the charts. Coordinates in any format: 40.232271, N040 13.9, 401357N, 0180821E ... (the same as the LATITUDE and LONGITUDE fields of runways.par). Use the thresholds of the landing runways and at least 6 decimals (or seconds with 2 decimals). Pasting both coordinates, or a whole line of runways.par, in the latitude box fills both boxes."));
 
             root.Children.Add(Caption("Threshold A: the runway whose heading you want (the aircraft lands from here)"));
-            root.Children.Add(thresholdA);
+            root.Children.Add(CoordinateRow(latitudeA, longitudeA));
             root.Children.Add(Caption("Threshold B: the other end of the runway (the threshold of the opposite runway)"));
-            root.Children.Add(thresholdB);
+            root.Children.Add(CoordinateRow(latitudeB, longitudeB));
 
             StackPanel options = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
             options.Children.Add(Field("Published length (optional, m or ft):", lengthBox, "For example 3000 or 9843ft: the distance between the thresholds is compared with it."));
@@ -73,10 +79,12 @@ namespace AuroraPAR
             root.Children.Add(results);
             Content = root;
 
-            foreach (TextBox box in new[] { thresholdA, thresholdB, lengthBox, variationBox, dateBox })
+            foreach (TextBox box in new[] { latitudeA, longitudeA, latitudeB, longitudeB, lengthBox, variationBox, dateBox })
             {
                 box.TextChanged += (s, e) => Recalculate();
             }
+            latitudeA.TextChanged += (s, e) => Split(latitudeA, longitudeA);
+            latitudeB.TextChanged += (s, e) => Split(latitudeB, longitudeB);
             Recalculate();
         }
 
@@ -88,6 +96,50 @@ namespace AuroraPAR
             FontSize = 11.5,
             Margin = new Thickness(0, 0, 0, 8)
         };
+
+        private static FrameworkElement CoordinateRow(TextBox latitude, TextBox longitude)
+        {
+            StackPanel row = new() { Orientation = Orientation.Horizontal };
+            foreach ((string caption, TextBox box) in new[] { ("Latitude", latitude), ("Longitude", longitude) })
+            {
+                StackPanel field = new() { Margin = new Thickness(0, 0, 14, 0) };
+                field.Children.Add(new TextBlock { Text = caption, FontSize = 11.5, Foreground = Gray });
+                field.Children.Add(box);
+                row.Children.Add(field);
+            }
+            return row;
+        }
+
+        /// <summary>
+        /// Both coordinates (or a whole line of runways.par: its fields 5 and 6) pasted in the latitude box: the
+        /// longitude goes to its own box.
+        /// </summary>
+        private void Split(TextBox latitude, TextBox longitude)
+        {
+            if (splitting) return;
+            string text = latitude.Text.Trim();
+            string? lat = null;
+            string? lon = null;
+            string[] fields = text.Split(';');
+            if (fields.Length >= 6 && CoordinateParser.TryParse(fields[4], true, out _) && CoordinateParser.TryParse(fields[5], false, out _))
+            {
+                lat = fields[4].Trim();
+                lon = fields[5].Trim();
+            }
+            else if (!CoordinateParser.TryParse(text, true, out _)
+                && CoordinateParser.TryParsePair(text, out _, out _, out string latText, out string lonText))
+            {
+                lat = latText;
+                lon = lonText;
+            }
+            if (lat == null || lon == null) return;
+            splitting = true;
+            latitude.Text = lat;
+            longitude.Text = lon;
+            latitude.CaretIndex = lat.Length;
+            splitting = false;
+            Recalculate();
+        }
 
         private static TextBlock Caption(string text) => new() { Text = text, Margin = new Thickness(0, 8, 0, 2) };
 
@@ -134,13 +186,13 @@ namespace AuroraPAR
         private void Recalculate()
         {
             results.Children.Clear();
-            bool a = CoordinateParser.TryParsePair(thresholdA.Text, out double latA, out double lonA, out string latTextA, out string lonTextA);
-            bool b = CoordinateParser.TryParsePair(thresholdB.Text, out double latB, out double lonB, out string latTextB, out string lonTextB);
-            thresholdA.Background = a || string.IsNullOrWhiteSpace(thresholdA.Text) ? Brushes.White : BadInput;
-            thresholdB.Background = b || string.IsNullOrWhiteSpace(thresholdB.Text) ? Brushes.White : BadInput;
+            if (splitting) return;
+            bool a = Coordinate(latitudeA, true, out double latA) & Coordinate(longitudeA, false, out double lonA);
+            bool b = Coordinate(latitudeB, true, out double latB) & Coordinate(longitudeB, false, out double lonB);
+            string latTextA = latitudeA.Text, lonTextA = longitudeA.Text, latTextB = latitudeB.Text, lonTextB = longitudeB.Text;
             if (!a || !b)
             {
-                results.Children.Add(Note("Write the latitude and longitude of the two thresholds."));
+                results.Children.Add(Note("Write the latitude and the longitude of the two thresholds (red: not a valid coordinate; e.g. 41.845923 for a latitude, 12.261522 or 0121541E for a longitude)."));
                 return;
             }
             (double distance, double azimuth1, double azimuth2) = Geodesic.Inverse(latA, lonA, latB, lonB);
@@ -158,7 +210,7 @@ namespace AuroraPAR
             Add("Heading for AuroraPAR (Runways editor: true heading)", $"{Number(radar)}°", Number(radar), null,
                 "Calculated as AuroraPAR does, on a sphere: with this value an aircraft on the extended centreline has zero lateral offset on the radar.");
             Add("True heading on the WGS84 ellipsoid, as the charts give it", $"{Number(heading)}°", Number(heading), null,
-                $"Differs from the radar value by {Number(Math.Abs(((heading - radar + 540) % 360) - 180))}°: AuroraPAR does not use an ellipsoid.");
+                $"Differs from the radar value by {Number(Math.Abs(((heading - radar + 540) % 360) - 180))}°: AuroraPAR measures the angles on a sphere.");
             Add("Opposite runway (heading for AuroraPAR · ellipsoid)", $"{Number(radarReverse)}° · {Number(reverse)}°", Number(radarReverse));
 
             // Distance and length.
@@ -210,6 +262,14 @@ namespace AuroraPAR
                 courseNote += " The published variation was not understood (write for example 3E or 2.5W).";
             }
             Add("Final course (CRS), magnetic", course, null, null, courseNote);
+        }
+
+        /// <summary>Reads one coordinate box (red when written but not valid).</summary>
+        private static bool Coordinate(TextBox box, bool latitude, out double value)
+        {
+            bool ok = CoordinateParser.TryParse(box.Text, latitude, out value);
+            box.Background = ok || string.IsNullOrWhiteSpace(box.Text) ? Brushes.White : BadInput;
+            return ok;
         }
 
         private static double HeadingError(double latitude, string latText, string lonText, double distance)

@@ -173,6 +173,7 @@ namespace AuroraPAR
                 DhControlComboBox.SelectedIndex = (int)Active.DhControl;
                 BrightnessControlComboBox.SelectedIndex = (int)Active.BrightnessControl;
                 ReadoutsComboBox.SelectedIndex = (int)Active.Readouts;
+                KeyStyleComboBox.SelectedIndex = (int)Active.KeyStyle;
                 RunwayLeftRadio.IsChecked = Active.RunwaySide == RunwaySide.Left;
                 RunwayRightRadio.IsChecked = Active.RunwaySide == RunwaySide.Right;
                 StartRangeLastRadio.IsChecked = Active.StartupRange == StartupRange.LastUsed;
@@ -336,6 +337,13 @@ namespace AuroraPAR
             DhControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  RWY  +)" };
             BrightnessControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  100  +)" };
             ReadoutsComboBox.ItemsSource = new[] { "Segments (amber)", "Drums (mechanical counters)" };
+            KeyStyleComboBox.ItemsSource = new[] { "Console (grey keys)", "FIAR (backlit keys)" };
+            KeyStyleComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || KeyStyleComboBox.SelectedIndex < 0) return;
+                AnalogKeyStyle value = (AnalogKeyStyle)KeyStyleComboBox.SelectedIndex;
+                SetProfileValue(p => p.KeyStyle == value, p => p.KeyStyle = value);
+            };
             ReadoutsComboBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || ReadoutsComboBox.SelectedIndex < 0) return;
