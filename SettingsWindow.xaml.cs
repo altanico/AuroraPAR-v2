@@ -63,7 +63,7 @@ namespace AuroraPAR
             AnalogRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Analog, p => p.DisplayMode = DisplayMode.Analog);
             LockModeCheck.Checked += (s, e) => SetProfileValue(p => p.LockDisplayMode, p => p.LockDisplayMode = true);
             LockModeCheck.Unchecked += (s, e) => SetProfileValue(p => !p.LockDisplayMode, p => p.LockDisplayMode = false);
-            DhSideComboBox.ItemsSource = new[] { "left", "right", "both" };
+            DhSideComboBox.ItemsSource = new[] { "left", "right", "both", "none" };
             DhSideComboBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || DhSideComboBox.SelectedIndex < 0) return;
@@ -84,7 +84,7 @@ namespace AuroraPAR
                 double value = DhAzimuthLengths[DhAzimuthLengthComboBox.SelectedIndex];
                 SetProfileValue(p => p.DhAzimuthLength == value, p => p.DhAzimuthLength = value);
             };
-            DhDropSideComboBox.ItemsSource = new[] { "down", "up", "both" };
+            DhDropSideComboBox.ItemsSource = new[] { "down", "up", "both", "none" };
             DhDropSideComboBox.SelectionChanged += (s, e) =>
             {
                 if (refreshing || DhDropSideComboBox.SelectedIndex < 0) return;

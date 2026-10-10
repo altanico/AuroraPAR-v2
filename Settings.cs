@@ -191,10 +191,10 @@ namespace AuroraPAR
     /// profiles saved by older versions simply get the default for the missing ones.
     /// </summary>
     /// <summary>Where the horizontal DH line goes from the point where the glide path reaches the DH (side of the screen).</summary>
-    internal enum DhHorizontalSide { Left, Right, Both }
+    internal enum DhHorizontalSide { Left, Right, Both, None }
 
     /// <summary>Where the vertical DH line goes from that point.</summary>
-    internal enum DhVerticalSide { Down, Up, Both }
+    internal enum DhVerticalSide { Down, Up, Both, None }
 
     internal class Profile
     {
