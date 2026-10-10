@@ -47,6 +47,12 @@ namespace AuroraPAR
         public string? Airport { get; set; }
         /// <summary>Role chosen by hand; null: from the callsign (_TWR = tower, anything else = radar).</summary>
         public CoordinationRole? Role { get; set; }
+        /// <summary>
+        /// Panel code (optional): a secret shared by the panels of a group, part of the channel name, so that only who
+        /// knows it can join. Null: the open channel of the airport (as before).
+        /// </summary>
+        public string? Code { get; set; }
+        public const int MaxCodeLength = 12;
         /// <summary>Colours of the five lights and of the reset button.</summary>
         public string[] Colors { get; set; } = (string[])DefaultColors.Clone();
         public static readonly string[] DefaultLabels = ["", "", "", "", "", "RESET"];
@@ -69,6 +75,7 @@ namespace AuroraPAR
             List<string> query = [];
             if (airport != null) query.Add("apt=" + Uri.EscapeDataString(airport));
             if (role != null) query.Add("role=" + role.Value.ToString().ToLowerInvariant());
+            if (Code != null) query.Add("k=" + Code);
             query.Add("c=" + string.Join(",", Colors.Select(c => ColorText.ToHex(ColorText.Parse(c, System.Windows.Media.Colors.White)).TrimStart('#'))));
             query.Add("l=" + string.Join(",", Labels.Select(Uri.EscapeDataString)));
             query.Add("s=" + (Sound == CoordinationSound.OtherSide ? "other" : "every"));
@@ -94,7 +101,23 @@ namespace AuroraPAR
                 if (Airport.Length == 0) Airport = null;
             }
             if (Role is CoordinationRole role && !Enum.IsDefined(role)) Role = null;
+            Code = NormalizeCode(Code);
             if (!Enum.IsDefined(Sound)) Sound = CoordinationSound.EveryPress;
+        }
+
+        /// <summary>Panel code as used in the channel: letters and digits only, upper case, at most 12; null when empty.</summary>
+        public static string? NormalizeCode(string? code)
+        {
+            string text = new string((code ?? "").ToUpperInvariant().Where(c => c is >= 'A' and <= 'Z' or >= '0' and <= '9').ToArray());
+            if (text.Length > MaxCodeLength) text = text[..MaxCodeLength];
+            return text.Length == 0 ? null : text;
+        }
+
+        /// <summary>A new random panel code: 6 letters and digits, without the ones easy to confuse (0/O, 1/I/L).</summary>
+        public static string GenerateCode()
+        {
+            const string alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+            return new string(Enumerable.Range(0, 6).Select(_ => alphabet[System.Security.Cryptography.RandomNumberGenerator.GetInt32(alphabet.Length)]).ToArray());
         }
 
         /// <summary>
@@ -244,30 +267,37 @@ namespace AuroraPAR
 
         public bool Connected => client?.IsConnected == true;
         public string? Airport { get; private set; }
+        /// <summary>Panel code of the channel joined (null: the open channel of the airport).</summary>
+        public string? Code { get; private set; }
 
-        /// <summary>Channel of an airport: a name that is not trivial to guess, the same for both sides.</summary>
-        private static string ChannelOf(string airport)
+        /// <summary>
+        /// Channel of an airport: a name that is not trivial to guess, the same for both sides. With a panel code the
+        /// code is part of the hashed text, so the channel cannot be computed without it.
+        /// </summary>
+        private static string ChannelOf(string airport, string? code)
         {
-            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes("AuroraPAR coordination panel " + airport));
+            string text = "AuroraPAR coordination panel " + airport + (code == null ? "" : " " + code);
+            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(text));
             return $"aurorapar/coord/v1/{airport}-{Convert.ToHexString(hash)[..16].ToLowerInvariant()}";
         }
 
         /// <summary>
-        /// Joins the channel of an airport with a role (or leaves when <paramref name="airport"/> is null).
-        /// Reconnects by itself while joined.
+        /// Joins the channel of an airport with a role (or leaves when <paramref name="airport"/> is null), with the
+        /// panel code if any. Reconnects by itself while joined.
         /// </summary>
-        public async Task Join(string? airport, CoordinationRole newRole)
+        public async Task Join(string? airport, CoordinationRole newRole, string? code = null)
         {
             await gate.WaitAsync();
             try
             {
-                if (airport == Airport && newRole == role && (airport == null || Connected)) return;
+                if (airport == Airport && newRole == role && code == Code && (airport == null || Connected)) return;
                 await DisconnectInternal();
                 Airport = airport;
+                Code = code;
                 role = newRole;
-                channel = airport == null ? null : ChannelOf(airport);
+                channel = airport == null ? null : ChannelOf(airport, code);
                 brokerIndex = 0;
-                Log(airport == null ? "Leave: no airport / role" : $"Join {airport} as {newRole}");
+                Log(airport == null ? "Leave: no airport / role" : $"Join {airport} as {newRole}{(code == null ? "" : " with a panel code")}");
                 PresenceChanged?.Invoke(CoordinationRole.Radar, false);
                 PresenceChanged?.Invoke(CoordinationRole.Tower, false);
                 if (channel != null) await ConnectInternal();

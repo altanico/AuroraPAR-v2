@@ -58,7 +58,7 @@ namespace AuroraPAR
     }
 
     /// <summary>
-    /// Range marks for every display range (see <see cref="Ranges.Values"/>).
+    /// Range marks for every display range (see <see cref="Ranges.All"/>).
     /// </summary>
     /// <summary>How the distance is written under the range marks.</summary>
     internal enum DistanceTextFormat
@@ -80,11 +80,11 @@ namespace AuroraPAR
         public const int MinTextSize = 10;
         public const int MaxTextSize = 18;
 
-        /// <summary>Default marks: every 2 NM at 20 NM, every NM at 15 and 10, NM and half miles at 5, quarter miles at 2.5 and 1.</summary>
+        /// <summary>Default marks: every 5 NM at 30 and 40 NM, every 2 NM at 20 NM, every NM at 15 and 10, NM and half miles at 5, quarter miles at 2.5 and 1.</summary>
         public static RangeMarkSettings Default()
         {
             RangeMarkSettings settings = new();
-            foreach (double range in Ranges.Values)
+            foreach (double range in Ranges.All)
             {
                 settings.Rows.Add(DefaultRow(range));
             }
@@ -95,6 +95,7 @@ namespace AuroraPAR
         {
             return range switch
             {
+                >= 30 => new() { Range = range, Lines = [MarkInterval.Five], Text = MarkInterval.Five },
                 >= 20 => new() { Range = range, Lines = [MarkInterval.Two], Text = MarkInterval.Two },
                 >= 10 => new() { Range = range, Lines = [MarkInterval.One], Text = MarkInterval.One },
                 >= 5 => new() { Range = range, Lines = [MarkInterval.One, MarkInterval.Half], Text = MarkInterval.One },
@@ -115,7 +116,7 @@ namespace AuroraPAR
             if (!Enum.IsDefined(TextFormat)) TextFormat = DistanceTextFormat.Decimal;
             TextSize = TextSize <= 0 ? DefaultTextSize : Math.Clamp(Math.Round(TextSize), MinTextSize, MaxTextSize);
             List<RangeMarkRow> rows = [];
-            foreach (double range in Ranges.Values)
+            foreach (double range in Ranges.All)
             {
                 RangeMarkRow? row = Rows.FirstOrDefault(r => r != null && Math.Abs(r.Range - range) < 0.01);
                 if (row == null)

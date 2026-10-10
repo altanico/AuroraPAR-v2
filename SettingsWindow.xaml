@@ -47,6 +47,10 @@
                     <ComboBox Name="FixedRangeComboBox" Width="80" Margin="8,0,0,0"/>
                     <TextBlock Text="NM" VerticalAlignment="Center" Margin="6,0,0,0"/>
                 </StackPanel>
+                <TextBlock Text="Ranges offered (NM)" Margin="0,10,0,0"
+                           ToolTip="The range box, knob and keys, Page up / Page down and the mouse wheel step only through the ticked ranges (at least one)."/>
+                <WrapPanel Name="RangeChecksPanel" Margin="0,6,0,0"
+                           ToolTip="The range box, knob and keys, Page up / Page down and the mouse wheel step only through the ticked ranges (at least one)."/>
                 <TextBlock Text="Range at start" Margin="0,10,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <RadioButton Name="StartRangeLastRadio" GroupName="StartRange" Content="Last used" Margin="0,0,16,0"/>
@@ -119,7 +123,7 @@
                     <TextBlock Text="Range:" VerticalAlignment="Center"/>
                     <ComboBox Name="RangeControlComboBox" Grid.Column="1" Width="170" Margin="8,2,0,2"/>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0"
-                                ToolTip="Text of the middle key (back to the preferred range of the Display settings), at most 5 characters.">
+                                ToolTip="Text of the key back to the preferred range of the Display settings (middle key, or the key under the range panel), at most 5 characters.">
                         <TextBlock Text="middle key:" VerticalAlignment="Center"/>
                         <TextBox Name="RangeKeyTextBox" Width="52" Height="22" Margin="6,0,0,0" MaxLength="5" CharacterCasing="Upper" VerticalContentAlignment="Center"/>
                     </StackPanel>

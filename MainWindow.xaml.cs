@@ -51,7 +51,8 @@ namespace AuroraPAR
         private static readonly Brush PanelTextBrush = CreateFrozenBrush(Color.FromRgb(0xD8, 0xD8, 0xD0));
         private readonly Brush glassBrush = ScopeBezel.CreateGlassBrush();
         private readonly Aurora aurora;
-        private readonly Distance[] distances = Ranges.Values.Select(v => (Distance)v).ToArray();
+        /// <summary>Ranges of the range box (those ticked in the active profile, see <see cref="ApplyRanges"/>).</summary>
+        private Distance[] distances = Ranges.Values.Select(v => (Distance)v).ToArray();
         /// <summary>
         /// Runway file, next to the program (not in the current directory, which depends on how the program is started).
         /// </summary>
@@ -374,7 +375,8 @@ namespace AuroraPAR
         private void BuildAnalogControls()
         {
             Profile profile = settings.Active;
-            string layout = $"{profile.RangeControl}|{profile.RangeDefaultKey}|{profile.TiltControl}|{profile.DhControl}|{profile.BrightnessControl}";
+            string ranges = string.Join(",", Ranges.Values);
+            string layout = $"{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.BrightnessControl}";
             if (layout == analogControlsLayout) return;
             analogControlsLayout = layout;
             KnobPanel.Children.Clear();
@@ -386,6 +388,9 @@ namespace AuroraPAR
                     AddKeyGroup("RANGE NM", Ranges.Values.Select((value, i) => (
                         value.ToString(invariant), $"Range {value.ToString(invariant)} NM",
                         (Action)(() => SetRangeIndex(i)), (Func<bool>?)(() => DistanceComboBox.SelectedIndex == i))).ToArray(), latching: true);
+                    break;
+                case AnalogRangeControl.PanelKeys:
+                    AddRangePanel(profile);
                     break;
                 case AnalogRangeControl.StepKeys:
                     AddKeyGroup("RANGE NM",
@@ -488,6 +493,85 @@ namespace AuroraPAR
             KnobPanel.Children.Add(group);
         }
 
+        /// <summary>Range keys of the FIAR panel style.</summary>
+        private const double PanelKeyWidth = 36;
+        private const double PanelKeyHeight = 40;
+        private static readonly Brush PanelFrameBrush = CreateFrozenBrush(Color.FromRgb(0xB8, 0xA0, 0x4A));
+        private static readonly Brush PanelEngravingBrush = CreateFrozenBrush(Color.FromRgb(0xC9, 0xB4, 0x6A));
+
+        /// <summary>
+        /// Range keys as on the FIAR console: two columns of large square keys (number over NM) in a gold frame, the
+        /// range in use bright, a dot on the preferred one; under them the key back to the preferred range.
+        /// </summary>
+        private void AddRangePanel(Profile profile)
+        {
+            System.Globalization.CultureInfo invariant = System.Globalization.CultureInfo.InvariantCulture;
+            StackPanel group = new() { Margin = new Thickness(0, 4, 0, 6) };
+            TextBlock title = new() { Text = "RANGE", Style = (Style)FindResource("EngravedLabel"), HorizontalAlignment = HorizontalAlignment.Center };
+            title.Foreground = PanelEngravingBrush;
+            group.Children.Add(title);
+            System.Windows.Controls.Primitives.UniformGrid grid = new() { Columns = 2 };
+            int preferred = Ranges.IndexOfClosest(profile.PreferredRange);
+            for (int i = 0; i < Ranges.Values.Length; i++)
+            {
+                int index = i;
+                string value = Ranges.Values[i].ToString(invariant);
+                Grid face = new();
+                StackPanel lines = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 2) };
+                lines.Children.Add(new TextBlock { Text = value, FontSize = value.Length > 2 ? 13 : 15, HorizontalAlignment = HorizontalAlignment.Center });
+                lines.Children.Add(new TextBlock { Text = "NM", FontSize = 10, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, -3, 0, 0) });
+                face.Children.Add(lines);
+                if (i == preferred)
+                {
+                    face.Children.Add(new System.Windows.Shapes.Ellipse
+                    {
+                        Width = 4,
+                        Height = 4,
+                        Fill = CreateFrozenBrush(Color.FromRgb(0x2A, 0x26, 0x22)),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                        Margin = new Thickness(0, 0, 0, 2)
+                    });
+                }
+                Button key = new()
+                {
+                    Content = face,
+                    ToolTip = $"Range {value} NM" + (i == preferred ? " (preferred range, Settings → Display)." : ".") + " Keys Page up / Page down / End.",
+                    Style = (Style)FindResource("PanelKey"),
+                    Width = PanelKeyWidth,
+                    Height = PanelKeyHeight,
+                    Margin = new Thickness(2)
+                };
+                key.Click += (s, e) => SetRangeIndex(index);
+                grid.Children.Add(key);
+                analogKeys.Add((key, () => DistanceComboBox.SelectedIndex == index, true));
+            }
+            group.Children.Add(new Border
+            {
+                BorderBrush = PanelFrameBrush,
+                BorderThickness = new Thickness(1.5),
+                CornerRadius = new CornerRadius(2),
+                Padding = new Thickness(2, 3, 2, 3),
+                Margin = new Thickness(0, 2, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Child = grid
+            });
+            Button back = new()
+            {
+                Content = new TextBlock { Text = profile.RangeDefaultKey, FontSize = 13, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+                ToolTip = "Back to the preferred range (Settings → Display) (key End).",
+                Style = (Style)FindResource("PanelKey"),
+                Width = 64,
+                Height = 26,
+                Margin = new Thickness(0, 6, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            back.Click += (s, e) => SetRangeIndex(Ranges.IndexOfClosest(settings.Active.PreferredRange));
+            group.Children.Add(back);
+            analogKeys.Add((back, null, false));
+            KnobPanel.Children.Add(group);
+        }
+
         /// <summary>The key acts when pressed, then again after 0.45 s and every 0.12 s while held.</summary>
         private static void MakeRepeating(Button key, Action action)
         {
@@ -520,6 +604,23 @@ namespace AuroraPAR
             {
                 key.Tag = lit?.Invoke() == true ? (latching ? "Selected" : "Lit") : "Unlit";
             }
+        }
+
+        /// <summary>
+        /// Ranges ticked in the profile: the range box, knob and keys offer only these; the range in use moves to the
+        /// closest one when it is no longer ticked.
+        /// </summary>
+        private void ApplyRanges(Profile profile)
+        {
+            double[] values = Ranges.Of(profile.DisplayRanges);
+            if (distances.Select(d => (double)d).SequenceEqual(values)) return;
+            double current = DistanceComboBox.SelectedItem is Distance selected ? selected : runway.Distance;
+            Ranges.Values = values;
+            distances = values.Select(v => (Distance)v).ToArray();
+            rangeKnob.Positions = values.Length;
+            rangeKnob.InvalidateVisual();
+            DistanceComboBox.ItemsSource = distances;
+            DistanceComboBox.SelectedIndex = IndexOfDistance(current);
         }
 
         private void SetRangeIndex(int index)
@@ -1812,6 +1913,7 @@ namespace AuroraPAR
         {
             Profile profile = settings.Active;
             radar.ApplyProfile(profile);
+            ApplyRanges(profile);
             viewOptions.Qfe = profile.PressureReference == PressureReference.QFE;
             bool analog = profile.DisplayMode == DisplayMode.Analog;
             viewOptions.Analog = analog;

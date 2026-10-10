@@ -85,6 +85,64 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Analog: range keys as on the FIAR console (one key per range): a lens backlit all the time, dim; the range in
+             use (Tag "Selected") bright warm white. -->
+        <Style x:Key="PanelKey" TargetType="Button">
+            <Setter Property="FontFamily" Value="./Fonts/#Barlow Condensed"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#2A2622"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root" SnapsToDevicePixels="True">
+                            <Border CornerRadius="3" Background="#0B0B0A" BorderBrush="#333331" BorderThickness="1"/>
+                            <Border x:Name="Lens" CornerRadius="2" Margin="3">
+                                <Border.Background>
+                                    <RadialGradientBrush Center="0.5,0.45" GradientOrigin="0.5,0.45" RadiusX="0.7" RadiusY="0.7">
+                                        <GradientStop Color="#8A847B" Offset="0"/>
+                                        <GradientStop Color="#6F6A63" Offset="0.6"/>
+                                        <GradientStop Color="#5A5550" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Border.Background>
+                                <Grid>
+                                    <Border x:Name="Hover" CornerRadius="2" Background="White" Opacity="0" IsHitTestVisible="False"/>
+                                    <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" RecognizesAccessKey="False"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hover" Property="Opacity" Value="0.08"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Lens" Property="Margin" Value="4,5,2,1"/>
+                                <Setter TargetName="Hover" Property="Background" Value="Black"/>
+                                <Setter TargetName="Hover" Property="Opacity" Value="0.2"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter Property="Foreground" Value="#1D1A17"/>
+                                <Setter TargetName="Lens" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#FFF6E1" ShadowDepth="0" BlurRadius="12" Opacity="0.6"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Lens" Property="Background">
+                                    <Setter.Value>
+                                        <RadialGradientBrush Center="0.5,0.45" GradientOrigin="0.5,0.45" RadiusX="0.7" RadiusY="0.7">
+                                            <GradientStop Color="#FFFDF6" Offset="0"/>
+                                            <GradientStop Color="#F3ECE0" Offset="0.55"/>
+                                            <GradientStop Color="#D9CFC0" Offset="1"/>
+                                        </RadialGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Modern display: flat keys of a PC program (runway and glide path keys); Tag "Lit" = the one in use. -->
         <Style x:Key="ModernKey" TargetType="Button">
             <Setter Property="FontFamily" Value="Segoe UI"/>

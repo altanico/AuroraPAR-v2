@@ -48,29 +48,29 @@
   #stage { flex: 1; position: relative; }
   #plate {
     position: absolute; border-radius: 12px; border: 1px solid #111110;
-    background: linear-gradient(180deg, #3A3C37, #282A26);
+    background: linear-gradient(180deg, #242522, #151614);
   }
   .screw {
     position: absolute; width: 14px; height: 14px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #E0E0D8, #55564F); border: 1px solid #222220;
+    background: radial-gradient(circle at 35% 30%, #9A9A94, #3A3B37); border: 1px solid #111110;
   }
   .screw::after {
     content: ""; position: absolute; left: 2px; right: 2px; top: 5.5px; height: 2px;
     background: #333330; transform: rotate(-30deg);
   }
-  .groove { position: absolute; background: #151614; box-shadow: 1px 1px 0 #4A4C47; }
+  .groove { position: absolute; background: #0A0A09; box-shadow: 1px 1px 0 #34352F; }
   .lamp {
-    position: absolute; border-radius: 17%; border: 1px solid #101010; cursor: pointer;
-    background: linear-gradient(135deg, #C4C6C0, #3E403B);
+    position: absolute; border-radius: 10%; border: 1px solid #050505; cursor: pointer;
+    background: linear-gradient(135deg, #3A3A38, #0E0E0D);
     transition: transform 60ms;
   }
   .lamp.pressed { transform: scale(0.96); }
   .lens {
-    position: absolute; inset: 10%; border-radius: 12%; border: 2px solid #080808; overflow: hidden;
+    position: absolute; inset: 10%; border-radius: 8%; border: 2px solid #050505; overflow: hidden;
   }
   .lens::after {
-    content: ""; position: absolute; left: 8%; right: 8%; top: 6%; height: 16%; border-radius: 999px;
-    background: rgba(255, 255, 255, 0.25);
+    content: ""; position: absolute; left: 8%; right: 8%; top: 6%; height: 13%; border-radius: 6px;
+    background: rgba(255, 255, 255, 0.19);
   }
   .engraving {
     position: absolute; text-align: center; font-family: "B612", system-ui, sans-serif; font-weight: 700;
@@ -138,7 +138,9 @@
       <option value="every">At every press, on both panels</option>
       <option value="other">Only for the presses of the other side</option>
     </select>
-    <div class="hint">The panel links with the AuroraPAR / AuroraCoord panels of the same airport. Tower: the tower side. Radar: the radar side (also as an extra panel next to AuroraPAR). Monitor: sees the lights and who is online, cannot press anything.</div>
+    <label for="code">Panel code (optional)</label>
+    <input id="code" type="text" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="none">
+    <div class="hint">The panel links with the AuroraPAR / AuroraCoord panels of the same airport. Tower: the tower side. Radar: the radar side (also as an extra panel next to AuroraPAR). Monitor: sees the lights and who is online, cannot press anything. Panel code: the same code as on the other panels (empty: the open channel of the airport).</div>
     <div class="error" id="error"></div>
 
     <h2>Buttons: colour and engraved text (the last one is reset)</h2>
@@ -172,13 +174,14 @@ const clientId = "aurorapar-web-" + Math.random().toString(16).slice(2, 14);
 
 // ---------- Settings ----------
 function defaults() {
-  return { airport: "", role: "Tower", colors: DEFAULT_COLORS.slice(), labels: DEFAULT_LABELS.slice(), sound: "every", query: "" };
+  return { airport: "", role: "Tower", code: "", colors: DEFAULT_COLORS.slice(), labels: DEFAULT_LABELS.slice(), sound: "every", query: "" };
 }
 function normalize(s) {
   const d = defaults();
   s = Object.assign(d, s || {});
   s.airport = String(s.airport || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
   if (!ROLES.includes(s.role)) s.role = "Tower";
+  s.code = String(s.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
   if (!Array.isArray(s.colors) || s.colors.length !== 6) s.colors = DEFAULT_COLORS.slice();
   s.colors = s.colors.map((c, i) => /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toUpperCase() : DEFAULT_COLORS[i]);
   if (!Array.isArray(s.labels) || s.labels.length !== 6) s.labels = DEFAULT_LABELS.slice();
@@ -212,6 +215,7 @@ function applyLink(s) {
     const role = ROLES.find(x => x.toLowerCase() === r);
     if (role) s.role = role;
   }
+  if (raw.k !== undefined) s.code = decode(raw.k);
   if (raw.c) {
     const colors = raw.c.split(",").map(v => "#" + decode(v).replace("#", ""));
     if (colors.length === 6) s.colors = colors;
@@ -357,10 +361,11 @@ function paint() {
     const reset = i === LIGHTS;
     const light = reset ? "Off" : state.Lights[i];
     const lit = light === "Steady" || (light === "Flashing" && flashPhase);
-    const edge = lit ? scale(color, 0.8) : scale(color, reset ? 0.6 : 0.3);
-    const middle = lit ? lighten(color, 0.45) : scale(color, reset ? 0.9 : 0.42);
     const lens = lamps[i].firstChild;
-    lens.style.background = `radial-gradient(circle at 40% 35%, ${middle}, ${edge} 75%)`;
+    // Lit: almost white in the middle (the lamp behind the lens), full colour at the edge.
+    lens.style.background = lit
+      ? `radial-gradient(circle at 48% 45%, ${lighten(color, 0.65)}, ${lighten(color, 0.15)} 35%, ${scale(color, 0.8)} 75%)`
+      : `radial-gradient(circle at 48% 45%, ${scale(color, reset ? 0.9 : 0.42)}, ${scale(color, reset ? 0.6 : 0.28)} 75%)`;
     const size = parseFloat(lamps[i].style.width) || 60;
     lamps[i].style.boxShadow = lit ? `0 0 ${size * 0.35}px ${size * 0.08}px ${color}` : "none";
     engravings[i].textContent = settings.labels[i];
@@ -447,9 +452,12 @@ let joinedAirport = null, joinedRole = null;
 let leaving = false;
 let radarOnline = false, towerOnline = false;
 
-/** Channel of an airport, the same as in AuroraPAR: prefix + airport + first 16 hex digits of a SHA-256. */
-async function channelOf(airport) {
-  const data = new TextEncoder().encode("AuroraPAR coordination panel " + airport);
+/**
+ * Channel of an airport, the same as in AuroraPAR: prefix + airport + first 16 hex digits of a SHA-256 (of a text
+ * that also contains the panel code, when there is one).
+ */
+async function channelOf(airport, code) {
+  const data = new TextEncoder().encode("AuroraPAR coordination panel " + airport + (code ? " " + code : ""));
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
   const hexText = Array.from(hash, b => b.toString(16).padStart(2, "0")).join("");
   return "aurorapar/coord/v1/" + airport + "-" + hexText.slice(0, 16);
@@ -479,7 +487,7 @@ async function join() {
   if (!settings.airport || settings.airport.length !== 4) { updateStatus(); return; }
   joinedAirport = settings.airport;
   joinedRole = settings.role;
-  channel = await channelOf(settings.airport);
+  channel = await channelOf(settings.airport, settings.code);
   brokerIndex = 0;
   connect();
 }
@@ -610,7 +618,7 @@ function updateStatus() {
     const other = role === "Tower" ? "radar" : "tower";
     text = connected ? (partner ? `linked with the ${other}` : `waiting for the ${other}`) : "connecting...";
   }
-  $("status").textContent = `${settings.airport} · ${role.toUpperCase()} · ${text}`;
+  $("status").textContent = `${settings.code ? "🔒 " : ""}${settings.airport} · ${role.toUpperCase()} · ${text}`;
   dot.style.background = connected && partner ? "#50E050" : connected ? "#FFB020" : "#FF3030";
 }
 
@@ -619,6 +627,7 @@ function openSettings() {
   $("airport").value = settings.airport;
   $("role").value = settings.role;
   $("sound").value = settings.sound;
+  $("code").value = settings.code;
   $("error").textContent = "";
   fillRows(settings.colors, settings.labels);
   $("settings").classList.remove("hidden");
@@ -646,9 +655,11 @@ $("save").addEventListener("click", () => {
   const airport = $("airport").value.trim().toUpperCase();
   if (!/^[A-Z]{4}$/.test(airport)) { $("error").textContent = "The airport is the 4-letter ICAO code, e.g. LIRF."; return; }
   const rows = Array.from($("rows").children);
-  const changedLink = airport !== settings.airport || $("role").value !== settings.role;
+  const code = $("code").value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+  const changedLink = airport !== settings.airport || $("role").value !== settings.role || code !== settings.code;
   settings = normalize(Object.assign({}, settings, {
     airport,
+    code,
     role: $("role").value,
     sound: $("sound").value,
     colors: rows.map(r => r.children[1].value),

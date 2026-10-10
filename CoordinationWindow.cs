@@ -23,6 +23,8 @@ namespace AuroraPAR
         private readonly Border partnerDot = new() { Width = 10, Height = 10, CornerRadius = new CornerRadius(5), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
         private readonly StackPanel options = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 12, 0, 0) };
         private readonly TextBox airportBox = new() { Width = 70, Height = 22, VerticalContentAlignment = VerticalAlignment.Center, CharacterCasing = CharacterCasing.Upper, MaxLength = 4 };
+        private readonly TextBox codeBox = new() { Width = 110, Height = 22, VerticalContentAlignment = VerticalAlignment.Center, CharacterCasing = CharacterCasing.Upper, MaxLength = CoordinationSettings.MaxCodeLength };
+        private readonly Button newCodeButton = new() { Content = "New code", Height = 22, Padding = new Thickness(8, 0, 8, 0), Margin = new Thickness(6, 0, 0, 0) };
         private readonly ComboBox roleBox = new() { Width = 200, Height = 22, ItemsSource = new[] { "From callsign", "Radar (PAR / APP)", "Tower", "Monitor (instructor, read-only)" } };
         /// <summary>Texts engraved under the buttons.</summary>
         private readonly TextBlock[] engravings = new TextBlock[CoordinationSettings.Lights + 1];
@@ -127,7 +129,8 @@ namespace AuroraPAR
                 CornerRadius = new CornerRadius(8),
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0x11, 0x11, 0x10)),
                 BorderThickness = new Thickness(1),
-                Background = new LinearGradientBrush(Color.FromRgb(0x3A, 0x3C, 0x37), Color.FromRgb(0x28, 0x2A, 0x26), 90)
+                // Matte black, as the plate of the FIAR console.
+                Background = new LinearGradientBrush(Color.FromRgb(0x24, 0x25, 0x22), Color.FromRgb(0x15, 0x16, 0x14), 90)
             };
             plate.Children.Add(background);
             foreach ((HorizontalAlignment h, VerticalAlignment v) in new[]
@@ -147,8 +150,8 @@ namespace AuroraPAR
                 {
                     // Groove in the plate before the reset button.
                     StackPanel groove = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 22, 0) };
-                    groove.Children.Add(new Border { Width = 2, Background = new SolidColorBrush(Color.FromRgb(0x15, 0x16, 0x14)) });
-                    groove.Children.Add(new Border { Width = 1, Background = new SolidColorBrush(Color.FromRgb(0x4A, 0x4C, 0x47)) });
+                    groove.Children.Add(new Border { Width = 2, Background = new SolidColorBrush(Color.FromRgb(0x0A, 0x0A, 0x09)) });
+                    groove.Children.Add(new Border { Width = 1, Background = new SolidColorBrush(Color.FromRgb(0x34, 0x35, 0x30)) });
                     row.Children.Add(groove);
                 }
                 CoordinationLamp lamp = new() { IsReset = isReset };
@@ -183,7 +186,7 @@ namespace AuroraPAR
             Grid screw = new() { Width = 12, Height = 12, HorizontalAlignment = h, VerticalAlignment = v, Margin = new Thickness(9) };
             screw.Children.Add(new System.Windows.Shapes.Ellipse
             {
-                Fill = new RadialGradientBrush(Color.FromRgb(0xE0, 0xE0, 0xD8), Color.FromRgb(0x55, 0x56, 0x4F)) { GradientOrigin = new Point(0.35, 0.3) },
+                Fill = new RadialGradientBrush(Color.FromRgb(0x9A, 0x9A, 0x94), Color.FromRgb(0x3A, 0x3B, 0x37)) { GradientOrigin = new Point(0.35, 0.3) },
                 Stroke = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x20)),
                 StrokeThickness = 1
             });
@@ -219,6 +222,8 @@ namespace AuroraPAR
             // The boxes live in the previous (now detached) row: free them before putting them in the new one.
             (airportBox.Parent as Panel)?.Children.Remove(airportBox);
             (roleBox.Parent as Panel)?.Children.Remove(roleBox);
+            (codeBox.Parent as Panel)?.Children.Remove(codeBox);
+            (newCodeButton.Parent as Panel)?.Children.Remove(newCodeButton);
             StackPanel pairing = new() { Orientation = Orientation.Horizontal };
             pairing.Children.Add(Label("Airport:"));
             airportBox.Text = Options.Airport ?? "";
@@ -229,9 +234,27 @@ namespace AuroraPAR
             roleBox.SelectedIndex = Options.Role switch { CoordinationRole.Radar => 1, CoordinationRole.Tower => 2, CoordinationRole.Monitor => 3, _ => 0 };
             pairing.Children.Add(roleBox);
             options.Children.Add(pairing);
+            StackPanel codeRow = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+            codeRow.Children.Add(Label("Panel code:"));
+            codeBox.Text = Options.Code ?? "";
+            codeBox.ToolTip = "Optional. The same code on all the panels of the group (radar, tower, phones): only who knows it can join. Empty: the open channel of the airport. Letters and digits, up to 12.";
+            codeRow.Children.Add(codeBox);
+            newCodeButton.ToolTip = "A new random code: then type the same code on the other panels (or use the QR code for phones).";
+            codeRow.Children.Add(newCodeButton);
+            options.Children.Add(codeRow);
             if (!pairingWired)
             {
                 pairingWired = true;
+                codeBox.LostFocus += (s, e) => PairingChanged();
+                codeBox.KeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Enter) PairingChanged();
+                };
+                newCodeButton.Click += (s, e) =>
+                {
+                    codeBox.Text = CoordinationSettings.GenerateCode();
+                    PairingChanged();
+                };
                 airportBox.LostFocus += (s, e) => PairingChanged();
                 airportBox.KeyDown += (s, e) =>
                 {
@@ -242,7 +265,7 @@ namespace AuroraPAR
 
             options.Children.Add(new TextBlock
             {
-                Text = "Both panels of an airport are linked automatically: _TWR is the tower, any other callsign the radar. As observer (_OBS), type the airport and choose the role. Monitor: an instructor sees the lights and who is online, without pressing anything.",
+                Text = "Both panels of an airport are linked automatically: _TWR is the tower, any other callsign the radar. As observer (_OBS), type the airport and choose the role. Monitor: an instructor sees the lights and who is online, without pressing anything. Panel code (optional): the same on both sides keeps the panels of strangers out (🔒 in the status line).",
                 Foreground = Brushes.Gray,
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
@@ -360,6 +383,8 @@ namespace AuroraPAR
             string airport = airportBox.Text.Trim().ToUpperInvariant();
             Options.Airport = airport.Length == 0 ? null : airport;
             Options.Role = roleBox.SelectedIndex switch { 1 => CoordinationRole.Radar, 2 => CoordinationRole.Tower, 3 => CoordinationRole.Monitor, _ => null };
+            Options.Code = CoordinationSettings.NormalizeCode(codeBox.Text);
+            codeBox.Text = Options.Code ?? "";
             save();
             _ = Rejoin();
         }
@@ -397,7 +422,7 @@ namespace AuroraPAR
             }
             else
             {
-                await link.Join(airport, role.Value);
+                await link.Join(airport, role.Value, Options.Code);
             }
             UpdateStatus();
         }
@@ -429,7 +454,7 @@ namespace AuroraPAR
                 relay = link.Connected ? (partnerOnline ? $"linked with the {other}" : $"waiting for the {other}") : "connecting...";
             }
             string side = role switch { CoordinationRole.Tower => "TOWER", CoordinationRole.Monitor => "MONITOR", _ => "RADAR" };
-            status.Text = $"{airport} · {side} · {relay}";
+            status.Text = $"{(link.Code != null ? "🔒 " : "")}{airport} · {side} · {relay}";
             partnerDot.Background = link.Connected && partnerOnline ? new SolidColorBrush(Color.FromRgb(0x50, 0xE0, 0x50))
                 : link.Connected ? new SolidColorBrush(Color.FromRgb(0xFF, 0xB0, 0x20)) : Brushes.Red;
             bool monitor = role == CoordinationRole.Monitor;
@@ -606,18 +631,27 @@ namespace AuroraPAR
         protected override void OnRender(DrawingContext dc)
         {
             double inset = pressed ? 1 : 0;
-            // Metal bezel: rounded square.
-            LinearGradientBrush bezel = new(Color.FromRgb(0xC4, 0xC6, 0xC0), Color.FromRgb(0x3E, 0x40, 0x3B), 45);
-            dc.DrawRoundedRectangle(bezel, new Pen(new SolidColorBrush(Color.FromRgb(0x10, 0x10, 0x10)), 1), new Rect(0.5, 0.5, Size - 1, Size - 1), 10, 10);
+            // Black plastic bezel, square with small rounded corners, as the keys of the FIAR console.
+            LinearGradientBrush bezel = new(Color.FromRgb(0x3A, 0x3A, 0x38), Color.FromRgb(0x0E, 0x0E, 0x0D), 45);
+            dc.DrawRoundedRectangle(bezel, new Pen(new SolidColorBrush(Color.FromRgb(0x05, 0x05, 0x05)), 1), new Rect(0.5, 0.5, Size - 1, Size - 1), 6, 6);
             Rect lens = new(6 + inset, 6 + inset, Size - 12 - 2 * inset, Size - 12 - 2 * inset);
-            // Lens: dim colour when off, bright when lit.
-            Color edge = lit ? Scale(color, 0.8) : Scale(color, IsReset ? 0.6 : 0.3);
-            Color middle = lit ? Lighten(color, 0.45) : Scale(color, IsReset ? 0.9 : 0.42);
-            RadialGradientBrush glass = new(middle, edge) { GradientOrigin = new Point(0.4, 0.35), RadiusX = 0.75, RadiusY = 0.75 };
-            dc.DrawRoundedRectangle(glass, new Pen(new SolidColorBrush(Color.FromRgb(0x08, 0x08, 0x08)), 1.5), lens, 7, 7);
+            // Lens: dim colour when off; lit: almost white in the middle (the lamp behind it), full colour at the edge.
+            RadialGradientBrush glass = new() { GradientOrigin = new Point(0.45, 0.4), Center = new Point(0.5, 0.48), RadiusX = 0.72, RadiusY = 0.72 };
+            if (lit)
+            {
+                glass.GradientStops.Add(new GradientStop(Lighten(color, 0.65), 0));
+                glass.GradientStops.Add(new GradientStop(Lighten(color, 0.15), 0.45));
+                glass.GradientStops.Add(new GradientStop(Scale(color, 0.8), 1));
+            }
+            else
+            {
+                glass.GradientStops.Add(new GradientStop(Scale(color, IsReset ? 0.9 : 0.42), 0));
+                glass.GradientStops.Add(new GradientStop(Scale(color, IsReset ? 0.6 : 0.28), 1));
+            }
+            dc.DrawRoundedRectangle(glass, new Pen(new SolidColorBrush(Color.FromRgb(0x05, 0x05, 0x05)), 1.5), lens, 4, 4);
             // Reflection on the upper part of the lens.
-            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)), null,
-                new Rect(lens.X + 4, lens.Y + 3, lens.Width - 8, 9), 4.5, 4.5);
+            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), null,
+                new Rect(lens.X + 4, lens.Y + 3, lens.Width - 8, 7), 3, 3);
         }
     }
 

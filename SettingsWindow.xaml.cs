@@ -65,7 +65,14 @@ namespace AuroraPAR
             LockModeCheck.Unchecked += (s, e) => SetProfileValue(p => !p.LockDisplayMode, p => p.LockDisplayMode = false);
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
             RunwayRightRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Right);
-            FixedRangeComboBox.ItemsSource = Ranges.Values;
+            foreach (double value in Ranges.All)
+            {
+                double range = value;
+                CheckBox check = new() { Content = range.ToString(System.Globalization.CultureInfo.InvariantCulture), Tag = range, Margin = new Thickness(0, 0, 14, 4) };
+                check.Checked += (s, e) => SetRangeOffered(range, true);
+                check.Unchecked += (s, e) => SetRangeOffered(range, false);
+                RangeChecksPanel.Children.Add(check);
+            }
             StartRangeLastRadio.Checked += (s, e) => SetStartupRange(StartupRange.LastUsed);
             StartRangeRunwayRadio.Checked += (s, e) => SetStartupRange(StartupRange.RunwayDefault);
             StartRangeFixedRadio.Checked += (s, e) => SetStartupRange(StartupRange.Fixed);
@@ -161,7 +168,7 @@ namespace AuroraPAR
                 LockModeCheck.IsChecked = Active.LockDisplayMode;
                 RangeControlComboBox.SelectedIndex = (int)Active.RangeControl;
                 if (!RangeKeyTextBox.IsKeyboardFocused) RangeKeyTextBox.Text = Active.RangeDefaultKey;
-                RangeKeyTextBox.IsEnabled = Active.RangeControl == AnalogRangeControl.StepKeys;
+                RangeKeyTextBox.IsEnabled = Active.RangeControl is AnalogRangeControl.StepKeys or AnalogRangeControl.PanelKeys;
                 TiltControlComboBox.SelectedIndex = (int)Active.TiltControl;
                 DhControlComboBox.SelectedIndex = (int)Active.DhControl;
                 BrightnessControlComboBox.SelectedIndex = (int)Active.BrightnessControl;
@@ -174,7 +181,13 @@ namespace AuroraPAR
                 ChangeRangeKeepRadio.IsChecked = Active.RunwayChangeRange == RunwayChangeRange.KeepCurrent;
                 ChangeRangeRunwayRadio.IsChecked = Active.RunwayChangeRange == RunwayChangeRange.RunwayDefault;
                 ChangeRangeFixedRadio.IsChecked = Active.RunwayChangeRange == RunwayChangeRange.Fixed;
-                FixedRangeComboBox.SelectedIndex = Ranges.IndexOfClosest(Active.PreferredRange);
+                double[] offered = Ranges.Of(Active.DisplayRanges);
+                foreach (CheckBox check in RangeChecksPanel.Children.OfType<CheckBox>())
+                {
+                    check.IsChecked = offered.Contains((double)check.Tag);
+                }
+                FixedRangeComboBox.ItemsSource = offered;
+                FixedRangeComboBox.SelectedIndex = Ranges.IndexOfClosest(offered, Active.PreferredRange);
                 QnhRadio.IsChecked = Active.PressureReference == PressureReference.QNH;
                 QfeRadio.IsChecked = Active.PressureReference == PressureReference.QFE;
                 HpaRadio.IsChecked = Active.PressureUnit == PressureUnit.HectoPascal;
@@ -318,7 +331,7 @@ namespace AuroraPAR
         /// <summary>Analog console: knob or keys for each control group (the tilt also as a small joystick).</summary>
         private void BuildAnalogControlFields()
         {
-            RangeControlComboBox.ItemsSource = new[] { "Knob", "One key per range", "Keys  <  middle  >" };
+            RangeControlComboBox.ItemsSource = new[] { "Knob", "One key per range", "Keys  <  middle  >", "Range panel (FIAR keys)" };
             TiltControlComboBox.ItemsSource = new[] { "Knobs (EL, AZ)", "Keys (UP 0 DN, L 0 R)", "Small joystick (4 ways)" };
             DhControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  RWY  +)" };
             BrightnessControlComboBox.ItemsSource = new[] { "Knob", "Keys (−  100  +)" };
@@ -333,7 +346,7 @@ namespace AuroraPAR
             {
                 if (refreshing || RangeControlComboBox.SelectedIndex < 0) return;
                 AnalogRangeControl value = (AnalogRangeControl)RangeControlComboBox.SelectedIndex;
-                RangeKeyTextBox.IsEnabled = value == AnalogRangeControl.StepKeys;
+                RangeKeyTextBox.IsEnabled = value is AnalogRangeControl.StepKeys or AnalogRangeControl.PanelKeys;
                 SetProfileValue(p => p.RangeControl == value, p => p.RangeControl = value);
             };
             TiltControlComboBox.SelectionChanged += (s, e) =>
@@ -737,6 +750,22 @@ namespace AuroraPAR
         private static string FormatNumber(double value)
         {
             return value.ToString("0.##", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>Ticks or unticks a range offered by the range controls; the last one cannot be unticked.</summary>
+        private void SetRangeOffered(double range, bool offered)
+        {
+            if (refreshing) return;
+            List<double> ranges = [.. Ranges.Of(Active.DisplayRanges)];
+            if (offered) ranges.Add(range); else ranges.RemoveAll(r => Math.Abs(r - range) < 0.01);
+            if (ranges.Count == 0)
+            {
+                // At least one range: tick it again.
+                RefreshControls();
+                return;
+            }
+            Active.DisplayRanges = [.. Ranges.Of(ranges)];
+            Commit();
         }
 
         private void SetStartupRange(StartupRange startupRange)

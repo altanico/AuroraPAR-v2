@@ -6,6 +6,8 @@ AuroraPAR is a **Precision Approach Radar (PAR)** display for the IVAO **Aurora*
 
 This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https://github.com/bornac1/AuroraPAR) by bornac1.
 
+> **Unofficial add-on.** AuroraPAR is a free program made by IVAO members for their own use. It is **not made, endorsed or supported by IVAO** and is not affiliated with it. For simulation only: never use it for real-world navigation or air traffic control.
+
 ---
 
 ## Contents
@@ -38,7 +40,7 @@ This manual describes AuroraPAR v2, an unofficial evolution of [AuroraPAR](https
    - `AuroraPAR.exe` — the program (Windows 64-bit, nothing else to install);
    - `runways.par` — the runway database (keep it **next to** `AuroraPAR.exe`);
    - this manual.
-3. Run `AuroraPAR.exe`.
+3. Run `AuroraPAR.exe`. The program is not signed with a paid certificate, so the first time Windows may show **"Windows protected your PC"** (SmartScreen): click **More info → Run anyway**. The SHA-256 of each zip is on the download page (`SHA256SUMS.txt`), to check that the file is the original one.
 
 To update, download the new build and replace the files. Your settings are stored elsewhere (see [section 13](#13-where-the-settings-are-stored)) and are kept. If you edited `runways.par`, keep your copy.
 
@@ -71,7 +73,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | | Control | Use |
 |---|---|---|
 | **4** | **ICAO** and **Runway** keys | The ICAO box shows the airport in use. Type another ICAO: with the fourth letter (or **Enter**, when the letters typed fit a single airport) it is set and its first runway is selected. Red: no airport in `runways.par` starts with these letters. **Esc** or leaving the box shows the airport in use again. Below, one key per runway of the airport (two columns, the one in use in blue; none when the airport has a single runway); the approaches of the same runway are one key. When you connect with a callsign of an airport in the file (LIPC_APP → LIPC) that airport is set at the connection; without such a callsign the last runway stays. There is no drop-down list of the runways. |
-| **5** | Range list | Display range: 1, 2.5, 5, 10, 15 or 20 NM. The mouse wheel over the display does the same. |
+| **5** | Range list | Display range: the ranges ticked in *Settings → Display → Ranges offered* (1, 2.5, 5, 10, 15, 20, 30, 40 NM; up to 20 NM by default). The mouse wheel over the display does the same. |
 | **6** | **Settings...** | Profiles and options ([section 10](#10-settings-and-profiles)). |
 | | **GP (°)** | Glide path of the approach: one key per published angle of the runway (when it has more than one), and below a box with the angle in use, where a free angle can be typed (Enter; unpublished approach, orange) ([section 8b](#8b-glide-path-several-approaches-and-unpublished-angle)). |
 | **8** | **DH** box with **−** / **+** | Decision height for this session ([section 8](#8-decision-height)). |
@@ -286,7 +288,7 @@ Some runways have approaches with different glide path angles. In `runways.par` 
 
 ### 9.2 Console panel (left)
 
-14-segment amber readouts:
+14-segment amber readouts (or drum counters, see *Readouts* in 9.1):
 
 | Readout | Meaning |
 |---|---|
@@ -320,7 +322,7 @@ The knobs always follow the real state, also when it is changed with the keyboar
 
 **Knobs or keys** (*Settings → Analog console controls*, per profile). Each group can be a knob or a row of console keys (lit key = the state in use):
 
-- **Range:** knob, **one key per range** (1, 2.5, 5, 10, 15, 20; the one in use is lit) or **`<` `DEF` `>`**: smaller / back to the preferred range (*Display*) / larger. The text of the middle key is free (at most 5 characters, default DEF).
+- **Range:** knob, **one key per range** (the ranges ticked in *Display → Ranges offered*; the one in use is lit), **`<` `DEF` `>`**: smaller / back to the preferred range (*Display*) / larger, or **Range panel (FIAR keys)**: large square backlit keys in two columns in a gold frame, as on the range panel of the FIAR PAR console (number over NM; all dimly lit, the range in use bright white; a small dot on the preferred range), with the key back to the preferred range under them. The text of the key back to the preferred range is free (at most 5 characters, default DEF).
 - **Antenna tilt:** two knobs (EL, AZ), keys **UP 0 DN** and **L 0 R** (0 = neutral of that axis, lit when neutral), or a **small 4-way joystick** as on some old American PAR consoles: push it (drag, or click on a direction) up/down for the elevation, left/right for the azimuth; one step, repeated while held; released it springs back; a click on the centre = neutral.
 - **DH:** knob or keys **− RWY +** (10 ft steps; RWY = the runway value, lit when in use).
 - Tilt, DH and BRT keys **repeat while held** (0, RWY, 100 do not); the range keys step only once per press.
@@ -346,7 +348,7 @@ The **Coordination** button opens a small panel for **voiceless coordination** b
 
 | | |
 |---|---|
-| Lights 1–5 | Square lit buttons (default blue, white, yellow, red, green, as on the real panel). No text on the lights: each unit gives them its own meaning, e.g. *12 NM*, *8 NM*, *landing clearance requested / given*, *not authorised*. |
+| Lights 1–5 | Square lit buttons on a black plate, as the light panel of the FIAR PAR console (default blue, white, yellow, red, green, as on the real panel). No text on the lights: each unit gives them its own meaning, e.g. *12 NM*, *8 NM*, *landing clearance requested / given*, *not authorised*. |
 | Light 6 | **Reset** (default black, set apart from the others): switches all the lights off on both panels. |
 
 **How it works — the same rule for every light:**
@@ -362,18 +364,20 @@ Example: at 12 NM the radar presses white (flashing, alert in the tower), the to
 
 **Connected as a controller**, the callsign always decides airport and side, in AuroraPAR as in AuroraCoord (an airport or role chosen earlier in *Options* is not used). **As observer** (`_OBS`) or not connected: open **Options**, type the **airport** (ICAO) and choose the **role**.
 
+**Panel code (optional).** The channel of an airport can be found by anyone who knows the program, so a stranger could in theory press your lights. To keep the group private, type the same **panel code** in *Options* on every panel of the group (radar, tower, phones), or press **New code** on one panel and type that code on the others: only panels with the same code are linked, and **🔒** is shown in the status line. The QR code for phones already contains it. Empty code (default) = the open channel of the airport, as before. Letters and digits, up to 12; it stays saved until changed.
+
 **Monitor (instructor):** an instructor connected as observer chooses the airport and the role **Monitor** in *Options*. The monitor panel shows the same lights in real time and whether the radar and the tower are online, but it is **read-only**: it cannot press the lights or reset them, and it does not sound.
 
 **Sound** (Options): **at every press, on both panels** (default: every call, acknowledge, cancel and reset sounds on both sides, also your own press) or **only for the presses of the other side**. The monitor never sounds.
 
-**Options:** airport, role (from callsign, Radar, Tower, Monitor), sound, **colour** and **engraved text** of each button (optional, up to 10 characters, shown under the button as on a radio panel; only on your panel; default: *RESET* under the reset button, nothing elsewhere), *Default colours and texts*, always on top.
+**Options:** airport, role (from callsign, Radar, Tower, Monitor), panel code, sound, **colour** and **engraved text** of each button (optional, up to 10 characters, shown under the button as on a radio panel; only on your panel; default: *RESET* under the reset button, nothing elsewhere), *Default colours and texts*, always on top.
 
 **Connection:** the panels talk through a free public relay on the internet (MQTT, encrypted connection), so there is nothing to install and no port to open. Only the state of the lights is sent: no names, no IVAO data. Being a public service it is best-effort. If the network blocks the MQTT port (8883), the panel reaches the same relay through a secure WebSocket (ports 8084 / 8884), as the phone panel. If the status line keeps saying *connecting...*, check that a firewall or antivirus does not block AuroraPAR / AuroraCoord from the internet (try the phone panel link in a browser on the same PC: if that connects, the network is fine).
 
 **On a phone or tablet:** the same panel also runs in the browser of a phone or tablet, with nothing to install: <https://altanico.github.io/AuroraPAR-v2/coord/>. Use it instead of the window on the PC, or as an **extra panel** next to it (same role as the PC: pressing on the phone or on the PC is the same).
 
 - **Quickest:** in the panel on the PC, *Options* → **Open on phone / tablet...** shows a **QR code**. Scan it with the phone camera: the phone panel opens already set with the airport, the role, the colours and the texts of the PC panel. *Copy link* gives the same link, to send it by message.
-- **By hand:** open the address above; the first time it asks for the airport and the role (Radar, Tower, Monitor). The **⚙** button in the top right corner changes them, with the colour and the engraved text of each button.
+- **By hand:** open the address above; the first time it asks for the airport and the role (Radar, Tower, Monitor), and the panel code if your group uses one. The **⚙** button in the top right corner changes them, with the colour and the engraved text of each button.
 - The buttons **fill the screen**: two columns with reset below in portrait, one row in landscape; it follows the rotation.
 - Tap **Tap to start** when it opens: it allows the **alert sound** and keeps the **screen on** while the panel is open. On Android the phone also **vibrates** at an alert (iPhones do not allow it from a web page). *Test sound* in ⚙ plays the alert.
 - Add it to the **home screen** (browser menu → *Add to Home screen*) to open it full screen like an app. On iPhone the home screen copy keeps its own settings: open it once from the QR code link, or set it with ⚙.
@@ -403,7 +407,8 @@ A profile holds all the display options, so that different controllers or differ
 |---|---|
 | Display mode | Modern or Analog. |
 | Runway position on screen | Left or right. |
-| Preferred range | A range you like to use. |
+| Preferred range | A range you like to use (one of the ranges offered). |
+| Ranges offered | Tick boxes 1, 2.5, 5, 10, 15, 20, 30, 40 NM: the range list, knob and keys, Page up / Page down and the mouse wheel step only through the ticked ranges (at least one). New and older profiles: up to 20 NM. If the preferred range is not ticked, the closest ticked one is used. |
 | Range at start | Last used, runway default (from `runways.par`) or preferred. |
 | Range when the runway changes | Keep current, runway default or preferred. |
 | Antenna scan effect, speed | Sweeping beam drawn over the modern display (graphic only); slow, normal, fast. Always on in Analog mode. Colour, line and width of the beam (default 1 px): *Display style → Antenna scan effect*. |
@@ -449,12 +454,12 @@ Profiles of the versions before the antenna beam keep their scan limits (e.g. 8 
 
 ### 11.1 Range marks
 
-A table with one row per display range. For each range choose:
+A table with one row per display range (all of them, also the ranges not ticked in *Ranges offered*). For each range choose:
 
 - which marks are drawn: every **5, 2, 1, ½ or ¼ NM** (marks longer than the range are disabled);
 - on which marks the **distance is written** (or none).
 
-Defaults: every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; 1 NM, ½ and ¼ NM at 2.5 and 1 NM, distance written every ¼ NM. Each ticked box draws those lines with their own style (*Colours & lines*); where ticked boxes overlap (1 NM is also a ½ and a ¼ mile) the largest one wins. Example: to see the 5 NM lines in their own colour at 15 NM, tick *5 NM* in the 15 NM row.
+Defaults: every 5 NM at 40 and 30 NM; every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; 1 NM, ½ and ¼ NM at 2.5 and 1 NM, distance written every ¼ NM. Each ticked box draws those lines with their own style (*Colours & lines*); where ticked boxes overlap (1 NM is also a ½ and a ¼ mile) the largest one wins. Example: to see the 5 NM lines in their own colour at 15 NM, tick *5 NM* in the 15 NM row.
 
 **Distance text**: *Decimal* (`1.25NM`, `2.5NM`) or *Fractions* (`1 1/4NM`, `2 1/2NM`, `3/4NM`), and its **text size** (10–18 px, default 12). **Default** restores the table above; the text format and size stay as chosen.
 
@@ -539,7 +544,7 @@ Several lines with the same ICAO and designator and different glide path angles 
 
 ### 12.4 CRSCalculator: runway heading and magnetic variation
 
-A heading taken from the runway number or from the magnetic value on a chart is rounded, and a small error grows with the distance: **0.1° is about 48 m of lateral error at 15 NM** (0.3° is 145 m). **CRSCalculator** (download **CRSCalculator-win-x64**, a small program of its own: `CRSCalculator.exe`) gives the heading from the coordinates of the two thresholds:
+A heading taken from the runway number or from the magnetic value on a chart is rounded, and a small error grows with the distance: **0.1° is about 48 m of lateral error at 15 NM** (0.3° is 145 m). **CRSCalculator** (download **CRSCalculator-win-x64.zip** from the same page as AuroraPAR, a small program of its own: `CRSCalculator.exe`) gives the heading from the coordinates of the two thresholds:
 
 1. Write the coordinates of **threshold A** (the landing threshold of the runway whose heading you want, as in the runway editor) and of **threshold B** (the other end, the threshold of the opposite runway), in any format of the editor; each on one line, latitude and longitude together. Use at least 6 decimals (or seconds with 2 decimals): the program shows the **precision** that the digits you wrote allow, and warns when it is too rough.
 2. **Heading for AuroraPAR** is the value to write in the *Runway heading* field of the editor (button **Copy**). It is calculated as AuroraPAR does (on a sphere), so that an aircraft on the extended centreline shows zero lateral offset on the radar. Below it the **true heading on the WGS84 ellipsoid**, as the charts give it (it differs by a tenth of a degree or so), and the values for the **opposite runway**.
@@ -570,6 +575,7 @@ All profiles and options are in one file:
 
 | Problem | Solution |
 |---|---|
+| Coordination panel: *waiting for the tower / radar* although both are on | The two panels are not on the same channel: check the airport, the role (one radar, one tower) and that the **panel code** is the same on both (or empty on both). |
 | Coordination panel stays on *connecting...* | The relay on the internet is not reachable from this PC. Most often a **DNS ad blocker** (Pi-hole, AdGuard, NextDNS…): add **broker.emqx.io** and **broker.hivemq.com** to its allow list (whitelist). Otherwise an antivirus web shield, a VPN or a proxy. Check: open the phone panel link in a browser on the same PC. Details of every attempt in the **log**: `%AppData%\AuroraPAR\coord-AuroraPAR.log` (or `coord-AuroraCoord.log`). |
 | `STS FAIL` / red STS lamp | Aurora is not running, or its access for third-party programs is off: **Aurora → Settings → Other → Software → 3rd Party software access**. AuroraPAR reconnects by itself. |
 | Tracks move in jumps, red `DATA` or flashing **ANT. R/R** | In Aurora set the traffic refresh rate to **0.5 s**. |

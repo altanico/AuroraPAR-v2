@@ -122,7 +122,10 @@ namespace AuroraPAR
     {
         Knob,
         RangeKeys,
-        StepKeys
+        StepKeys,
+        /// <summary>One key per range, as the range panel of the FIAR console: two columns of large square keys
+        /// (number and NM), framed, with a key back to the preferred range under them.</summary>
+        PanelKeys
     }
 
     /// <summary>Antenna tilt of the analog console: two knobs (EL, AZ), keys, or a small 4-way joystick.</summary>
@@ -134,27 +137,46 @@ namespace AuroraPAR
     }
 
     /// <summary>
-    /// Display ranges available, in NM.
+    /// Display ranges, in NM: all those offered, and those in use (ticked in the active profile).
     /// </summary>
     internal static class Ranges
     {
-        public static readonly double[] Values = [1, 2.5, 5, 10, 15, 20];
+        /// <summary>All the ranges offered; each profile ticks the ones it uses (<see cref="Profile.DisplayRanges"/>).</summary>
+        public static readonly double[] All = [1, 2.5, 5, 10, 15, 20, 30, 40];
+        /// <summary>Ranges of a profile that never chose (those of the older versions).</summary>
+        public static readonly double[] Default = [1, 2.5, 5, 10, 15, 20];
+
+        /// <summary>Ranges in use (ticked in the active profile), smallest first; never empty.</summary>
+        public static double[] Values { get; set; } = Default;
+
+        /// <summary>Ranges ticked in a profile: only offered values, smallest first, at least one.</summary>
+        public static double[] Of(IEnumerable<double>? ranges)
+        {
+            double[] values = All.Where(a => ranges?.Any(r => Math.Abs(r - a) < 0.01) == true).ToArray();
+            return values.Length > 0 ? values : Default;
+        }
 
         /// <summary>
-        /// Index of the available range closest to the given one.
+        /// Index of the range in use closest to the given one.
         /// </summary>
-        public static int IndexOfClosest(double range)
+        public static int IndexOfClosest(double range) => IndexOfClosest(Values, range);
+
+        /// <summary>Index of the value of the list closest to the given range.</summary>
+        public static int IndexOfClosest(IReadOnlyList<double> values, double range)
         {
             int best = 0;
-            for (int i = 1; i < Values.Length; i++)
+            for (int i = 1; i < values.Count; i++)
             {
-                if (Math.Abs(Values[i] - range) < Math.Abs(Values[best] - range))
+                if (Math.Abs(values[i] - range) < Math.Abs(values[best] - range))
                 {
                     best = i;
                 }
             }
             return best;
         }
+
+        /// <summary>The range in use closest to the given one.</summary>
+        public static double Closest(double range) => Values[IndexOfClosest(range)];
     }
 
     /// <summary>
@@ -181,6 +203,11 @@ namespace AuroraPAR
         /// Preferred range in NM, used at start and/or on runway change when set to Fixed.
         /// </summary>
         public double PreferredRange { get; set; } = 15;
+        /// <summary>
+        /// Display ranges offered by the range controls (knob, keys, Page up / Page down, mouse wheel), from
+        /// <see cref="Ranges.All"/>; at least one. Older profiles: the ranges up to 20 NM.
+        /// </summary>
+        public List<double> DisplayRanges { get; set; } = [.. Ranges.Default];
 
         // Radar equipment (see Radar): angles in degrees.
         /// <summary>Approach limits from the ideal glide path and centreline (green inside, red outside).</summary>
@@ -348,6 +375,7 @@ namespace AuroraPAR
             if (!Enum.IsDefined(TrackSmoothing)) TrackSmoothing = TrackSmoothing.Light;
             if (!Enum.IsDefined(DisplayMode)) DisplayMode = DisplayMode.Modern;
             if (!Enum.IsDefined(RangeControl)) RangeControl = AnalogRangeControl.Knob;
+            DisplayRanges = [.. Ranges.Of(DisplayRanges)];
             if (!Enum.IsDefined(TiltControl)) TiltControl = AnalogTiltControl.Knobs;
             if (!Enum.IsDefined(DhControl)) DhControl = AnalogControl.Knob;
             if (!Enum.IsDefined(BrightnessControl)) BrightnessControl = AnalogControl.Knob;
