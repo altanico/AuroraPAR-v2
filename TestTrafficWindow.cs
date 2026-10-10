@@ -78,6 +78,19 @@ namespace AuroraPAR
         private readonly DispatcherTimer refresh = new() { Interval = TimeSpan.FromSeconds(0.25) };
         private bool updatingList;
 
+        /// <summary>Rain clutter forced for the test (null: from the METAR) and CLUTTER filter step 0 to 10.</summary>
+        public event Action<RainLevel?>? RainChanged;
+        public event Action<int>? ClutterFilterChanged;
+        private readonly ComboBox rainBox = new() { Width = 120, Margin = new Thickness(4, 0, 0, 0), ItemsSource = new[] { "From METAR", "None", "Light", "Moderate", "Heavy", "Thunderstorm" }, SelectedIndex = 0, ToolTip = "Rain clutter of the analog scope: from the METAR of the airport, or forced to try it (also with the option off in the Settings)." };
+        private readonly Slider filterSlider = new() { Width = 110, Minimum = 0, Maximum = 10, TickFrequency = 1, IsSnapToTickEnabled = true, VerticalAlignment = VerticalAlignment.Center, ToolTip = "CLUTTER filter (as the knob of the analog console): reduces the clutter, but dims the tracks too." };
+
+        /// <summary>Shows the current rain choice (index of the list: 0 METAR, 1 None...) and filter step.</summary>
+        public void SetRain(int index, int filterStep)
+        {
+            rainBox.SelectedIndex = Math.Clamp(index, 0, 5);
+            filterSlider.Value = Math.Clamp(filterStep, 0, 10);
+        }
+
         internal TestTrafficWindow(TestTraffic traffic, Action<Window>? openJoystick = null, Func<double>? variation = null, Func<string?>? metar = null)
         {
             this.traffic = traffic;
@@ -148,6 +161,16 @@ namespace AuroraPAR
             GroupBox windGroup = Group("Wind (rough: the same at all heights)", windPanel);
             windGroup.ToolTip = "The aircraft fly their heading through the air: a crosswind makes them drift off the centreline unless the heading is corrected, a headwind lowers the ground speed and so the rate of descent on the glide path. Gusts: the wind grows at random up to this much more.";
             root.Children.Add(windGroup);
+
+            // Rain clutter of the analog scope.
+            WrapPanel rainPanel = new();
+            rainPanel.Children.Add(Caption("Rain"));
+            rainPanel.Children.Add(rainBox);
+            rainPanel.Children.Add(Caption("   CLUTTER filter"));
+            rainPanel.Children.Add(filterSlider);
+            rainBox.SelectionChanged += (s, e) => RainChanged?.Invoke(rainBox.SelectedIndex <= 0 ? null : (RainLevel)(rainBox.SelectedIndex - 1));
+            filterSlider.ValueChanged += (s, e) => ClutterFilterChanged?.Invoke((int)filterSlider.Value);
+            root.Children.Add(Group("Rain clutter (analog scope)", rainPanel));
 
             // Aircraft.
             StackPanel aircraftPanel = new() { Orientation = Orientation.Horizontal };

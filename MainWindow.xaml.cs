@@ -40,6 +40,12 @@ namespace AuroraPAR
         private readonly Knob elevationKnob = new() { Title = "EL TILT", ToolTip = $"Antenna elevation tilt. {KnobHelp}; double click on the centre: neutral." };
         private readonly Knob azimuthKnob = new() { Title = "AZ TILT", ToolTip = $"Antenna azimuth tilt. {KnobHelp}; double click on the centre: neutral." };
         private readonly Knob brightnessKnob = new() { Title = "BRT", Positions = Profile.MaxBrightness / Profile.BrightnessStep, ToolTip = $"Brightness of the scope, 10% to 150% (above 100% for dim monitors). {KnobHelp}; double click on the centre: 100%." };
+        private readonly Knob clutterKnob = new() { Title = "CLUTTER", Positions = 11, ToolTip = "Rain clutter filter: reduces the clutter, but dims the tracks too. Turn clockwise for more filtering (Reset: off)." };
+        /// <summary>Rain clutter forced in the Test traffic window (null: from the METAR) and CLUTTER filter step 0 to 10 (session values).</summary>
+        private RainLevel? rainOverride;
+        private int clutterFilterStep;
+        private string? clutterMetarText;
+        private RainLevel clutterMetarLevel;
         private readonly Knob dhKnob = new() { Title = "DH", ToolTip = $"Decision height, 10 ft per step. {KnobHelp}; double click on the centre: runway value." };
         /// <summary>Analog: airport entry (readout window).</summary>
         private readonly AptEntry aptEntry = new();
@@ -178,7 +184,7 @@ namespace AuroraPAR
             infoPanel.Children.Add(ToolTips.KeepOpen(courseText));
             infoPanel.Children.Add(glidePathText);
             infoPanel.Children.Add(ToolTips.KeepOpen(missedApproachText));
-            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob }) ToolTips.KeepOpen(knob);
+            foreach (Knob knob in new[] { rangeKnob, elevationKnob, azimuthKnob, dhKnob, brightnessKnob, clutterKnob }) ToolTips.KeepOpen(knob);
             aptEntry.Submit = SelectAirport;
             AptHost.Child = aptEntry;
             BrightnessDownButton.Click += (s, e) => ChangeBrightness(-1);
@@ -280,12 +286,49 @@ namespace AuroraPAR
             }
         }
 
+        /// <summary>CLUTTER filter step (0 to 10), shared by the knob and the Test traffic window.</summary>
+        private void SetClutterFilter(int step)
+        {
+            clutterFilterStep = Math.Clamp(step, 0, 10);
+            clutterKnob.Index = clutterFilterStep;
+            testTrafficWindow?.SetRain(rainOverride is RainLevel level ? (int)level + 1 : 0, clutterFilterStep);
+        }
+
+        /// <summary>
+        /// Analog scope rain clutter: strength from the precipitation of the METAR (or forced in the Test traffic
+        /// window, also with the option off in the Settings), and the CLUTTER filter, set for both views.
+        /// </summary>
+        private void UpdateClutter(Profile profile)
+        {
+            bool on = viewOptions.Analog && (profile.RainClutter || rainOverride != null);
+            double strength = 0;
+            if (on)
+            {
+                RainLevel level;
+                if (rainOverride is RainLevel forced) level = forced;
+                else
+                {
+                    string? text = aurora.LastMetar is MetarReport report && string.Equals(report.Icao, runway.ICAO, StringComparison.OrdinalIgnoreCase) ? report.Text : null;
+                    if (text != clutterMetarText)
+                    {
+                        clutterMetarText = text;
+                        clutterMetarLevel = RainClutter.FromMetar(text);
+                    }
+                    level = clutterMetarLevel;
+                }
+                strength = RainClutter.Strength(level);
+            }
+            viewOptions.ClutterStrength = strength;
+            viewOptions.ClutterFilter = strength > 0 ? clutterFilterStep / 10.0 : 0;
+        }
+
         private void RenderSweep()
         {
             Profile profile = settings.Active;
             double t = sweepClock.Elapsed.TotalSeconds;
             // The analog scope always has its beam.
             bool enabled = profile.ScanEffect || viewOptions.Analog;
+            UpdateClutter(profile);
             profileView.RenderSweep(enabled, t, profile.ScanEffectSpeed);
             horizontalView.RenderSweep(enabled, t, profile.ScanEffectSpeed);
             MoveTracks();
@@ -341,6 +384,9 @@ namespace AuroraPAR
             brightnessKnob.LabelFor = i => i == 0 ? "MIN" : i == 100 / Profile.BrightnessStep - 1 ? "100" : i == Profile.MaxBrightness / Profile.BrightnessStep - 1 ? "MAX" : null;
             brightnessKnob.Turned += steps => ChangeBrightness(steps);
             brightnessKnob.Reset += () => SetBrightness(100);
+            clutterKnob.LabelFor = i => i == 0 ? "OFF" : i == 10 ? "MAX" : null;
+            clutterKnob.Turned += steps => SetClutterFilter(clutterFilterStep + steps);
+            clutterKnob.Reset += () => SetClutterFilter(0);
             tiltStick.Moved += (elevation, azimuth) => TiltAntenna(elevation, azimuth * AzimuthSign);
             tiltStick.Centred += NeutralAntenna;
             ToolTips.KeepOpen(tiltStick);
@@ -377,7 +423,7 @@ namespace AuroraPAR
         {
             Profile profile = settings.Active;
             string ranges = string.Join(",", Ranges.Values);
-            string layout = $"{profile.KeyStyle}|{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.ShowDhSelector}|{profile.BrightnessControl}";
+            string layout = $"{profile.KeyStyle}|{profile.RangeControl}|{profile.RangeDefaultKey}|{ranges}|{profile.PreferredRange}|{profile.TiltControl}|{profile.DhControl}|{profile.ShowDhSelector}|{profile.BrightnessControl}|{profile.RainClutter}";
             if (layout == analogControlsLayout) return;
             analogControlsLayout = layout;
             KnobPanel.Children.Clear();
@@ -459,6 +505,11 @@ namespace AuroraPAR
             else
             {
                 KnobPanel.Children.Add(brightnessKnob);
+            }
+            if (profile.RainClutter)
+            {
+                clutterKnob.Index = clutterFilterStep;
+                KnobPanel.Children.Add(clutterKnob);
             }
             UpdateAnalogKeys();
         }
@@ -966,9 +1017,13 @@ namespace AuroraPAR
                 { Owner = this };
                 testTrafficWindow.Left = Math.Max(0, Left + 40);
                 testTrafficWindow.Top = Math.Max(0, Top + 60);
+                testTrafficWindow.SetRain(rainOverride is RainLevel current ? (int)current + 1 : 0, clutterFilterStep);
+                testTrafficWindow.RainChanged += level => rainOverride = level;
+                testTrafficWindow.ClutterFilterChanged += SetClutterFilter;
                 testTrafficWindow.Closed += (s, e) =>
                 {
                     testTrafficWindow = null;
+                    rainOverride = null;
                     TestButton.Tag = viewOptions.Analog ? "Unlit" : null;
                     Redraw();
                 };

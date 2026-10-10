@@ -263,6 +263,8 @@ namespace AuroraPAR
 
         protected override bool IsElevation => true;
 
+        protected override double HorizonY => H;
+
         protected override Point SweepOrigin() => new(AntennaNM * xscale, H);
 
         protected override Point SweepEnd(double position)

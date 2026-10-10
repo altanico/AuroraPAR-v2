@@ -29,6 +29,8 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **(Done, to be tested) Rain clutter on the analog scope** (Settings → Display → *Rain clutter*, off by default, per profile): patches + dots inside the antenna beam only (short edge fade), intensity from the METAR precipitation (-RA/DZ light, RA moderate, +RA heavy, TS storm), brighter when the scan beam passes, drift of the patches, dots renewed per scan cycle, tracks in the same green so they get lost in it; **CLUTTER knob** (0–10, reduces clutter and dims tracks up to 40%); *Test traffic → Rain* forces a level (also with the option off) and has the filter slider. Check: look (patch size, density, brightness at 5/10/20 NM, with tilt, runway on the right, azimuth view), CPU use (updated every other frame at half resolution), real METARs with RA/TS, filter, switching A. Tuning knobs in ClutterLayer.cs (thresholds, EdgeFade, strengths).
+
 - **(Done, to be tested) Test traffic button on the main window:** modern: **Test traffic (T)** under Coordination; analog: key **TEST** (in the former spare key, lit while the window is open). The button in Settings stays.
 
 - **(Done, to be tested) Test traffic: intercept start.** *Start* in New aircraft: 30°/45°/90° from left/right, aimed at the point of the centreline at the Distance, ~3 NM off the centreline, level below the GP (offset −300 ft at that point); the info shows *GP in x NM (about y s)*; Normal starts the descent. Idea for later: analog button for the test traffic (to be decided).

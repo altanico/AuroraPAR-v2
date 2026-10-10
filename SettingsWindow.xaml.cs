@@ -99,6 +99,8 @@ namespace AuroraPAR
                 SetProfileValue(p => p.DhDropLength == value, p => p.DhDropLength = value);
             };
             ShowDhCheck.Checked += (s, e) => SetProfileValue(p => p.ShowDhSelector, p => p.ShowDhSelector = true);
+            RainClutterCheck.Checked += (s, e) => SetProfileValue(p => p.RainClutter, p => p.RainClutter = true);
+            RainClutterCheck.Unchecked += (s, e) => SetProfileValue(p => !p.RainClutter, p => p.RainClutter = false);
             ShowDhCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ShowDhSelector, p => p.ShowDhSelector = false);
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
             RunwayRightRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Right);
@@ -204,6 +206,7 @@ namespace AuroraPAR
                 AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
                 LockModeCheck.IsChecked = Active.LockDisplayMode;
                 ShowDhCheck.IsChecked = Active.ShowDhSelector;
+                RainClutterCheck.IsChecked = Active.RainClutter;
                 DhSideComboBox.SelectedIndex = (int)Active.DhLineSide;
                 DhLengthComboBox.SelectedIndex = Array.FindIndex(DhLengths, l => Math.Abs(l - Active.DhLineLength) < 0.01);
                 DhAzimuthLengthComboBox.SelectedIndex = Array.FindIndex(DhAzimuthLengths, l => Math.Abs(l - Active.DhAzimuthLength) < 0.5);

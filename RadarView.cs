@@ -52,6 +52,9 @@ namespace AuroraPAR
         public bool Analog { get; set; }
         /// <summary>Analog scope: length of the echo at the far end of the range compared with the touchdown (1 = same).</summary>
         public double EchoGrowth { get; set; } = 1;
+        /// <summary>Analog scope: rain clutter strength 0 to 1 (0 = none) and CLUTTER filter 0 to 1 (session values).</summary>
+        public double ClutterStrength { get; set; }
+        public double ClutterFilter { get; set; }
         /// <summary>Colours, widths and dash styles of the elements.</summary>
         public Theme Theme { get; set; } = Theme.Modern(DisplayStyleSettings.CreateDefault());
         /// <summary>Range marks drawn at each range.</summary>
@@ -80,6 +83,7 @@ namespace AuroraPAR
     internal abstract class RadarView
     {
         private const int StaticZIndex = 0;
+        private const int ClutterZIndex = 3;
         private const int SweepZIndex = 5;
         private const int HistoryZIndex = 9;
         private const int TrackZIndex = 11;
@@ -111,6 +115,8 @@ namespace AuroraPAR
         private static readonly System.Diagnostics.Stopwatch HistoryClock = System.Diagnostics.Stopwatch.StartNew();
         /// <summary>Lines of the antenna scan effect (beam and glow), created when first needed.</summary>
         private readonly List<Line> sweepLines = [];
+        private readonly ClutterLayer clutter = new();
+        private bool clutterAdded;
         /// <summary>Afterglow of the echo: seconds between two copies, and strength of each copy (newest first).</summary>
         private const double GhostSpacing = 0.8;
         private static readonly double[] GhostStrengths = [0.4, 0.24, 0.12];
@@ -358,6 +364,7 @@ namespace AuroraPAR
             {
                 foreach (Line line in sweepLines) line.Visibility = Visibility.Collapsed;
                 foreach (Track track in tracks.Values) track.Symbol.Opacity = 1;
+                clutter.Hide();
                 return;
             }
             var beams = new (double? Position, double Opacity)[ScanEffect.Lines];
@@ -393,6 +400,51 @@ namespace AuroraPAR
                 line.Visibility = Visibility.Visible;
             }
             UpdateEchoBrightness(t, speed);
+            UpdateClutter(t, speed);
+        }
+
+        /// <summary>Horizon of the view (logical y below which there is no echo); none by default.</summary>
+        protected virtual double HorizonY => double.MaxValue;
+
+        /// <summary>Analog scope: rain clutter inside the antenna beam (see <see cref="ClutterLayer"/>).</summary>
+        private void UpdateClutter(double t, ScanEffectSpeed speed)
+        {
+            if (!Options.Analog || Options.ClutterStrength <= 0)
+            {
+                clutter.Hide();
+                return;
+            }
+            if (!clutterAdded)
+            {
+                Panel.SetZIndex(clutter.Element, ClutterZIndex);
+                Canvas.Children.Add(clutter.Element);
+                clutterAdded = true;
+            }
+            Point origin = SweepOrigin();
+            Point low = SweepEnd(0);
+            Point high = SweepEnd(1);
+            Color colour = Options.Theme.Brush(StyleElement.TrackInside) is SolidColorBrush brush ? brush.Color : Colors.LimeGreen;
+            clutter.Update(new ClutterLayer.Frame
+            {
+                Width = Canvas.ActualWidth,
+                Height = Canvas.ActualHeight,
+                Time = t,
+                SweepCycle = 4 * ScanEffect.SweepSeconds(speed),
+                Speed = speed,
+                Elevation = IsElevation,
+                RunwayOnRight = RunwayOnRight,
+                FlipVertically = FlipVertically,
+                XShift = XShift,
+                OriginX = origin.X,
+                OriginY = origin.Y,
+                EndX = low.X,
+                LowY = low.Y,
+                HighY = high.Y,
+                HorizonY = HorizonY,
+                Strength = Options.ClutterStrength,
+                Filter = Options.ClutterFilter,
+                Colour = colour
+            });
         }
 
         /// <summary>
@@ -430,7 +482,7 @@ namespace AuroraPAR
                 // Brightens as the beam arrives, full at its centre, then fades; weaker near the edge of the antenna
                 // beam (soft edge).
                 double light = ScanEffect.BeamLight(t, speed, IsElevation, PositionOf(track.Logical), 0.6);
-                double echo = (0.18 + 0.82 * light) * (0.15 + 0.85 * track.EdgeFactor);
+                double echo = (0.18 + 0.82 * light) * (0.15 + 0.85 * track.EdgeFactor) * (1 - 0.4 * Options.ClutterFilter);
                 track.Symbol.Opacity = echo;
                 // Afterglow: the copies behind the echo light up and fade with it.
                 for (int k = 0; k < track.Ghosts.Length; k++)
