@@ -29,6 +29,8 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **(Done, to be tested) Test traffic button on the main window:** modern: **Test traffic (T)** under Coordination; analog: key **TEST** (in the former spare key, lit while the window is open). The button in Settings stays.
+
 - **(Done, to be tested) Test traffic: intercept start.** *Start* in New aircraft: 30°/45°/90° from left/right, aimed at the point of the centreline at the Distance, ~3 NM off the centreline, level below the GP (offset −300 ft at that point); the info shows *GP in x NM (about y s)*; Normal starts the descent. Idea for later: analog button for the test traffic (to be decided).
 
 - **(Done, to be tested) Customisable DH mark:** *Colours & lines*: **Decision height line** (horizontal, also in the azimuth view), **Decision height drop line** (vertical, new, default dashed) and **Decision height mark** (symbol colour); *Settings*: **DH line length** (0.5–5 NM or up to the glide path, default 3) and symbol **DH point** (none by default). Old profiles: the drop line and the mark take the style of the old DH line. Default look unchanged.

@@ -68,7 +68,7 @@ The QNH is taken from the METAR of the airport in Aurora and refreshed every min
 | **2** | Elevation view ([4.2](#42-elevation-view-top)) |
 | **3** | Azimuth view ([4.3](#43-azimuth-view-bottom)) |
 
-**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination and Settings... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons are square keys like those of a real console (big capital letters; the whole key lights up in warm white when active: the runway and approach in use, COORD while the panel is open) and the text fields are readout windows. The bottom keys are **MODERN** (back to the modern display), **COORD**, **SETUP** (Settings) and a blank spare key that does nothing:
+**Right column, from the top (4–11).** The selectors "on the fly" are at the top; **Hide labels** (a quick switch of the display) comes after them, a little apart from the antenna tilt; the buttons Analog, Coordination, Test traffic (T) and Settings... are fixed at the bottom edge of the window, apart from them. In the analog mode the buttons are square keys like those of a real console (big capital letters; the whole key lights up in warm white when active: the runway and approach in use, COORD and TEST while their windows are open) and the text fields are readout windows. The bottom keys are **MODERN** (back to the modern display), **COORD**, **TEST** (test traffic, as the key T) and **SETUP** (Settings):
 
 | | Control | Use |
 |---|---|---|

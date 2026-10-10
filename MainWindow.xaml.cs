@@ -216,6 +216,7 @@ namespace AuroraPAR
             LabelsButton.Click += (s, e) => ToggleLabels();
             ModeButton.Click += (s, e) => ToggleDisplayMode();
             CoordinationButton.Click += (s, e) => OpenCoordination();
+            TestButton.Click += (s, e) => OpenTestTraffic();
             BuildKnobs();
             ScopeHost.SizeChanged += (s, e) => LayoutDisplay();
             // Console panel at most about a quarter of the display (it is scaled to fit, see the XAML).
@@ -968,9 +969,11 @@ namespace AuroraPAR
                 testTrafficWindow.Closed += (s, e) =>
                 {
                     testTrafficWindow = null;
+                    TestButton.Tag = viewOptions.Analog ? "Unlit" : null;
                     Redraw();
                 };
                 testTrafficWindow.Show();
+                TestButton.Tag = viewOptions.Analog ? "Lit" : null;
             }
             else
             {
@@ -1181,6 +1184,7 @@ namespace AuroraPAR
             [
                 (ModeButton, "Analog (A)", "MODERN", "Switch to the modern display (key A).", 26),
                 (CoordinationButton, "Coordination", "COORD", "Coordination light panel with the tower (voiceless coordination).", 26),
+                (TestButton, "Test traffic (T)", "TEST", "Test traffic: aircraft to practise with (key T).", 26),
                 (SettingsButton, "Settings...", "SETUP", "Settings.", 30)
             ];
             foreach ((Button button, string modern, string analogText, string tip, int height) in buttons)
@@ -1200,18 +1204,17 @@ namespace AuroraPAR
                     button.Height = height;
                     button.Margin = new Thickness(0, 4, 0, 0);
                     button.Tag = null;
-                    button.ToolTip = button == ModeButton ? "Switch between the modern display and the analog scope (key A)." : button == CoordinationButton ? tip : null;
+                    button.ToolTip = button == ModeButton ? "Switch between the modern display and the analog scope (key A)." : button == CoordinationButton || button == TestButton ? tip : null;
                 }
             }
-            if (analog) StyleAsKey(SpareKey, "");
-            else SpareKey.ClearValue(StyleProperty);
-            SpareKey.Visibility = analog ? Visibility.Visible : Visibility.Collapsed;
+            SpareKey.Visibility = Visibility.Collapsed;
             SystemSeparator.Visibility = analog ? Visibility.Collapsed : Visibility.Visible;
             SystemPlate.Background = analog ? new SolidColorBrush(Color.FromRgb(0x1F, 0x20, 0x1D)) : Brushes.Transparent;
             SystemPlate.BorderBrush = analog ? new SolidColorBrush(Color.FromRgb(0x0E, 0x0F, 0x0D)) : Brushes.Transparent;
             SystemPlate.Padding = analog ? new Thickness(0, 2, 0, 0) : new Thickness(0);
             // Lamp: the coordination key is lit while its panel is open. The mode key is a plain command.
             CoordinationButton.Tag = analog ? (coordinationWindow != null ? "Lit" : "Unlit") : null;
+            TestButton.Tag = analog ? (testTrafficWindow != null ? "Lit" : "Unlit") : null;
             // Display mode locked in the profile: no mode button (analog: a blank key keeps the place of the others).
             bool locked = settings.Active.LockDisplayMode;
             ModeButton.Visibility = locked && !analog ? Visibility.Collapsed : Visibility.Visible;
