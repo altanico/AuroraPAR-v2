@@ -127,9 +127,10 @@ namespace AuroraPAR
                 double p = -0.1 + 1.2 * i / LutSize;
                 light[i] = (float)ScanEffect.BeamLight(f.Time, f.Speed, f.Elevation, p, 0.6);
             }
-            int cycle = (int)Math.Floor(f.Time / f.SweepCycle);
-            int driftX = (int)(f.Time * 2.5) + cycle * 37;
-            int driftY = (int)(f.Time * 0.8) + cycle * 11;
+            // Rain is nearly static compared with an aircraft: the patches creep very slowly (no jumps), the dots stay.
+            int cycle = 0;
+            int driftX = (int)(f.Time * 0.15);
+            int driftY = (int)(f.Time * 0.05);
             double ratio = Tile / f.Width;
             double thr = 0.80 - 0.24 * f.Strength;
             double dotBase = 0.05 * f.Strength;
