@@ -37,6 +37,22 @@ namespace AuroraPAR
             BuildRangeMarks();
             DecimalRadio.IsChecked = Active.RangeMarks.TextFormat == DistanceTextFormat.Decimal;
             FractionsRadio.IsChecked = Active.RangeMarks.TextFormat == DistanceTextFormat.Fractions;
+            AllTextButton.Click += (s, e) =>
+            {
+                int mode = AllTextCombo.SelectedIndex;
+                foreach (RangeMarkRow row in Active.RangeMarks.Rows)
+                {
+                    if (mode == 2)
+                    {
+                        row.Text = null;
+                        continue;
+                    }
+                    row.ShowUnit = mode == 0;
+                    row.Text ??= RangeMarkSettings.DefaultRow(row.Range).Text;
+                }
+                BuildRangeMarks();
+                commit();
+            };
             DecimalRadio.Checked += (s, e) => SetTextFormat(DistanceTextFormat.Decimal);
             FractionsRadio.Checked += (s, e) => SetTextFormat(DistanceTextFormat.Fractions);
             List<int> sizes = Enumerable.Range(RangeMarkSettings.MinTextSize, RangeMarkSettings.MaxTextSize - RangeMarkSettings.MinTextSize + 1).ToList();
@@ -284,7 +300,21 @@ namespace AuroraPAR
                     textTarget.Text = text.SelectedIndex <= 0 ? null : MarkIntervals.All[text.SelectedIndex - 1];
                     commit();
                 };
-                AddCell(grid, text, r, MarkIntervals.All.Length + 1);
+                CheckBox unit = new()
+                {
+                    Content = "NM",
+                    IsChecked = row.ShowUnit,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(8, 0, 0, 0),
+                    ToolTip = "Write the unit after the number (off: only the number)."
+                };
+                RangeMarkRow unitTarget = row;
+                unit.Checked += (s, e) => { if (!building) { unitTarget.ShowUnit = true; commit(); } };
+                unit.Unchecked += (s, e) => { if (!building) { unitTarget.ShowUnit = false; commit(); } };
+                StackPanel textCell = new() { Orientation = Orientation.Horizontal };
+                textCell.Children.Add(text);
+                textCell.Children.Add(unit);
+                AddCell(grid, textCell, r, MarkIntervals.All.Length + 1);
                 r++;
             }
             building = false;

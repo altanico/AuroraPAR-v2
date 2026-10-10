@@ -9,6 +9,18 @@
                 <StackPanel Margin="10">
                     <TextBlock TextWrapping="Wrap" MaxWidth="600" Foreground="Gray"
                                Text="Each ticked box draws those lines with their own style (Colours &amp; lines tab). Where ticked boxes overlap (e.g. 1 NM is also a ½ and a ¼ mile), the largest one wins. Changes are applied immediately."/>
+                    <Border Background="#F6F6F6" BorderBrush="#CCCCCC" BorderThickness="1" Padding="8,6" Margin="0,10,0,0" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Distance text on all ranges:" VerticalAlignment="Center"/>
+                            <ComboBox Name="AllTextCombo" Width="140" Height="24" Margin="8,0,0,0" SelectedIndex="0">
+                                <ComboBoxItem Content="Full (1.25NM)"/>
+                                <ComboBoxItem Content="Number only (1.25)"/>
+                                <ComboBoxItem Content="None"/>
+                            </ComboBox>
+                            <Button Name="AllTextButton" Content="Apply to all" Height="26" Padding="14,0" Margin="8,0,0,0"
+                                    ToolTip="Full / Number only: unit on or off on every range (a range without text gets the default marks again). None: no text on any range. Single ranges can be changed afterwards."/>
+                        </StackPanel>
+                    </Border>
                     <Grid Name="RangeMarkGrid" Margin="0,10,0,0"/>
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                         <TextBlock Text="Distance text:" VerticalAlignment="Center" Margin="0,0,12,0"/>

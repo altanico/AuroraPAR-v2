@@ -465,7 +465,7 @@ A table with one row per display range (all of them, also the ranges not ticked 
 
 Defaults: every 5 NM at 40 and 30 NM; every 2 NM at 20 NM; every NM at 15 and 10 NM; every NM plus dashed half miles without text at 5 NM; 1 NM, ½ and ¼ NM at 2.5 and 1 NM, distance written every ¼ NM. Each ticked box draws those lines with their own style (*Colours & lines*); where ticked boxes overlap (1 NM is also a ½ and a ¼ mile) the largest one wins. Example: to see the 5 NM lines in their own colour at 15 NM, tick *5 NM* in the 15 NM row.
 
-**Distance text**: *Decimal* (`1.25NM`, `2.5NM`) or *Fractions* (`1 1/4NM`, `2 1/2NM`, `3/4NM`), and its **text size** (10–18 px, default 12). **Default** restores the table above; the text format and size stay as chosen.
+**Distance text**: *Decimal* (`1.25NM`, `2.5NM`) or *Fractions* (`1 1/4NM`, `2 1/2NM`, `3/4NM`), and its **text size** (10–18 px, default 12). The **NM** box next to each range writes the unit (`1.25NM`) or only the number (`1.25`, `1 1/4`); for older scopes with no text, choose *none* in the range. At the top, **Distance text on all ranges** + **Apply to all** sets every range at once: *Full* or *Number only* (unit on/off; a range with no text gets the default marks again) or *None*. Single ranges can be changed afterwards. **Default** restores the table above; the text format and size stay as chosen.
 
 ### 11.2 Colours & lines
 

@@ -29,6 +29,8 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **(Done, to be tested) Range mark text without unit + bulk button** (Display style → Range marks): **NM** box per range (off: only the number, also with fractions), and **Distance text on all ranges: Full / Number only / None + Apply to all** (Full and Number only restore the default marks on ranges with no text; None clears all).
+
 - **(Done, to be tested) DH selector optional** (both displays): *Settings → Show the DH selector*, **off by default** (existing profiles too). Hidden: the runway DH is used; Shift+arrows still work. Modern: the DH box disappears from the right panel; analog: knob/keys of the DH disappear (the readout stays).
 
 - **(Done, to be tested) CRSCalculator: pick airport and runway from `runways.par`.** Choose the file (remembered), the ICAO and the runway: threshold A is filled in, B too if the opposite end is in the file (otherwise you type B). Filter **Only runways without the opposite end** (default on). Results show what the file already contains. Confirmation before writing the file. Button **Write heading and length in runways.par...** in the main window for the picked runway (and its opposite, if present).

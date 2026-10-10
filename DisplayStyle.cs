@@ -55,6 +55,8 @@ namespace AuroraPAR
         public List<MarkInterval> Lines { get; set; } = [];
         /// <summary>The distance is written on the marks at multiples of this interval; null: no text.</summary>
         public MarkInterval? Text { get; set; }
+        /// <summary>Write the unit (NM) after the number; off: only the number.</summary>
+        public bool ShowUnit { get; set; } = true;
     }
 
     /// <summary>
@@ -163,8 +165,9 @@ namespace AuroraPAR
         }
 
         /// <summary>Distance written under a range mark, in the chosen format (1.25NM or 1 1/4NM).</summary>
-        public string Label(double distance)
+        public string Label(double distance, double range)
         {
+            string unit = For(range).ShowUnit ? "NM" : "";
             // Quarters only: any other value (not possible with the marks offered) is written as a decimal.
             if (TextFormat == DistanceTextFormat.Fractions && Math.Abs(distance * 4 - Math.Round(distance * 4)) < 1e-6)
             {
@@ -179,9 +182,9 @@ namespace AuroraPAR
                 };
                 string number = whole.ToString("0", CultureInfo.InvariantCulture);
                 string text = fraction.Length == 0 ? number : whole > 0 ? number + " " + fraction : fraction;
-                return text + "NM";
+                return text + unit;
             }
-            return distance.ToString("0.##", CultureInfo.InvariantCulture) + "NM";
+            return distance.ToString("0.##", CultureInfo.InvariantCulture) + unit;
         }
     }
 
