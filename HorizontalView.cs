@@ -157,6 +157,8 @@ namespace AuroraPAR
 
         protected override bool IsElevation => false;
 
+        protected override double LateralPixelsPerNM => yscale;
+
         protected override Point SweepOrigin() => new(AntennaNM * xscale, CenterY);
 
         protected override Point SweepEnd(double position)

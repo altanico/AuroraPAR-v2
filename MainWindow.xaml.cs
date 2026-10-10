@@ -304,20 +304,24 @@ namespace AuroraPAR
             double strength = 0;
             if (on)
             {
-                RainLevel level;
-                if (rainOverride is RainLevel forced) level = forced;
-                else
+                string? text = aurora.LastMetar is MetarReport report && string.Equals(report.Icao, runway.ICAO, StringComparison.OrdinalIgnoreCase) ? report.Text : null;
+                if (text != clutterMetarText)
                 {
-                    string? text = aurora.LastMetar is MetarReport report && string.Equals(report.Icao, runway.ICAO, StringComparison.OrdinalIgnoreCase) ? report.Text : null;
-                    if (text != clutterMetarText)
-                    {
-                        clutterMetarText = text;
-                        clutterMetarLevel = RainClutter.FromMetar(text);
-                    }
-                    level = clutterMetarLevel;
+                    clutterMetarText = text;
+                    clutterMetarLevel = RainClutter.FromMetar(text);
                 }
-                strength = RainClutter.Strength(level);
+                strength = RainClutter.Strength(rainOverride ?? clutterMetarLevel);
             }
+            // Wind that moves the patches: the wind of the Test traffic (when set), otherwise the one of the METAR.
+            double from = 0, knots = 0;
+            if (strength > 0)
+            {
+                if (testTraffic.Count > 0 && testTraffic.WindSpeed > 0) { from = testTraffic.WindFrom; knots = testTraffic.WindSpeed; }
+                else if (!RainClutter.TryWind(clutterMetarText, out from, out knots)) knots = 0;
+            }
+            double towards = (from + 180 - runway.Heading) * Math.PI / 180;
+            viewOptions.ClutterWindAlongKt = knots * Math.Cos(towards);
+            viewOptions.ClutterWindRightKt = knots * Math.Sin(towards);
             viewOptions.ClutterStrength = strength;
             viewOptions.ClutterFilter = strength > 0 ? clutterFilterStep / 10.0 : 0;
         }

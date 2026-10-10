@@ -41,6 +41,22 @@ namespace AuroraPAR
             return level;
         }
 
+        /// <summary>Wind in a METAR: 27015KT, 27015G25KT, 27008MPS (VRB has no direction).</summary>
+        private static readonly Regex MetarWind = new(@"\b(\d{3})(\d{2,3})(?:G\d{2,3})?(KT|MPS|KMH)\b");
+
+        /// <summary>Wind of a METAR: direction it blows from (degrees true) and speed in knots.</summary>
+        public static bool TryWind(string? metar, out double from, out double knots)
+        {
+            from = knots = 0;
+            if (string.IsNullOrEmpty(metar)) return false;
+            Match match = MetarWind.Match(metar);
+            if (!match.Success) return false;
+            from = double.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+            double factor = match.Groups[3].Value switch { "MPS" => 1.94384, "KMH" => 0.539957, _ => 1 };
+            knots = double.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) * factor;
+            return true;
+        }
+
         /// <summary>Strength of the clutter, 0 to 1.</summary>
         public static double Strength(RainLevel level) => level switch
         {
@@ -92,6 +108,7 @@ namespace AuroraPAR
         }
         private readonly List<(double LowY, double HighY, double Since)> trail = [];
         private double lastLow = double.NaN, lastHigh, lastOriginX, lastOriginY, lastEndX, lastTrailTime = -1;
+        private double offsetX, offsetY, lastTime = double.NaN;
         private const double TrailSpacing = 0.2;
         private const double TrailSeconds = 0.7;
         private const int TrailMax = 5;
@@ -106,6 +123,8 @@ namespace AuroraPAR
             public bool Elevation, RunwayOnRight, FlipVertically;
             public double XShift, OriginX, OriginY, EndX, LowY, HighY, HorizonY;
             public double Strength, Filter;
+            /// <summary>Drift of the patches with the wind, logical pixels per second.</summary>
+            public double DriftX, DriftY;
             public ScanEffectSpeed Speed;
             public Color Colour;
         }
@@ -155,10 +174,13 @@ namespace AuroraPAR
                 double p = -0.1 + 1.2 * i / LutSize;
                 light[i] = (float)ScanEffect.BeamLight(f.Time, f.Speed, f.Elevation, p, 0.6);
             }
+            // The patches move with the wind (real speed, in scale with the range).
+            double dt = double.IsNaN(lastTime) ? 0 : Math.Clamp(f.Time - lastTime, 0, 0.5);
+            lastTime = f.Time;
+            offsetX += f.DriftX * dt;
+            offsetY += f.DriftY * dt;
             // Rain is static compared with an aircraft: patches and dots do not move (only their light changes with the beam).
             int cycle = 0;
-            int driftX = 0;
-            int driftY = 0;
             double ratio = Tile / f.Width;
             double thr = 0.80 - 0.24 * f.Strength;
             double dotBase = 0.05 * f.Strength;
@@ -171,7 +193,6 @@ namespace AuroraPAR
                 double sy = (by + 0.5) * Pixel;
                 double ly = f.RunwayOnRight && f.FlipVertically ? f.Height - sy : sy;
                 if (ly > f.HorizonY) continue;
-                int ty = ((int)(sy * ratio) + driftY) & (Tile - 1);
                 for (int bx = 0; bx < w; bx++)
                 {
                     double sx = (bx + 0.5) * Pixel;
@@ -187,7 +208,8 @@ namespace AuroraPAR
                         if (m > mask) { mask = m; p = pg; }
                     }
                     if (mask <= 0) continue;
-                    int tx = ((int)(sx * ratio) + driftX) & (Tile - 1);
+                    int tx = (int)Math.Floor((lx - offsetX) * ratio) & (Tile - 1);
+                    int ty = (int)Math.Floor((ly - offsetY) * ratio) & (Tile - 1);
                     int ti = ty * Tile + tx;
                     double range = 0.4 + 0.6 * Math.Min(1, dx / span);
                     double n = 0.6 * Coarse[ti] + 0.4 * Fine[ti];

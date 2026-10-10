@@ -55,6 +55,9 @@ namespace AuroraPAR
         /// <summary>Analog scope: rain clutter strength 0 to 1 (0 = none) and CLUTTER filter 0 to 1 (session values).</summary>
         public double ClutterStrength { get; set; }
         public double ClutterFilter { get; set; }
+        /// <summary>Wind that moves the clutter patches, in knots: along the final course towards the runway (tailwind) and to the right of the flight direction.</summary>
+        public double ClutterWindAlongKt { get; set; }
+        public double ClutterWindRightKt { get; set; }
         /// <summary>Colours, widths and dash styles of the elements.</summary>
         public Theme Theme { get; set; } = Theme.Modern(DisplayStyleSettings.CreateDefault());
         /// <summary>Range marks drawn at each range.</summary>
@@ -403,6 +406,9 @@ namespace AuroraPAR
             UpdateClutter(t, speed);
         }
 
+        /// <summary>Logical pixels per NM across the approach (azimuth view; 0 in the profile).</summary>
+        protected virtual double LateralPixelsPerNM => 0;
+
         /// <summary>Horizon of the view (logical y below which there is no echo); none by default.</summary>
         protected virtual double HorizonY => double.MaxValue;
 
@@ -443,6 +449,8 @@ namespace AuroraPAR
                 HorizonY = HorizonY,
                 Strength = Options.ClutterStrength,
                 Filter = Options.ClutterFilter,
+                DriftX = -Options.ClutterWindAlongKt / 3600 * xscale,
+                DriftY = -Options.ClutterWindRightKt / 3600 * LateralPixelsPerNM,
                 Colour = colour
             });
         }
