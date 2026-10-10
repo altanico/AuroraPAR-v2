@@ -38,6 +38,7 @@ namespace AuroraPAR
         private readonly TextBox squawkBox = NumberBox("7001");
         private readonly TextBox lateralBox = NumberBox("0");
         private readonly TextBox heightBox = NumberBox("0");
+        private readonly ComboBox startBox = new() { Width = 130, Margin = new Thickness(4, 0, 0, 0), ItemsSource = new[] { "On final", "30° from left", "30° from right", "45° from left", "45° from right", "90° from left", "90° from right" }, SelectedIndex = 0, ToolTip = "Start: on the final course (as before), or heading towards the point of the centreline at the Distance (NM), with this intercept angle, about 3 NM off the centreline and level below the glide path (the height offset is measured at that point). The Normal button then starts the descent." };
         private readonly TextBox windFromBox = NumberBox("0");
         private readonly TextBox windSpeedBox = NumberBox("0");
         private readonly TextBox windGustBox = NumberBox("0");
@@ -113,6 +114,18 @@ namespace AuroraPAR
             offsets.Children.Add(Caption("ft (+above/−below GP)"));
             second.Children.Add(offsets);
             newPanel.Children.Add(second);
+            StackPanel startRow = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+            startRow.Children.Add(Caption("Start"));
+            startRow.Children.Add(startBox);
+            startRow.Children.Add(Caption("aimed at the Distance, level below the GP"));
+            newPanel.Children.Add(startRow);
+            startBox.SelectionChanged += (s, e) =>
+            {
+                bool intercept = startBox.SelectedIndex > 0;
+                lateralBox.IsEnabled = !intercept;
+                if (intercept && heightBox.Text.Trim() == "0") heightBox.Text = "-300";
+                else if (!intercept && heightBox.Text.Trim() == "-300") heightBox.Text = "0";
+            };
             root.Children.Add(Group("New aircraft", newPanel));
 
             // Wind (all the test aircraft).
@@ -581,7 +594,10 @@ namespace AuroraPAR
             }
             string code = squawkBox.Text.Trim();
             string? squawk = code.Length == 4 && code.All(c => c >= '0' && c <= '7') && code != "0000" ? code : null;
-            string callsign = traffic.Add(distance, speed, squawk, lateral, height);
+            int start = startBox.SelectedIndex;
+            double intercept = start <= 0 ? 0 : new[] { 30.0, 45.0, 90.0 }[(start - 1) / 2];
+            int side = start <= 0 ? 0 : start % 2 == 1 ? -1 : 1;
+            string callsign = traffic.Add(distance, speed, squawk, lateral, height, intercept, side);
             RefreshList();
             list.SelectedItem = callsign;
         }
@@ -905,6 +921,7 @@ namespace AuroraPAR
             }
             info.Text = string.Format(CultureInfo.InvariantCulture, "{0}\n{1:0.0} NM from touchdown\n{2:0} kt, ground speed {3:0} kt{4}",
                 plane.Callsign, plane.Distance, plane.Speed, plane.GroundSpeed, plane.Squawk != null ? "\nSSR A" + plane.Squawk : "");
+            if (!double.IsNaN(plane.GpSeconds)) info.Text += string.Format(CultureInfo.InvariantCulture, "\nGP in {0:0.0} NM (about {1:0} s)", plane.GpRemainingNM, Math.Max(0, plane.GpSeconds));
             bestLabel.Text = string.Format(CultureInfo.InvariantCulture, "BEST VS {0:0.0#}°", plane.GlideSlope);
             bestValue.Text = Rounded(plane.BestVerticalSpeed);
             actualValue.Text = Rounded(plane.VerticalSpeed);

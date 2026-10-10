@@ -77,6 +77,13 @@ namespace AuroraPAR
             public DateTime GivenPositionTime;
             public DateTime GivenAltitudeTime;
 
+            /// <summary>Started level (below the glide path, on an intercept heading): the height offset is measured at <see cref="AimDistance"/>.</summary>
+            public bool StartLevel;
+            public double AimDistance;
+            /// <summary>Level below the glide path: NM and seconds left before it meets the glide path (NaN: not applicable).</summary>
+            public double GpRemainingNM = double.NaN;
+            public double GpSeconds = double.NaN;
+
             public Plane Copy() => (Plane)MemberwiseClone();
         }
 
@@ -131,7 +138,7 @@ namespace AuroraPAR
         /// path (ft, + above), descending at the glide path rate; returns its callsign. The height is set at the
         /// next <see cref="Snapshot"/> (it needs the runway).
         /// </summary>
-        public string Add(double distanceNM, double speedKt, string? squawk, double lateralM, double heightOffsetFt)
+        public string Add(double distanceNM, double speedKt, string? squawk, double lateralM, double heightOffsetFt, double interceptDegrees = 0, int side = 0)
         {
             lock (sync)
             {
@@ -148,6 +155,19 @@ namespace AuroraPAR
                     Speed = speedKt,
                     Squawk = squawk
                 };
+                if (interceptDegrees > 0 && side != 0)
+                {
+                    // Aimed at the point of the centreline at distanceNM, with this intercept angle: the start is back along
+                    // that track, at about 3 NM from the centreline (left: side −1, right: +1); level, below the glide path.
+                    double angle = interceptDegrees * Math.PI / 180;
+                    double back = 3 / Math.Sin(angle);
+                    plane.AimDistance = distanceNM;
+                    plane.Distance = distanceNM + back * Math.Cos(angle);
+                    plane.Lateral = side * 3.0;
+                    plane.Heading = -side * interceptDegrees;
+                    plane.StartLevel = true;
+                    plane.HoldGlidePath = false;
+                }
                 planes.Add(plane);
                 return plane.Callsign;
             }
@@ -223,8 +243,8 @@ namespace AuroraPAR
                     // New aircraft: on the glide path plus its height offset (kept in VerticalSpeed by Add).
                     if (double.IsNaN(plane.Height))
                     {
-                        plane.Height = Math.Max(0, runway.GlidePathHeight(plane.Distance) + plane.VerticalSpeed);
-                        plane.VerticalSpeed = BestVerticalSpeed(plane, runway, windAlong);
+                        plane.Height = Math.Max(0, runway.GlidePathHeight(plane.StartLevel ? plane.AimDistance : plane.Distance) + plane.VerticalSpeed);
+                        plane.VerticalSpeed = plane.StartLevel ? 0 : BestVerticalSpeed(plane, runway, windAlong);
                     }
                     Fly(plane, runway, seconds, windAlong, windRight);
                     // Landed (past the touchdown point near the centreline), or far away: removed.
@@ -325,6 +345,17 @@ namespace AuroraPAR
             plane.FinalTrue = runway.Heading;
             plane.HeadingTrue = (runway.Heading + plane.Heading + 720) % 360;
             plane.Height = Math.Max(0, plane.Height + plane.VerticalSpeed * seconds / 60);
+            // Level below the glide path: where it will meet it, to choose the moment of the descent instruction.
+            double perNM = runway.GlidePathHeight(1);
+            if (!plane.HoldGlidePath && Math.Abs(plane.VerticalSpeed) < 50 && perNM > 0 && alongKt > 1 && plane.Height < runway.GlidePathHeight(plane.Distance) - 10)
+            {
+                plane.GpRemainingNM = plane.Distance - plane.Height / perNM;
+                plane.GpSeconds = plane.GpRemainingNM / alongKt * 3600;
+            }
+            else
+            {
+                plane.GpRemainingNM = plane.GpSeconds = double.NaN;
+            }
         }
 
         private Aircraft ToAircraft(Plane plane, Runway runway, DateTime now)
