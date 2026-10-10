@@ -83,6 +83,10 @@ namespace AuroraPAR
                 "LIRF;34R;342.7;6;41.81243791;12.27552181;1000;60;3.0;57.41;200;20\r",
                 "LIRF;16R;162.7;14;41.80;12.25;1000;60;3.0;56.04;200;20\r"
             ];
+            Check("lines of the file read", RunwayFile.Parse(file).Count, 4, 0);
+            Check("runways of the file (approaches as one)", RunwayFile.Runways(RunwayFile.Parse(file)).Count, 3, 0);
+            Check("16L has its opposite end", RunwayFile.OppositeOf(RunwayFile.Parse(file), RunwayFile.Parse(file)[0]) != null ? 1 : 0, 1, 0);
+            Check("16R has no opposite end", RunwayFile.OppositeOf(RunwayFile.Parse(file), RunwayFile.Parse(file)[3]) == null ? 1 : 0, 1, 0);
             List<RunwayCheck> checks = RunwayFile.Analyze(file, out List<string> unpaired);
             Check("runways paired in the file", checks.Count, 2, 0);
             Check("runway without its opposite end listed", unpaired.Count, 1, 0);

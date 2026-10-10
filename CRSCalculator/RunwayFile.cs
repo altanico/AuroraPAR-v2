@@ -23,16 +23,20 @@ namespace AuroraPAR
         public static double Delta(double a, double b) => ((a - b + 540) % 360 + 360) % 360 - 180;
     }
 
+    /// <summary>One line of runways.par (one approach of a runway).</summary>
+    internal sealed class RunwayEntry
+    {
+        public int Line;
+        public string Icao = "";
+        public string Base = "";
+        /// <summary>Coordinates as written in the file.</summary>
+        public string LatitudeText = "", LongitudeText = "";
+        public double Latitude, Longitude, Heading, Length;
+    }
+
     /// <summary>Reads runways.par, pairs the runways with their opposite ends and rewrites headings and lengths.</summary>
     internal static class RunwayFile
     {
-        private sealed class Entry
-        {
-            public int Line;
-            public string Icao = "";
-            public string Base = "";
-            public double Latitude, Longitude, Heading, Length;
-        }
 
         /// <summary>First word of the designator ("16L 3.0" is runway 16L).</summary>
         private static string BaseDesignator(string designator) => designator.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.ToUpperInvariant() ?? "";
@@ -49,10 +53,10 @@ namespace AuroraPAR
             return other.ToString("00", CultureInfo.InvariantCulture) + side;
         }
 
-        /// <summary>The runways of the file whose opposite end is also in the file.</summary>
-        public static List<RunwayCheck> Analyze(IReadOnlyList<string> lines, out List<string> unpaired)
+        /// <summary>The valid runway lines of the file.</summary>
+        public static List<RunwayEntry> Parse(IReadOnlyList<string> lines)
         {
-            List<Entry> entries = [];
+            List<RunwayEntry> entries = [];
             for (int i = 0; i < lines.Count; i++)
             {
                 string text = lines[i].TrimEnd('\r');
@@ -62,15 +66,37 @@ namespace AuroraPAR
                 if (!CoordinateParser.TryParse(f[4], true, out double lat) || !CoordinateParser.TryParse(f[5], false, out double lon)) continue;
                 if (!double.TryParse(f[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double heading)) continue;
                 double.TryParse(f[6], NumberStyles.Float, CultureInfo.InvariantCulture, out double length);
-                entries.Add(new Entry { Line = i, Icao = f[0].Trim().ToUpperInvariant(), Base = BaseDesignator(f[1]), Latitude = lat, Longitude = lon, Heading = heading, Length = length });
+                entries.Add(new RunwayEntry
+                {
+                    Line = i, Icao = f[0].Trim().ToUpperInvariant(), Base = BaseDesignator(f[1]), Latitude = lat, Longitude = lon,
+                    LatitudeText = f[4].Trim(), LongitudeText = f[5].Trim(), Heading = heading, Length = length
+                });
             }
+            return entries;
+        }
+
+        /// <summary>First line of each runway (the approaches of a runway count as one).</summary>
+        public static List<RunwayEntry> Runways(IEnumerable<RunwayEntry> entries) =>
+            entries.GroupBy(e => (e.Icao, e.Base)).Select(g => g.First()).ToList();
+
+        /// <summary>The opposite end of the runway, if it is in the list.</summary>
+        public static RunwayEntry? OppositeOf(IEnumerable<RunwayEntry> entries, RunwayEntry runway)
+        {
+            string? opposite = Opposite(runway.Base);
+            return opposite == null ? null : entries.FirstOrDefault(e => e.Icao == runway.Icao && e.Base == opposite);
+        }
+
+        /// <summary>The runways of the file whose opposite end is also in the file.</summary>
+        public static List<RunwayCheck> Analyze(IReadOnlyList<string> lines, out List<string> unpaired)
+        {
+            List<RunwayEntry> entries = Parse(lines);
             List<RunwayCheck> result = [];
             unpaired = [];
             foreach (var group in entries.GroupBy(e => (e.Icao, e.Base)))
             {
-                Entry first = group.First();
+                RunwayEntry first = group.First();
                 string? opposite = Opposite(first.Base);
-                Entry? other = opposite == null ? null : entries.FirstOrDefault(e => e.Icao == first.Icao && e.Base == opposite);
+                RunwayEntry? other = OppositeOf(entries, first);
                 if (other == null)
                 {
                     unpaired.Add($"{first.Icao} {first.Base}");
@@ -231,6 +257,8 @@ namespace AuroraPAR
                 MessageBox.Show(this, "Nothing is ticked.", "CRSCalculator");
                 return;
             }
+            if (MessageBox.Show(this, $"Write {choices.Count} runways in {Path.GetFileName(path)}?\nThe present file is kept as {Path.GetFileName(path)}.bak.", "CRSCalculator",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             try
             {
                 List<string> output = [.. lines];

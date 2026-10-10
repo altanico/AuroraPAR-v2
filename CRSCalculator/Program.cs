@@ -43,6 +43,17 @@ namespace AuroraPAR
         private readonly TextBox longitudeB = CoordinateBox();
         private bool splitting;
 
+        // runways.par: choice of the airport and of the runway whose threshold fills the boxes of threshold A.
+        private static readonly string LastFilePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AuroraPAR", "CRSCalculator.lastfile");
+        private List<RunwayEntry> fileEntries = [];
+        private RunwayEntry? fileRunway;
+        private string? filePath;
+        private bool filling;
+        private readonly TextBlock fileName = new() { VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.Gray, FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(8, 0, 0, 0), MaxWidth = 330 };
+        private readonly ComboBox icaoBox = new() { IsEditable = true, Width = 80, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
+        private readonly ComboBox runwayBox = new() { Width = 110, Height = 24, Margin = new Thickness(10, 0, 0, 0) };
+        private readonly CheckBox onlyUnpaired = new() { Content = "Only runways without the opposite end", IsChecked = true, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+
         private static TextBox CoordinateBox() => new() { Width = 270, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
         private readonly TextBox lengthBox = new() { Width = 110, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
         private readonly TextBox variationBox = new() { Width = 110, Height = 24, VerticalContentAlignment = VerticalAlignment.Center };
@@ -65,6 +76,35 @@ namespace AuroraPAR
             StackPanel root = new() { Margin = new Thickness(14), Width = 560 };
             root.Children.Add(Note("Heading of a runway from the coordinates of its two thresholds, for the Runways editor of AuroraPAR (true heading) and to check the final course (CRS) against the charts. Coordinates in any format: 40.232271, N040 13.9, 401357N, 0180821E ... (the same as the LATITUDE and LONGITUDE fields of runways.par). Use the thresholds of the landing runways and at least 6 decimals (or seconds with 2 decimals). Pasting both coordinates, or a whole line of runways.par, in the latitude box fills both boxes."));
 
+            // runways.par: pick the airport and the runway, its threshold fills threshold A.
+            StackPanel fileRow = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
+            Button browse = new() { Content = "runways.par...", Height = 24, Padding = new Thickness(10, 0, 10, 0), ToolTip = "Choose the runways.par file: the thresholds of its runways can then be picked from the lists below, without copying them." };
+            browse.Click += (s, e) =>
+            {
+                Microsoft.Win32.OpenFileDialog dialog = new() { Title = "runways.par", Filter = "runways.par|*.par|All files|*.*" };
+                if (dialog.ShowDialog(this) == true) LoadFile(dialog.FileName, remember: true);
+            };
+            fileRow.Children.Add(browse);
+            fileRow.Children.Add(fileName);
+            root.Children.Add(fileRow);
+            StackPanel pick = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+            pick.Children.Add(new TextBlock { Text = "Airport:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+            pick.Children.Add(icaoBox);
+            pick.Children.Add(runwayBox);
+            pick.Children.Add(onlyUnpaired);
+            root.Children.Add(pick);
+            icaoBox.ToolTip = "ICAO of the airport (type it or pick it). Then choose the runway: its threshold is written in the boxes of threshold A.";
+            runwayBox.ToolTip = "Runway of the file: its threshold fills the boxes of threshold A.";
+            onlyUnpaired.ToolTip = "On: only the runways whose opposite end is not in the file (the other end is then written by hand, from the charts). Off: all the runways.";
+            icaoBox.LostFocus += (s, e) => FillRunways();
+            icaoBox.SelectionChanged += (s, e) => Dispatcher.BeginInvoke(FillRunways);
+            icaoBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == System.Windows.Input.Key.Enter) FillRunways();
+            };
+            onlyUnpaired.Click += (s, e) => FillAirports();
+            runwayBox.SelectionChanged += (s, e) => PickRunway();
+
             root.Children.Add(Caption("Threshold A: the runway whose heading you want (the aircraft lands from here)"));
             root.Children.Add(CoordinateRow(latitudeA, longitudeA));
             root.Children.Add(Caption("Threshold B: the other end of the runway (the threshold of the opposite runway)"));
@@ -79,7 +119,7 @@ namespace AuroraPAR
             root.Children.Add(results);
             Button fileButton = new()
             {
-                Content = "Check a runways.par file...",
+                Content = "Check the whole runways.par file...",
                 Height = 26,
                 Padding = new Thickness(12, 0, 12, 0),
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -88,11 +128,19 @@ namespace AuroraPAR
             };
             fileButton.Click += (s, e) =>
             {
-                Microsoft.Win32.OpenFileDialog dialog = new() { Title = "runways.par", Filter = "runways.par|*.par|All files|*.*" };
-                if (dialog.ShowDialog(this) != true) return;
+                string? path = filePath;
+                if (path == null)
+                {
+                    Microsoft.Win32.OpenFileDialog dialog = new() { Title = "runways.par", Filter = "runways.par|*.par|All files|*.*" };
+                    if (dialog.ShowDialog(this) != true) return;
+                    path = dialog.FileName;
+                    LoadFile(path, remember: true);
+                }
                 try
                 {
-                    new RunwayFileWindow(dialog.FileName).ShowDialog();
+                    new RunwayFileWindow(path).ShowDialog();
+                    // The file may have been written: lists and values again.
+                    LoadFile(path, remember: false);
                 }
                 catch (Exception error)
                 {
@@ -108,7 +156,103 @@ namespace AuroraPAR
             }
             latitudeA.TextChanged += (s, e) => Split(latitudeA, longitudeA);
             latitudeB.TextChanged += (s, e) => Split(latitudeB, longitudeB);
+            try
+            {
+                if (System.IO.File.Exists(LastFilePath))
+                {
+                    string last = System.IO.File.ReadAllText(LastFilePath).Trim();
+                    if (System.IO.File.Exists(last)) LoadFile(last, remember: false);
+                }
+            }
+            catch (Exception)
+            {
+            }
             Recalculate();
+        }
+
+        /// <summary>Reads runways.par (and remembers it for the next start).</summary>
+        private void LoadFile(string path, bool remember)
+        {
+            try
+            {
+                fileEntries = RunwayFile.Parse(System.IO.File.ReadAllLines(path));
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(this, "Cannot read the file: " + error.Message, "CRSCalculator", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            filePath = path;
+            fileName.Text = $"{System.IO.Path.GetFileName(path)}  ({RunwayFile.Runways(fileEntries).Count} runways)";
+            fileName.ToolTip = path;
+            if (remember)
+            {
+                try
+                {
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(LastFilePath)!);
+                    System.IO.File.WriteAllText(LastFilePath, path);
+                }
+                catch (Exception)
+                {
+                }
+            }
+            FillAirports();
+        }
+
+        /// <summary>Runways offered: all, or only those whose opposite end is not in the file.</summary>
+        private List<RunwayEntry> Candidates()
+        {
+            List<RunwayEntry> all = RunwayFile.Runways(fileEntries);
+            return onlyUnpaired.IsChecked == true ? all.Where(r => RunwayFile.OppositeOf(fileEntries, r) == null).ToList() : all;
+        }
+
+        private void FillAirports()
+        {
+            filling = true;
+            string current = icaoBox.Text.Trim().ToUpperInvariant();
+            List<string> airports = Candidates().Select(r => r.Icao).Distinct().OrderBy(a => a, StringComparer.Ordinal).ToList();
+            icaoBox.ItemsSource = airports;
+            icaoBox.Text = current;
+            filling = false;
+            FillRunways();
+        }
+
+        private void FillRunways()
+        {
+            if (filling) return;
+            filling = true;
+            string icao = icaoBox.Text.Trim().ToUpperInvariant();
+            icaoBox.Text = icao;
+            List<string> runways = Candidates().Where(r => r.Icao == icao).Select(r => r.Base).OrderBy(b => b, StringComparer.Ordinal).ToList();
+            string? previous = runwayBox.SelectedItem as string;
+            runwayBox.ItemsSource = runways;
+            runwayBox.SelectedItem = previous != null && runways.Contains(previous) ? previous : null;
+            filling = false;
+            if (icao.Length == 4 && runways.Count == 0 && fileEntries.Count > 0)
+            {
+                fileName.Text = onlyUnpaired.IsChecked == true
+                    ? $"{icao}: no runway without its opposite end in the file (untick the box to see all)"
+                    : $"{icao}: not in the file";
+            }
+        }
+
+        /// <summary>The runway chosen: its threshold in the boxes of threshold A.</summary>
+        private void PickRunway()
+        {
+            if (filling || runwayBox.SelectedItem is not string name) return;
+            RunwayEntry? entry = fileEntries.FirstOrDefault(e => e.Icao == icaoBox.Text.Trim().ToUpperInvariant() && e.Base == name);
+            if (entry == null) return;
+            fileRunway = entry;
+            RunwayEntry? opposite = RunwayFile.OppositeOf(fileEntries, entry);
+            filling = true;
+            latitudeA.Text = entry.LatitudeText;
+            longitudeA.Text = entry.LongitudeText;
+            // Opposite end in the file: threshold B too; otherwise B is written by hand.
+            latitudeB.Text = opposite?.LatitudeText ?? "";
+            longitudeB.Text = opposite?.LongitudeText ?? "";
+            filling = false;
+            Recalculate();
+            (opposite == null ? latitudeB : latitudeA).Focus();
         }
 
         private static TextBlock Note(string text) => new()
@@ -209,7 +353,9 @@ namespace AuroraPAR
         private void Recalculate()
         {
             results.Children.Clear();
-            if (splitting) return;
+            if (splitting || filling) return;
+            // The runway of the file stays linked only while its coordinates are not edited.
+            if (fileRunway != null && (latitudeA.Text.Trim() != fileRunway.LatitudeText || longitudeA.Text.Trim() != fileRunway.LongitudeText)) fileRunway = null;
             bool a = Coordinate(latitudeA, true, out double latA) & Coordinate(longitudeA, false, out double lonA);
             bool b = Coordinate(latitudeB, true, out double latB) & Coordinate(longitudeB, false, out double lonB);
             string latTextA = latitudeA.Text, lonTextA = longitudeA.Text, latTextB = latitudeB.Text, lonTextB = longitudeB.Text;
@@ -235,6 +381,13 @@ namespace AuroraPAR
             Add("True heading on the WGS84 ellipsoid, as the charts give it", $"{Number(heading)}°", Number(heading), null,
                 $"Differs from the radar value by {Number(Math.Abs(((heading - radar + 540) % 360) - 180))}°: AuroraPAR measures the angles on a sphere.");
             Add("Opposite runway (heading for AuroraPAR · ellipsoid)", $"{Number(radarReverse)}° · {Number(reverse)}°", Number(radarReverse));
+            if (fileRunway != null)
+            {
+                double gap = RunwayCheck.Delta(radar, fileRunway.Heading);
+                Add($"In runways.par for {fileRunway.Icao} {fileRunway.Base}", $"heading {Number(fileRunway.Heading, "0.##")}° · length {Number(fileRunway.Length, "0")} m", null,
+                    Math.Abs(gap) > 0.05 ? Amber : null,
+                    Math.Abs(gap) > 0.05 ? $"The heading in the file differs by {Number(Math.Abs(gap))}° from the one calculated here." : "The heading in the file agrees with the calculated one.");
+            }
 
             // Distance and length.
             Brush? lengthColor = null;
