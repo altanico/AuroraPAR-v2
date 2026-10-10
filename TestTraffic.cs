@@ -331,12 +331,10 @@ namespace AuroraPAR
         {
             // From the threshold: back along the approach (opposite of the runway heading), then to the pilot's right.
             double along = plane.Distance - runway.TouchdownNM;
-            double approach = (runway.Heading + 180) * Math.PI / 180;
-            double right = (runway.Heading + 90) * Math.PI / 180;
-            double northNM = along * Math.Cos(approach) + plane.Lateral * Math.Cos(right);
-            double eastNM = along * Math.Sin(approach) + plane.Lateral * Math.Sin(right);
-            double latitude = runway.Latitude + northNM / 60;
-            double longitude = runway.Longitude + eastNM / (60 * Math.Max(0.01, Math.Cos(runway.Latitude * Math.PI / 180)));
+            // On the same Earth as the radar (Earth.Radius): on the centreline the radar shows exactly the distance given.
+            double radius = Earth.Radius(runway);
+            (double onLine, double onLineLon) = Earth.Destination(runway.Latitude, runway.Longitude, runway.Heading + 180, along, radius);
+            (double latitude, double longitude) = Earth.Destination(onLine, onLineLon, runway.Heading + 90, plane.Lateral, radius);
             double altitude = runway.Elevation + plane.Height;
             double track = (runway.Heading + plane.Track + 720) % 360;
             if (AuroraLike)

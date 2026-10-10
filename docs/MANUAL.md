@@ -98,6 +98,7 @@ Both views are drawn as seen from the side of the runway, with the **antenna** (
 - **Antenna beam**: the part the antenna is looking at now, moved by the antenna tilt inside the scan limits. **A track is seen only inside the beam**, and each view has its own antenna, as on a real PAR: the elevation view shows it inside the elevation beam, the azimuth view inside the azimuth beam — leaving one beam it disappears only from that view. It is shown by the range marks, **thicker inside the beam**; its edges can also be drawn as lines (*Settings → Radar → Draw the edges of the beam*, off by default) ([section 7](#7-antenna-tilt)).
 - **Approach limits** (red lines from the touchdown point): the tolerance around the glide path / centreline. Inside them a track is **green**, outside **red**.
 - Between touchdown and threshold the glide path, centreline and approach limits are **dashed**; beyond the threshold they are solid.
+- Distances and offsets are computed on the Earth's shape at the runway (WGS84 radius of curvature in the direction of the runway): along the final they are right within a few metres up to 40 NM.
 
 The antenna always stays at the same place: zooming in enlarges the approach, it does not move the picture. The part of the runway behind the antenna is outside the scan and is not drawn.
 
