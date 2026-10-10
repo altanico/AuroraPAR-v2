@@ -229,6 +229,18 @@ namespace AuroraPAR
             DisplayArea.SizeChanged += (s, e) => ConsoleHost.MaxWidth = Math.Max(90, Math.Min(DisplayArea.ActualWidth * 0.26, 300));
             ConsoleViewbox.Child = consolePanel;
             PreviewKeyDown += MainWindow_PreviewKeyDown;
+            // A click outside the text field (APT, DH, GP...) that has the cursor takes the keyboard back, so that the
+            // keys P, A, T, L and the arrows work again (a click on a part of the window that takes no focus does not).
+            PreviewMouseDown += (sender, e) =>
+            {
+                if (Keyboard.FocusedElement is not (TextBox or AptEntry) || Keyboard.FocusedElement is not DependencyObject focused) return;
+                for (DependencyObject? d = e.OriginalSource as DependencyObject; d != null;
+                     d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+                {
+                    if (d == focused) return;
+                }
+                Keyboard.ClearFocus();
+            };
             StartJoystick();
             DhUpButton.Click += (s, e) => SetDecisionHeight(runway.MDH + DecisionHeightStep);
             DhDownButton.Click += (s, e) => SetDecisionHeight(runway.MDH - DecisionHeightStep);
