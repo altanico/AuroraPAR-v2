@@ -70,6 +70,32 @@ namespace AuroraPAR
             Check("precision (seconds, 2 decimals)", CoordinatePrecision.MaxErrorDegrees("40°13'57.74\"N", true), 1.0 / 3600 / 100 / 2, 1e-12);
             Check("precision (compact AIP, seconds)", CoordinatePrecision.MaxErrorDegrees("401357N", true), 1.0 / 3600 / 2, 1e-12);
 
+            // Check of a runways.par file: pairing of the opposite ends, heading and length, rewriting of the two fields only.
+            Check("opposite of 16L", RunwayFile.Opposite("16L") == "34R" ? 1 : 0, 1, 0);
+            Check("opposite of 09", RunwayFile.Opposite("09") == "27" ? 1 : 0, 1, 0);
+            Check("opposite of 36", RunwayFile.Opposite("36") == "18" ? 1 : 0, 1, 0);
+            Check("opposite of 18C", RunwayFile.Opposite("18C") == "36C" ? 1 : 0, 1, 0);
+            List<string> file =
+            [
+                "# comment\r",
+                "LIRF;16L;162.7;14;41.84592298;12.26152158;1000;60;3.0;56.04;200;20\r",
+                "LIRF;16L 2.8;162.7;14;41.84592298;12.26152158;1000;60;2.8;56.04;200;20;310;3E\r",
+                "LIRF;34R;342.7;6;41.81243791;12.27552181;1000;60;3.0;57.41;200;20\r",
+                "LIRF;16R;162.7;14;41.80;12.25;1000;60;3.0;56.04;200;20\r"
+            ];
+            List<RunwayCheck> checks = RunwayFile.Analyze(file, out List<string> unpaired);
+            Check("runways paired in the file", checks.Count, 2, 0);
+            Check("runway without its opposite end listed", unpaired.Count, 1, 0);
+            RunwayCheck first = checks.First(c => c.Name == "LIRF 16L");
+            Check("file check: heading 16L", first.NewHeading, 162.69, 0.0051);
+            Check("file check: length 16L", first.NewLength, 3897, 0.5);
+            Check("file check: lines of 16L (two approaches)", first.Lines.Count, 2, 0);
+            RunwayFile.Apply(file, [(first, true, true)]);
+            Check("file rewritten: heading", file[1].Split(';')[2] == "162.69" ? 1 : 0, 1, 0);
+            Check("file rewritten: length of the second approach", file[2].Split(';')[6] == "3897" ? 1 : 0, 1, 0);
+            Check("file rewritten: other fields and line ending kept", file[2] == "LIRF;16L 2.8;162.69;14;41.84592298;12.26152158;3897;60;2.8;56.04;200;20;310;3E\r" ? 1 : 0, 1, 0);
+            Check("file rewritten: other runway untouched", file[3] == "LIRF;34R;342.7;6;41.81243791;12.27552181;1000;60;3.0;57.41;200;20\r" ? 1 : 0, 1, 0);
+
             report.AppendLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECKS FAILED");
             try
             {

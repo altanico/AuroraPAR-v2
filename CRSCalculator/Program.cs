@@ -77,6 +77,29 @@ namespace AuroraPAR
             root.Children.Add(options);
             dateBox.Text = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             root.Children.Add(results);
+            Button fileButton = new()
+            {
+                Content = "Check a runways.par file...",
+                Height = 26,
+                Padding = new Thickness(12, 0, 12, 0),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 14, 0, 0),
+                ToolTip = "Reads a runways.par, pairs each runway with its opposite end and proposes the heading and the length calculated from the thresholds, to write in the file (with a .bak copy)."
+            };
+            fileButton.Click += (s, e) =>
+            {
+                Microsoft.Win32.OpenFileDialog dialog = new() { Title = "runways.par", Filter = "runways.par|*.par|All files|*.*" };
+                if (dialog.ShowDialog(this) != true) return;
+                try
+                {
+                    new RunwayFileWindow(dialog.FileName).ShowDialog();
+                }
+                catch (Exception error)
+                {
+                    MessageBox.Show(this, "Cannot read the file: " + error.Message, "CRSCalculator", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            };
+            root.Children.Add(fileButton);
             Content = root;
 
             foreach (TextBox box in new[] { latitudeA, longitudeA, latitudeB, longitudeB, lengthBox, variationBox, dateBox })
