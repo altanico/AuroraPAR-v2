@@ -29,6 +29,8 @@
 
 Last updates, newest first. When an item works in the test, delete it.
 
+- **(Done, to be tested) Customisable DH mark:** *Colours & lines*: **Decision height line** (horizontal, also in the azimuth view), **Decision height drop line** (vertical, new, default dashed) and **Decision height mark** (symbol colour); *Settings*: **DH line length** (0.5–5 NM or up to the glide path, default 3) and symbol **DH point** (none by default). Old profiles: the drop line and the mark take the style of the old DH line. Default look unchanged.
+
 - **(Done, to be tested) Range mark text without unit + bulk button** (Display style → Range marks): **NM** box per range (off: only the number, also with fractions), and **Distance text on all ranges: Full / Number only / None + Apply to all** (Full and Number only restore the default marks on ranges with no text; None clears all).
 
 - **(Done, to be tested) DH selector optional** (both displays): *Settings → Show the DH selector*, **off by default** (existing profiles too). Hidden: the runway DH is used; Shift+arrows still work. Modern: the DH box disappears from the right panel; analog: knob/keys of the DH disappear (the readout stays).

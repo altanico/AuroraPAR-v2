@@ -92,6 +92,11 @@
                     <TextBlock Text="Track smoothing (modern display):" VerticalAlignment="Center"/>
                     <ComboBox Name="SmoothingComboBox" Width="90" Margin="8,0,0,0"/>
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                            ToolTip="Length of the horizontal decision height line, from the touchdown point (elevation view). Colour, line style and width: Display style, Colours &amp; lines.">
+                    <TextBlock Text="DH line length:" VerticalAlignment="Center"/>
+                    <ComboBox Name="DhLengthComboBox" Width="130" Margin="8,0,0,0"/>
+                </StackPanel>
                 <Grid Name="SymbolGrid" Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

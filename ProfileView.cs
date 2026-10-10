@@ -116,11 +116,13 @@ namespace AuroraPAR
             // Decision height: horizontal line from the touchdown point to 3 NM (or the end of the display),
             // and a dashed vertical line from its intercept with the glide path down to the runway axis.
             double displayEnd = Runway.TouchdownNM + range;
-            AddLine(X(0), Y(Runway.MDH), X(Math.Min(Runway.DecisionHeightLineLength, displayEnd)), Y(Runway.MDH), StyleElement.DecisionHeight);
             double intercept = Runway.MissedApproachPointNM;
+            double lineLength = Options.DhLineLength <= 0 ? intercept : Options.DhLineLength;
+            AddLine(X(0), Y(Runway.MDH), X(Math.Min(lineLength, displayEnd)), Y(Runway.MDH), StyleElement.DecisionHeight);
             if (intercept <= displayEnd)
             {
-                AddLine(X(intercept), Y(0), X(intercept), Y(Runway.MDH), StyleElement.DecisionHeight, dashed: true);
+                AddLine(X(intercept), Y(0), X(intercept), Y(Runway.MDH), StyleElement.DecisionHeightDrop);
+                AddSymbol(Options.DhSymbol, X(intercept), Y(Runway.MDH), Brush(StyleElement.DecisionHeightMark));
             }
             // Touchdown point: origin of the range marks and of the glide path.
             if (Options.TouchdownSymbol.Shape == SymbolShape.Line)

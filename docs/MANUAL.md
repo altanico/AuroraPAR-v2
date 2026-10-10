@@ -115,7 +115,7 @@ The antenna always stays at the same place: zooming in enlarges the approach, it
 
 - **Horizon line** (ground at the threshold elevation) and the runway.
 - **Glide path** (yellow) from the touchdown point at the runway's glide slope angle, with its **approach limits** above and below (default ±0.5°).
-- **Decision height**: a red horizontal line at the DH from the touchdown point to 3 NM, and a dashed vertical line where it meets the glide path.
+- **Decision height**: a red horizontal line at the DH from the touchdown point (3 NM by default), and a dashed vertical line from the point where the DH meets the glide path down to the ground. Both can be customised: colour, line style and width of each (*Display style → Colours & lines*: *Decision height line* and *Decision height drop line*, which can also be hidden); the **length** of the horizontal line (0.5–5 NM or up to the glide path: *Settings → DH line length*); and an optional **symbol** on the DH point, with the colour of the *Decision height mark* (*Settings → Symbols → DH point*, none by default). The horizontal line in the azimuth view follows *Decision height line*.
 - **Altitude scale** (optional) on the runway side: altitudes with QNH, heights with QFE, in feet or metres.
 
 ### 4.3 Azimuth view (bottom)

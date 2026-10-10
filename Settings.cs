@@ -324,6 +324,10 @@ namespace AuroraPAR
         public SymbolSetting ThresholdSymbol { get; set; } = new(SymbolShape.Line, 10);
         public SymbolSetting TouchdownSymbol { get; set; } = new(SymbolShape.Line, 12);
         public SymbolSetting AntennaSymbol { get; set; } = new(SymbolShape.Square, 8);
+        /// <summary>Symbol on the point where the glide path reaches the decision height (none by default).</summary>
+        public SymbolSetting DhSymbol { get; set; } = new(SymbolShape.None, 10);
+        /// <summary>Length of the horizontal DH line from the touchdown point, in NM; 0 = up to the glide path.</summary>
+        public double DhLineLength { get; set; } = Runway.DecisionHeightLineLength;
         public SymbolSetting HistorySymbol { get; set; } = new(SymbolShape.FilledCircle, 3);
         /// <summary>Symbol of a coasting track (estimated position, out of the beam).</summary>
         public SymbolSetting CoastSymbol { get; set; } = new(SymbolShape.Diamond, 12);
@@ -410,6 +414,8 @@ namespace AuroraPAR
             ThresholdSymbol = NormalizeSymbol(ThresholdSymbol, new(SymbolShape.Line, 10));
             TouchdownSymbol = NormalizeSymbol(TouchdownSymbol, new(SymbolShape.Line, 12));
             AntennaSymbol = NormalizeSymbol(AntennaSymbol, new(SymbolShape.Square, 8));
+            DhSymbol = NormalizeSymbol(DhSymbol, new(SymbolShape.None, 10));
+            DhLineLength = double.IsNaN(DhLineLength) ? Runway.DecisionHeightLineLength : Math.Clamp(DhLineLength, 0, 5);
             HistorySymbol = NormalizeSymbol(HistorySymbol, new(SymbolShape.FilledCircle, 3));
             CoastSymbol = NormalizeSymbol(CoastSymbol, new(SymbolShape.Diamond, 12));
             CoastSeconds = double.IsNaN(CoastSeconds) ? 8 : Math.Clamp(CoastSeconds, 0, MaxCoastSeconds);

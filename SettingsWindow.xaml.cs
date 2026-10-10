@@ -63,6 +63,13 @@ namespace AuroraPAR
             AnalogRadio.Checked += (s, e) => SetProfileValue(p => p.DisplayMode == DisplayMode.Analog, p => p.DisplayMode = DisplayMode.Analog);
             LockModeCheck.Checked += (s, e) => SetProfileValue(p => p.LockDisplayMode, p => p.LockDisplayMode = true);
             LockModeCheck.Unchecked += (s, e) => SetProfileValue(p => !p.LockDisplayMode, p => p.LockDisplayMode = false);
+            DhLengthComboBox.ItemsSource = DhLengths.Select(l => l == 0 ? "up to the glide path" : FormatNumber(l) + " NM").ToList();
+            DhLengthComboBox.SelectionChanged += (s, e) =>
+            {
+                if (refreshing || DhLengthComboBox.SelectedIndex < 0) return;
+                double value = DhLengths[DhLengthComboBox.SelectedIndex];
+                SetProfileValue(p => p.DhLineLength == value, p => p.DhLineLength = value);
+            };
             ShowDhCheck.Checked += (s, e) => SetProfileValue(p => p.ShowDhSelector, p => p.ShowDhSelector = true);
             ShowDhCheck.Unchecked += (s, e) => SetProfileValue(p => !p.ShowDhSelector, p => p.ShowDhSelector = false);
             RunwayLeftRadio.Checked += (s, e) => SetRunwaySide(RunwaySide.Left);
@@ -169,6 +176,7 @@ namespace AuroraPAR
                 AnalogRadio.IsChecked = Active.DisplayMode == DisplayMode.Analog;
                 LockModeCheck.IsChecked = Active.LockDisplayMode;
                 ShowDhCheck.IsChecked = Active.ShowDhSelector;
+                DhLengthComboBox.SelectedIndex = Array.FindIndex(DhLengths, l => Math.Abs(l - Active.DhLineLength) < 0.01);
                 RangeControlComboBox.SelectedIndex = (int)Active.RangeControl;
                 if (!RangeKeyTextBox.IsKeyboardFocused) RangeKeyTextBox.Text = Active.RangeDefaultKey;
                 RangeKeyTextBox.IsEnabled = Active.RangeControl is AnalogRangeControl.StepKeys or AnalogRangeControl.PanelKeys;
@@ -456,6 +464,8 @@ namespace AuroraPAR
         /// <summary>
         /// One row per symbol (track, threshold, touchdown point, antenna): shape and size.
         /// </summary>
+        private static readonly double[] DhLengths = [0, 0.5, 1, 1.5, 2, 3, 4, 5];
+
         private void BuildSymbolRows()
         {
             // Fifth column: the key that edits a custom symbol.
@@ -467,6 +477,7 @@ namespace AuroraPAR
             AddSymbolRow("Threshold", p => p.ThresholdSymbol, all);
             AddSymbolRow("Touchdown point", p => p.TouchdownSymbol, all);
             AddSymbolRow("Antenna", p => p.AntennaSymbol, all);
+            AddSymbolRow("DH point", p => p.DhSymbol, all);
         }
 
         private void AddSymbolRow(string label, Func<Profile, SymbolSetting> get, SymbolShape[] shapes)

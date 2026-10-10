@@ -229,7 +229,11 @@ namespace AuroraPAR
         TrackOutside,
         /// <summary>Coasting track: estimated position of a track out of the beam (modern display).</summary>
         TrackCoasting,
-        LabelText
+        LabelText,
+        /// <summary>Vertical line from the intercept of the glide path with the DH down to the ground (added later: older profiles get the style of the DH line, dashed).</summary>
+        DecisionHeightDrop,
+        /// <summary>Colour of the symbol on the DH point (added later: older profiles get the colour of the DH line).</summary>
+        DecisionHeightMark
     }
 
     /// <summary>Colour (as #RRGGBB), dash style and width of an element.</summary>
@@ -258,7 +262,7 @@ namespace AuroraPAR
         {
             StyleElement.RangeText or StyleElement.Background or StyleElement.PlotInside or StyleElement.PlotOutside
                 or StyleElement.Antenna or StyleElement.TrackInside or StyleElement.TrackOutside or StyleElement.TrackCoasting
-                or StyleElement.LabelText => false,
+                or StyleElement.LabelText or StyleElement.DecisionHeightMark => false,
             _ => true
         };
 
@@ -282,7 +286,9 @@ namespace AuroraPAR
             StyleElement.ScanLimits => "Scan limits",
             StyleElement.AntennaBeam => "Antenna beam",
             StyleElement.Antenna => "Antenna",
-            StyleElement.DecisionHeight => "Decision height",
+            StyleElement.DecisionHeight => "Decision height line (horizontal)",
+            StyleElement.DecisionHeightDrop => "Decision height drop line (vertical)",
+            StyleElement.DecisionHeightMark => "Decision height mark (symbol)",
             StyleElement.Runway => "Runway and threshold",
             StyleElement.Ground => "Ground",
             StyleElement.Touchdown => "Touchdown point",
@@ -311,6 +317,8 @@ namespace AuroraPAR
             StyleElement.AntennaBeam => new() { Color = "#40E0D0", Width = 2 },
             StyleElement.Antenna => new() { Color = "#5F9EA0" },
             StyleElement.DecisionHeight => new() { Color = "#FF0000", Width = 2 },
+            StyleElement.DecisionHeightDrop => new() { Color = "#FF0000", Width = 2, Dash = LineDash.Dashed },
+            StyleElement.DecisionHeightMark => new() { Color = "#FF0000" },
             StyleElement.Runway => new() { Color = "#008000", Width = 3 },
             StyleElement.Ground => new() { Color = "#008000", Width = 2 },
             StyleElement.Touchdown => new() { Color = "#FFFF00", Width = 2 },
@@ -349,6 +357,21 @@ namespace AuroraPAR
                 && ColorText.TryParse(scan.Color, out _))
             {
                 Elements[StyleElement.Antenna] = new LineStyle { Color = scan.Color };
+            }
+            // Profiles saved before the DH had a vertical line and a mark of their own: the style of the DH line, as it was
+            // (the vertical line was always dashed).
+            if (Elements.TryGetValue(StyleElement.DecisionHeight, out LineStyle? dh) && dh != null && ColorText.TryParse(dh.Color, out _))
+            {
+                if (!Elements.TryGetValue(StyleElement.DecisionHeightDrop, out LineStyle? drop) || drop == null)
+                {
+                    LineStyle copy = dh.Copy();
+                    copy.Dash = LineDash.Dashed;
+                    Elements[StyleElement.DecisionHeightDrop] = copy;
+                }
+                if (!Elements.TryGetValue(StyleElement.DecisionHeightMark, out LineStyle? mark) || mark == null)
+                {
+                    Elements[StyleElement.DecisionHeightMark] = new LineStyle { Color = dh.Color };
+                }
             }
             // Profiles saved before the antenna beam: the old scan limits were the beam; with a colour or line of
             // their own they keep it on the beam (same picture). With the default style the beam gets its new one.

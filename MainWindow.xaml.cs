@@ -1961,6 +1961,8 @@ namespace AuroraPAR
             viewOptions.ThresholdSymbol = profile.ThresholdSymbol;
             viewOptions.TouchdownSymbol = profile.TouchdownSymbol;
             viewOptions.AntennaSymbol = profile.AntennaSymbol;
+            viewOptions.DhSymbol = profile.DhSymbol;
+            viewOptions.DhLineLength = profile.DhLineLength;
             viewOptions.HistorySymbol = profile.HistorySymbol;
             viewOptions.CoastSymbol = profile.CoastSymbol;
             viewOptions.CoastSeconds = profile.CoastSeconds;
